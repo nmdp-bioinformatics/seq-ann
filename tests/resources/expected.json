@@ -1,0 +1,168 @@
+{
+    "partial": [
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "feats":["exon_1", "exon_2", "exon_3", "exon_5", "exon_6", "exon_7", "exon_4", "exon_8"],
+            "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
+            "index": "0"
+        },
+        {
+            "locus": "HLA-DQB1",
+            "name": "HLA-DQB1*02:01:01",
+            "feats":["exon_1", "exon_2", "exon_3", "exon_5"],
+            "index": "1"
+        }
+    ],
+    "partial_ambig": [
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "feats":["exon_1", "exon_2", "exon_3", "exon_5", "exon_6", "exon_7", "exon_4", "exon_8"],
+            "diff": ["exon_2"],
+            "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
+            "method":"nt_search",
+            "index": "0"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "feats":["exon_1", "exon_2", "exon_3", "exon_5", "exon_6", "exon_7", "exon_4", "exon_8"],
+            "diff": ["exon_1", "exon_2"],
+            "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
+            "method":"nt_search and clustalo",
+            "index": "1"
+        }
+    ],
+    "insertion": [
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "diff": [ "intron_1"],
+            "lengths":{
+                    "intron_1":3
+                },
+            "index": "0"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "diff": [ "intron_4", "intron_2"],
+            "lengths":{
+                    "intron_4":6,
+                    "intron_2":8
+                },
+            "index": "1"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "diff": [ "five_prime_UTR"],
+            "lengths":{
+                    "five_prime_UTR":6
+                },
+            "index": "2"
+        }
+        
+    ],    
+    "exact": [
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "index": "0"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*24:23",
+            "index": "1"
+        },
+        {
+            "locus": "HLA-B",
+            "name": "HLA-B*07:02:01:01",
+            "index": "2"
+        },
+        {
+            "locus": "HLA-C",
+            "name": "HLA-C*01:02:01:01",
+            "index": "3"
+        },
+        {
+            "locus": "HLA-DRB1",
+            "name": "HLA-DRB1*01:01:01",
+            "index": "4"
+        },
+        {
+            "locus": "HLA-DQB1",
+            "name": "HLA-DQB1*02:01:01",
+            "index": "5"
+        }        
+    ],
+    "ambig": [
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "diff": ["exon_2"],
+            "index": "0"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*24:23",
+            "diff": ["exon_6"],
+            "index": "1"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "diff": ["five_prime_UTR", "intron_6"],
+            "index": "2"
+        },
+        {
+            "locus": "HLA-B",
+            "name": "HLA-B*07:02:01:01",
+            "diff": ["five_prime_UTR"],
+            "index": "3"
+        },
+        {
+            "locus": "HLA-B",
+            "name": "HLA-B*07:02:01:01",
+            "diff": ["exon_6"],
+            "index": "4"
+        },
+        {
+            "locus": "HLA-C",
+            "name": "HLA-C*01:02:01:01",
+            "diff": ["five_prime_UTR"],
+            "index": "5"
+        },
+        {
+            "locus": "HLA-C",
+            "name": "HLA-C*01:02:01:01",
+            "diff": ["intron_1"],
+            "index": "6"
+        },
+        {
+            "locus": "HLA-A",
+            "name": "HLA-A*01:01:01:01",
+            "diff": ["intron_1","intron_3","exon_6"],
+            "index": "7"
+        },
+        {
+            "locus": "HLA-DRB1",
+            "name": "HLA-DRB1*01:01:01",
+            "diff": ["five_prime_UTR"],
+            "index": "8"
+        },
+        {
+            "locus": "HLA-DRB1",
+            "name": "HLA-DRB1*01:01:01",
+            "diff": ["intron_2"],
+            "index": "9"
+        },
+        {
+            "locus": "HLA-DQB1",
+            "name": "HLA-DQB1*02:01:01",
+            "diff": ["exon_1"],
+            "index": "10"
+        }
+    ]
+}
