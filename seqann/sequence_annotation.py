@@ -103,8 +103,6 @@ class BioSeqAnn(Model):
                 # only align those blocks to the known
                 # missing features
                 missing_blocks = []
-                #print("annotation.blocks")
-                #print(annotation.blocks)
                 for b in annotation.blocks:
                         start = b[0]-1 if b[0] != 0 else 0
                         seq_feat = \
@@ -116,6 +114,25 @@ class BioSeqAnn(Model):
                                 type="unmapped")
 
                         feat = seq_feat.extract(annotation.seq)
+
+                        # refseqs = self._refseqs(locus, start, annotation,
+                        #                          sequence.seq)
+                        # - what is size of input seq
+                        # - whst is size of block
+                        # - what is features have been found
+                        # - Of the features that have not been found
+                        #   and follow these rules:
+                        #       - if it's at the start of the input seq
+                        #         then skip anything that comes after the
+                        #         block and is missing
+                        #       - if it's at the end of the input seq
+                        #       - then skip anything that comes before the
+                        #         block and is missing
+                        #       - Try first all combos of features where
+                        #         len(block) <= ave len blocks - sd or
+                        #         len(block) >= len blocks + sd
+
+
                         # print("FEATS")
                         # print(b[0]-1)
                         # print(b[len(b)-1])
@@ -171,10 +188,15 @@ class BioSeqAnn(Model):
 
         # return blank if missing features
         # If exon only, then only extract exon sequences
+        
         start = 0
         missing_feats = []
         missing_seqs = []
+        exon_only = []
+        exon_seqs = []
         for b in annotation.missing:
+
+
             missing_seqs.append(annotation.missing[b][1])
             end = start + len(annotation.missing[b][1])
             seq_feat = \
@@ -192,6 +214,39 @@ class BioSeqAnn(Model):
         refrec = SeqRecord(seq=refseq, features=missing_feats, id=refid)
         print(refrec)
         return SeqRecord(seq=refseq, features=missing_feats, id=refid)
+
+
+    # def _refseqs(self, annotation):
+
+    #     # return blank if missing features
+    #     # If exon only, then only extract exon sequences
+        
+
+    #     start = 0
+    #     missing_feats = []
+    #     missing_seqs = []
+    #     exon_only = []
+    #     exon_seqs = []
+    #     for b in annotation.missing:
+
+
+    #         missing_seqs.append(annotation.missing[b][1])
+    #         end = start + len(annotation.missing[b][1])
+    #         seq_feat = \
+    #             SeqFeature(
+    #                 FeatureLocation(
+    #                     ExactPosition(start),
+    #                     ExactPosition(end),
+    #                     strand=1),
+    #                 type=annotation.missing[b][2])
+    #         start = end
+    #         missing_feats.append(seq_feat)
+    #     seq = "".join([str(f) for f in missing_seqs])
+    #     refseq = Seq(seq, IUPAC.unambiguous_dna)
+    #     refid = "RefSeq_" + str(randomid())
+    #     refrec = SeqRecord(seq=refseq, features=missing_feats, id=refid)
+    #     print(refrec)
+    #     return SeqRecord(seq=refseq, features=missing_feats, id=refid)
 
     # def _build_error(self, type, **kargs):
 

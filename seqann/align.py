@@ -41,12 +41,11 @@ from seqann.models.annotation import Annotation
 import re
 
 
-def align_seq(found_seq, sequence, locus, 
-              match=2, mismatch=-1,
-              startgap=-10,
-              extendgap=-3):
+# def align_seq(found_seq, sequence, locus,
+#               match=2, mismatch=-1, startgap=-10,
+#               extendgap=-3):
 
-    alignments = pairwise2.align.globalms(seq1, seq2, 2, -1, -10, -2)
+#     alignments = pairwise2.align.globalms(seq1, seq2, 2, -1, -10, -2)
 
 
 def align_seqs(found_seqs, sequence, locus):

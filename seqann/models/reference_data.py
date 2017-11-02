@@ -31,6 +31,8 @@ from collections import OrderedDict
 from Bio.Alphabet import IUPAC
 from seqann.models.annotation import Annotation
 
+import csv
+
 import os
 import glob
 from BioSQL import BioSeqDatabase
@@ -64,6 +66,7 @@ class ReferenceData(Model):
             'datafile': str,
             'dbversion': str,
             'hla_names': List[str],
+            'feature_lengths': Dict,
             'structure_max': Dict,
             'struct_order': Dict,
             'structures': Dict,
@@ -78,6 +81,7 @@ class ReferenceData(Model):
             'dbversion': 'dbversion',
             'hla_names': 'hla_names',
             'structure_max': 'structure_max',
+            'feature_lengths': 'feature_lengths',
             'struct_order': 'struct_order',
             'structures': 'structures',
             'blastdb': 'blastdb',
@@ -105,6 +109,17 @@ class ReferenceData(Model):
                 hla_names.append("HLA-" + name)
             f.close()
 
+        feature_lengths = {}
+        columns = ['mean', 'std', 'min', 'max']
+        featurelength_file = data_dir + "/../data/feature_lengths.csv"
+        with open(featurelength_file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                feat_loc = str(row['locus']) + "_" + str(row['feature'])
+                ldata = [row[c] for c in columns]
+                feature_lengths.update({feat_loc: ldata})
+
+        self._feature_lengths = feature_lengths
         self._hla_names = hla_names
         struture_files = glob.glob(data_dir + '/../data/*.structure')
         structures = {}
@@ -260,6 +275,16 @@ class ReferenceData(Model):
         :rtype: Dict
         """
         return self._struct_order
+
+    @property
+    def feature_lengths(self) -> Dict:
+        """
+        Gets the feature_lengths of this ReferenceData.
+
+        :return: The feature_lengths of this ReferenceData.
+        :rtype: Dict
+        """
+        return self._feature_lengths
 
     @property
     def hla_names(self) -> List[str]:
