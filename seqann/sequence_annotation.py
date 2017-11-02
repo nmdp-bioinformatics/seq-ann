@@ -46,6 +46,8 @@ import re
 from seqann.align import align_seqs
 from seqann.util import randomid
 
+isexon = lambda f: True if re.search("exon", f) else False
+
 
 class BioSeqAnn(Model):
     '''
@@ -116,12 +118,22 @@ class BioSeqAnn(Model):
                         feat = seq_feat.extract(annotation.seq)
 
                         # refseqs = self._refseqs(locus, start, annotation,
-                        #                          sequence.seq)
+                        #                          sequence.seq, feat,
+                        #                           b)
                         # - what is size of input seq
                         # - whst is size of block
                         # - what is features have been found
                         # - Of the features that have not been found
                         #   and follow these rules:
+                        #       ** ONLY align features that are expected
+                        #           this block
+                        #           - if 5'UTR and exon1 are ambigous
+                        #             but intron1 is known, only align to
+                        #             5'UTR and exon1
+                        #       - LOOK for any features found above and
+                        #         behind block. Only USE features within that
+                        #         span.
+                        #
                         #       - if it's at the start of the input seq
                         #         then skip anything that comes after the
                         #         block and is missing
@@ -131,19 +143,20 @@ class BioSeqAnn(Model):
                         #       - Try first all combos of features where
                         #         len(block) <= ave len blocks - sd or
                         #         len(block) >= len blocks + sd
-
-
+                        #
                         # print("FEATS")
                         # print(b[0]-1)
                         # print(b[len(b)-1])
                         # print(b)
-
-                        # TODO: Skip if input seq is too small to align
+                        #
+                        #
                         an = align_seqs(refseqrec, feat, locus)
                         mapped_feat = list(an.annotation.keys())
                         if len(mapped_feat) >= 1:
                             print("Block found")
-                            #print(b)
+                        # print(b)
+                        # TODO: Skip if input seq is
+                        # too small to align
                             for f in an.annotation:
                                 print("Found feat " + f)
                                 print(str(an.annotation[f].seq))
@@ -184,36 +197,108 @@ class BioSeqAnn(Model):
         print("Failed")
         return
 
-    def _refseqs(self, annotation):
+    def _refseqs(self, locus, start_pos, annotation, inputseq, feat, block):
 
+#                       # refseqs = self._refseqs(locus, start, annotation,
+                        #                          sequence.seq, feat,
+                        #                           b)
         # return blank if missing features
         # If exon only, then only extract exon sequences
-        
+        end_pos = start_pos + len(feat.seq)
+        #found_feats = annotation.features
+        missing_feats = annotation.missing
+        mapping = annotation.mapping
+        next_feat = mapping[end_pos+1]
+        prev_feat = mapping[start_pos-1]
+        nxt_order = self.refdata.structure_order[next_feat]
+        prv_order = self.refdata.structure_order[prev_feat]
+
         start = 0
-        missing_feats = []
-        missing_seqs = []
-        exon_only = []
-        exon_seqs = []
-        for b in annotation.missing:
+        exstart = 0
+        all_seqs = []
+        all_feats = []
+        exons_only = []
+        exon_feats = []
+        all_seqrecs = []
+        for f in sorted(missing_feats,
+                        key=lambda k: self.refdata.struct_order[k]):
+            mis_order = self.refdata.structure_order[f]
+            if mis_order > nxt_order or mis_order < prv_order:
+                continue
+            else:
+                all_seqs.append(annotation.missing[f])
+                seq_feat, start = self._make_seqfeat(start,
+                                                     annotation.missing[f][1],
+                                                     annotation.missing[f][2])
+                all_feats.append(seq_feat)
 
+                one_seqfeat, x = self._make_seqfeat(0,
+                                                    annotation.missing[f][1],
+                                                    annotation.missing[f][2])
 
-            missing_seqs.append(annotation.missing[b][1])
-            end = start + len(annotation.missing[b][1])
-            seq_feat = \
-                SeqFeature(
-                    FeatureLocation(
-                        ExactPosition(start),
-                        ExactPosition(end),
-                        strand=1),
-                    type=annotation.missing[b][2])
-            start = end
-            missing_feats.append(seq_feat)
-        seq = "".join([str(f) for f in missing_seqs])
+                ref1 = Seq(str(annotation.missing[f]), IUPAC.unambiguous_dna)
+                rid1 = "Ref1_" + str(f) + str(randomid(N=2))
+                refrec1 = SeqRecord(seq=ref1, features=one_seqfeat, id=rid1)
+                all_seqrecs.append(refrec1)
+
+                if isexon(f):
+                    ftx, exstart = self._make_seqfeat(exstart,
+                                                      annotation.missing[f][1],
+                                                      annotation.missing[f][2])
+                    exons_only.append(annotation.missing[f][1])
+                    exon_feats.append(ftx)
+
+        exononly_seq = "".join([str(ft) for ft in exons_only])
+        refseq_exons = Seq(exononly_seq, IUPAC.unambiguous_dna)
+        refid_exons = "RefExons_" + str(randomid())
+        refrec_exons = SeqRecord(seq=refseq_exons, features=missing_feats,
+                                 id=refid_exons)
+
+        # All seqs
+        seq = "".join([str(ft) for ft in all_seqs])
         refseq = Seq(seq, IUPAC.unambiguous_dna)
-        refid = "RefSeq_" + str(randomid())
-        refrec = SeqRecord(seq=refseq, features=missing_feats, id=refid)
-        print(refrec)
-        return SeqRecord(seq=refseq, features=missing_feats, id=refid)
+        refid = "RefAll_" + str(randomid())
+        refrec = SeqRecord(seq=refseq, features=all_feats, id=refid)
+        return all_seqrecs, refrec_exons, refrec
+
+    def _make_seqfeat(self, start, sequence, featname):
+
+        end = start + len(sequence)
+        seq_feat = \
+            SeqFeature(
+                FeatureLocation(
+                    ExactPosition(start),
+                    ExactPosition(end),
+                    strand=1),
+                type=featname)
+        start = end
+        return seq_feat, start
+
+        # start = 0
+        # missing_feats = []
+        # missing_seqs = []
+        # exon_only = []
+        # exon_seqs = []
+        # for b in annotation.missing:
+
+
+        #     missing_seqs.append(annotation.missing[b][1])
+        #     end = start + len(annotation.missing[b][1])
+        #     seq_feat = \
+        #         SeqFeature(
+        #             FeatureLocation(
+        #                 ExactPosition(start),
+        #                 ExactPosition(end),
+        #                 strand=1),
+        #             type=annotation.missing[b][2])
+        #     start = end
+        #     missing_feats.append(seq_feat)
+        # seq = "".join([str(f) for f in missing_seqs])
+        # refseq = Seq(seq, IUPAC.unambiguous_dna)
+        # refid = "RefSeq_" + str(randomid())
+        # refrec = SeqRecord(seq=refseq, features=missing_feats, id=refid)
+        # print(refrec)
+        # return SeqRecord(seq=refseq, features=missing_feats, id=refid)
 
 
     # def _refseqs(self, annotation):

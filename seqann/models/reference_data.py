@@ -119,6 +119,9 @@ class ReferenceData(Model):
                 ldata = [row[c] for c in columns]
                 feature_lengths.update({feat_loc: ldata})
 
+        feat_lengthcombos = {}
+
+
         self._feature_lengths = feature_lengths
         self._hla_names = hla_names
         struture_files = glob.glob(data_dir + '/../data/*.structure')
@@ -409,6 +412,8 @@ class ReferenceData(Model):
         """
         seqrecord = self.seqrecord(allele, locus)
 
+        # TODO: USE notation, instead!
+        #
         feat_types = {}
         complete_annotation = {}
         for feat in seqrecord.features:
