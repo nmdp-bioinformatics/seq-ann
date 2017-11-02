@@ -112,12 +112,14 @@ class BioSeqAnn(Model):
                             type="unmapped")
 
                     feat = seq_feat.extract(annotation.seq)
-                    seqrecs, exons, fullrec = self._refseqs(locus,
-                                                            start,
-                                                            annotation,
-                                                            sequence.seq,
-                                                            feat,
-                                                            b)
+                    combosrecs, exons, fullrec = self._refseqs(locus,
+                                                               start,
+                                                               annotation,
+                                                               sequence.seq,
+                                                               feat,
+                                                               b)
+
+
 
                     an = align_seqs(refseqrec, feat, locus)
                     mapped_feat = list(an.annotation.keys())
@@ -211,7 +213,6 @@ class BioSeqAnn(Model):
         # return blank if missing features
         # If exon only, then only extract exon sequences
         end_pos = start_pos + len(feat.seq)
-        #found_feats = annotation.features
         missing_feats = annotation.missing
         mapping = annotation.mapping
         next_feat = mapping[end_pos+1]
@@ -243,7 +244,7 @@ class BioSeqAnn(Model):
                                                     annotation.missing[f][2])
 
                 ref1 = Seq(str(annotation.missing[f]), IUPAC.unambiguous_dna)
-                rid1 = "Ref1_" + str(f) + str(randomid(N=2))
+                rid1 = "Ref1_" + str(f) + "_" + str(randomid(N=2))
                 refrec1 = SeqRecord(seq=ref1, features=one_seqfeat, id=rid1)
                 all_seqrecs.update({annotation.missing[f][2]: refrec1})
 
@@ -276,29 +277,58 @@ class BioSeqAnn(Model):
             if start_ord != nxt_order-1:
                 nfeat = self.refdata.structure_order[locus][start_ord]
                 rec = all_seqrecs[nfeat]
-                recf, x = self._make_seqfeat(0, rec.seq, nfeat)
-                ctmpid1 = "RefComboPart_" + str(randomid())
-                tmprec1 = SeqRecord(seq=rec.seq, features=recf,
-                                    id=ctmpid1)
-                combos.append(tmprec1)
+
+                length = self.refdata.structure_lengths[locus][f]['length']
+                lengthsd = self.refdata.structure_lengths[locus][f]['sd']
+
+                # min and max lengths expected
+                max_length = length + lengthsd
+                min_length = length - lengthsd
+                if len(rec.seq) <= max_length \
+                        and len(rec.seq) >= min_length \
+                        and len(rec.seq) > 10:
+
+                    recf, x = self._make_seqfeat(0, rec.seq, nfeat)
+                    ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
+                    tmprec1 = SeqRecord(seq=rec.seq, features=recf,
+                                        id=ctmpid1)
+                    combos.append(tmprec1)
             else:
 
                 cstart = 0
+                ref_feats = []
                 combo_seq = []
                 combo_feats = []
                 for i in range(start_ord, nxt_order):
                     nfeat = self.refdata.structure_order[locus][i]
+                    ref_feats.append(f)
+
+                    length, lengthsd = 0, 0
+                    for f in ref_feats:
+                        length += self.refdata.structure_lengths[locus][f]['length']
+                        lengthsd += self.refdata.structure_lengths[locus][f]['sd']
+
+                    # min and max lengths expected
+                    max_length = length + lengthsd
+                    min_length = length - lengthsd
+
                     rec = all_seqrecs[nfeat]
-                    recf, cstart = self._make_seqfeat(start, rec.seq, nfeat)
                     combo_feats.append(recf)
                     combo_seq.append(rec.seq)
 
                     seqtmp = "".join([str(ft) for ft in combo_seq])
                     ctmpseq = Seq(seqtmp, IUPAC.unambiguous_dna)
-                    ctmpid = "RefComboPart_" + str(randomid())
-                    tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
-                                       id=ctmpid)
-                    combos.append(tmprec)
+
+                    if len(ctmpseq.seq) <= max_length \
+                            and len(ctmpseq.seq) >= min_length \
+                            and len(ctmpseq.seq) > 10:
+                        recf, cstart = self._make_seqfeat(start,
+                                                          rec.seq, nfeat)
+
+                        ctmpid = "RefComboPart_" + str(randomid())
+                        tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
+                                           id=ctmpid)
+                        combos.append(tmprec)
 
                 combseq = "".join([str(ft) for ft in combo_seq])
                 crefseq = Seq(combseq, IUPAC.unambiguous_dna)
