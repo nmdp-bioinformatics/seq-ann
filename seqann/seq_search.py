@@ -393,10 +393,6 @@ class SeqSearch(Model):
 
         # If it failed to map all features when only looking
         # at the exons, then try again and look at all features
-        #print("FOUND FEATS")
-        #print(list(found_feats.keys()))
-        #print("------")
-        #print("EXON ONLY " + str(exon_only) + " " + str(rerun))
         if exon_only and not rerun and missing_blocks:
             print("RERUNNING seqsearch")
             print(missing_blocks)

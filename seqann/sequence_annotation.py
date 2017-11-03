@@ -45,6 +45,7 @@ from BioSQL import BioSeqDatabase
 import re
 from seqann.align import align_seqs
 from seqann.util import randomid
+from seqann.util import get_features
 
 isexon = lambda f: True if re.search("exon", f) else False
 
@@ -102,80 +103,74 @@ class BioSeqAnn(Model):
             # missing features
             missing_blocks = []
             for b in annotation.blocks:
-                    start = b[0]-1 if b[0] != 0 else 0
-                    seq_feat = \
-                        SeqFeature(
-                            FeatureLocation(
-                                ExactPosition(start),
-                                ExactPosition(b[len(b)-1]),
-                                strand=1),
-                            type="unmapped")
 
-                    feat = seq_feat.extract(annotation.seq)
-                    combosrecs, exons, fullrec = self._refseqs(locus,
-                                                               start,
-                                                               annotation,
-                                                               sequence.seq,
-                                                               feat,
-                                                               b)
+                # **** Check if block equals full input sequence *** #
+                # - If it does, then just align the ful
 
+                start = b[0]-1 if b[0] != 0 else 0
+                seq_feat = \
+                    SeqFeature(
+                        FeatureLocation(
+                            ExactPosition(start),
+                            ExactPosition(b[len(b)-1]),
+                            strand=1),
+                        type="unmapped")
 
-
-                    an = align_seqs(refseqrec, feat, locus)
+                feat = seq_feat.extract(annotation.seq)
+                combosrecs, exons, fullrec = self._refseqs(locus,
+                                                           start,
+                                                           annotation,
+                                                           sequence.seq,
+                                                           feat,
+                                                           b)
+                mbtmp = []
+                anntemp = annotation.copy()
+                for combseqr in combosrecs:
+                    an = align_seqs(combseqr, feat, locus)
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
-                        print("Block found")
-                    # refseqs = self._refseqs(locus, start, annotation,
-                    #                          sequence.seq, feat,
-                    #                           b)
-                    # - what is size of input seq
-                    # - whst is size of block
-                    # - what is features have been found
-                    # - Of the features that have not been found
-                    #   and follow these rules:
-                    #       ** ONLY align features that are expected
-                    #           this block
-                    #           - if 5'UTR and exon1 are ambigous
-                    #             but intron1 is known, only align to
-                    #             5'UTR and exon1
-                    #       - LOOK for any features found above and
-                    #         behind block. Only USE features within that
-                    #         span.
-                    #
-                    #       - if it's at the start of the input seq
-                    #         then skip anything that comes after the
-                    #         block and is missing
-                    #       - if it's at the end of the input seq
-                    #       - then skip anything that comes before the
-                    #         block and is missing
-                    #       - Try first all combos of features where
-                    #         len(block) <= ave len blocks - sd or
-                    #         len(block) >= len blocks + sd
-                    #
-                    # print("FEATS")
-                    # print(b[0]-1)
-                    # print(b[len(b)-1])
-                    # print(b)
-                    #
-                    #
-                    an = align_seqs(refseqrec, feat, locus)
-                    mapped_feat = list(an.annotation.keys())
-                    if len(mapped_feat) >= 1:
-                        print("Block found")
-                    # print(b)
-                    # TODO: Skip if input seq is
-                    # too small to align
                         for f in an.annotation:
-                            print("Found feat " + f)
-                            print(str(an.annotation[f].seq))
-                            print("")
-                            annotation.annotation.update({f: an.annotation[f]})
+                            anntemp.annotation.update({f: an.annotation[f]})
                     else:
-                        print("Block missing")
-                        print(b)
+                        mbtmp.append(b)
+                    anntemp.blocks = mbtmp
+                    anntemp.check_annotation()
+                    if anntemp.complete_annotation:
+                        return anntemp
+
+                exonan = align_seqs(exons, feat, locus)
+                mapped_exons = list(exonan.annotation.keys())
+                if len(mapped_exons) >= 1:
+                    for f in exonan.annotation:
+                        annotation.annotation.update({f: exonan.annotation[f]})
+                else:
+                    if b not in missing_blocks:
                         missing_blocks.append(b)
-            annotation.blocks = missing_blocks
-            annotation.check_annotation()
+
+                annotation.blocks = missing_blocks
+                annotation.check_annotation()
+                if annotation.complete_annotation:
+                    return annotation
+
+                # Run full sequence
+                fullref = align_seqs(fullrec, feat, locus)
+                mapped_full = list(fullref.annotation.keys())
+                if len(mapped_full) >= 1:
+                    # If it wasn't found
+                    if b in missing_blocks:
+                        del missing_blocks[missing_blocks.index(b)]
+
+                    for f in fullref.annotation:
+                        annotation.update({f: fullref.annotation[f]})
+                else:
+                    if b not in missing_blocks:
+                        missing_blocks.append(b)
+
+                annotation.blocks = missing_blocks
+                annotation.check_annotation()
+                if annotation.complete_annotation:
+                    return annotation
+
             return annotation
         else:
             print("ref_align2")
@@ -206,10 +201,42 @@ class BioSeqAnn(Model):
         return
 
     def _refseqs(self, locus, start_pos, annotation, inputseq, feat, block):
-
-#                       # refseqs = self._refseqs(locus, start, annotation,
-                        #                          sequence.seq, feat,
-                        #                           b)
+        # refseqs = self._refseqs(locus, start, annotation,
+        #                          sequence.seq, feat,
+        #                           b)
+        # - what is size of input seq
+        # - whst is size of block
+        # - what is features have been found
+        # - Of the features that have not been found
+        #   and follow these rules:
+        #       ** ONLY align features that are expected
+        #           this block
+        #           - if 5'UTR and exon1 are ambigous
+        #             but intron1 is known, only align to
+        #             5'UTR and exon1
+        #       - LOOK for any features found above and
+        #         behind block. Only USE features within that
+        #         span.
+        #
+        #       - if it's at the start of the input seq
+        #         then skip anything that comes after the
+        #         block and is missing
+        #       - if it's at the end of the input seq
+        #       - then skip anything that comes before the
+        #         block and is missing
+        #       - Try first all combos of features where
+        #         len(block) <= ave len blocks - sd or
+        #         len(block) >= len blocks + sd
+        #
+        # print("FEATS")
+        # print(b[0]-1)
+        # print(b[len(b)-1])
+        # print(b)
+        #
+        #
+        # refseqs = self._refseqs(locus, start, annotation,
+        #                          sequence.seq, feat,
+        #                           b)
         # return blank if missing features
         # If exon only, then only extract exon sequences
         end_pos = start_pos + len(feat.seq)
@@ -285,8 +312,7 @@ class BioSeqAnn(Model):
                 max_length = length + lengthsd
                 min_length = length - lengthsd
                 if len(rec.seq) <= max_length \
-                        and len(rec.seq) >= min_length \
-                        and len(rec.seq) > 10:
+                        and len(rec.seq) >= min_length:
 
                     recf, x = self._make_seqfeat(0, rec.seq, nfeat)
                     ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
@@ -320,8 +346,7 @@ class BioSeqAnn(Model):
                     ctmpseq = Seq(seqtmp, IUPAC.unambiguous_dna)
 
                     if len(ctmpseq.seq) <= max_length \
-                            and len(ctmpseq.seq) >= min_length \
-                            and len(ctmpseq.seq) > 10:
+                            and len(ctmpseq.seq) >= min_length:
                         recf, cstart = self._make_seqfeat(start,
                                                           rec.seq, nfeat)
 
@@ -337,7 +362,16 @@ class BioSeqAnn(Model):
                                     id=crefid)
                 combos.append(crefrec)
 
-        return combos, refrec_exons, refrec
+        if combos:
+            # Sort combos by how close they
+            # are in length to the input sequence block
+            # * may need to reverse sort *
+            sorted_combos = sorted(combos,
+                                   key=lambda rec: abs(len(rec.seq) - len(inputseq.seq)))
+        else:
+            sorted_combos = []
+
+        return sorted_combos, refrec_exons, refrec
 
     def _make_seqfeat(self, start, sequence, featname):
 

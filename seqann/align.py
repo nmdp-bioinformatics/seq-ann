@@ -45,6 +45,10 @@ import re
 #               match=2, mismatch=-1, startgap=-10,
 #               extendgap=-3):
 
+
+# ** use different parameters depending on how big the difference
+#    is between found and inputsequence
+#           
 #     alignments = pairwise2.align.globalms(seq1, seq2, 2, -1, -10, -2)
 
 
@@ -138,6 +142,7 @@ def align_seqs(found_seqs, sequence, locus):
 
     cleanup(randid)
 
+
     return resolve_feats(all_features, align[len(align)-1])
 
 
@@ -157,6 +162,10 @@ def get_features(feats, sequ):
 
 
 def resolve_feats(feat_list, seq):
+
+    # Look at consensus sequence
+    #   gap_consensus
+
     if len(feat_list) > 1:
         print("****** resolve_feats error ******")
         for i in range(0, len(feat_list)):

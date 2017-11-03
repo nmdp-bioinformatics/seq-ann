@@ -43,6 +43,7 @@ from Bio.SeqFeature import SeqFeature
 import os
 import pymysql
 import json
+from seqann.util import get_features
 
 
 # TODO:
