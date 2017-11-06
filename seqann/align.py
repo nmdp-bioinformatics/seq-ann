@@ -39,16 +39,19 @@ from collections import OrderedDict
 from Bio.Alphabet import IUPAC
 from seqann.models.annotation import Annotation
 import re
-
-
+from seqann.util import get_features, get_seqfeat
+from Bio.SeqUtils import nt_search
+from seqann.seq_search import getblocks
 # def align_seq(found_seq, sequence, locus,
 #               match=2, mismatch=-1, startgap=-10,
 #               extendgap=-3):
 
+# *** return annotation ONLY IF the variation with
+#     the mapped features is within the expected
+#     amount
 
 # ** use different parameters depending on how big the difference
 #    is between found and inputsequence
-#           
 #     alignments = pairwise2.align.globalms(seq1, seq2, 2, -1, -10, -2)
 
 
@@ -57,9 +60,9 @@ def align_seqs(found_seqs, sequence, locus):
     randid = randomid()
     input_fasta = str(randid) + ".fasta"
     output_clu = str(randid) + ".clu"
+
     seqs = []
     seqs.append(found_seqs)
-    print(found_seqs)
     seqs.append(sequence)
     SeqIO.write(seqs, input_fasta, "fasta")
     clustalomega_cline = ClustalOmegaCommandline(infile=input_fasta,
@@ -68,96 +71,64 @@ def align_seqs(found_seqs, sequence, locus):
                                                  verbose=True, auto=True)
     stdout, stderr = clustalomega_cline()
     align = AlignIO.read(output_clu, "clustal")
-    print("******************************")
-    for a in align:
-        print(str(a.seq))
-    print("******************************")
+    cleanup(randid)
+
+    insers, dels = 0, 0
     all_features = []
     if len(align)-2 == 0:
-        feats = [feat for feat in seqs[0].features if feat.type != "source" and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-        l = 0
-        feat_names = {}
-        feat_nums = {}
-        for f in feats:
-            l += 1
-            feat_name = ''
-            if re.search("\d", f.type) or f.type == "five_prime_UTR" \
-                    or f.type == "three_prime_UTR":
-                        feat_names.update({f.type: f})
-            else:
-                if f.type not in feat_nums:
-                    if(f.type == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_nums.update({f.type: 1})
-                        feat_names.update({feat_name: f})
-                    else:
-                        feat_name = f.type + "_" + str(1)
-                        feat_nums.update({f.type: 1})
-                        feat_names.update({feat_name: f})
-                else:
-                    if(f.type == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        feat_names.update({feat_name: f})
-                    else:
-                        num = feat_nums[f.type] + 1
-                        feat_name = f.type + "_" + str(num)
-                        feat_nums[f.type] = num
-                        feat_names.update({feat_name: f})
-
-        f = get_features(feat_names, align[0])
+        infeats = get_seqfeat(seqs[0])
+        diffs = count_diffs(align, infeats)
+        if isinstance(diffs, Annotation):
+            return diffs, 0, 0
+        else:
+            insers, dels = diffs[0], diffs[1]
+        f = find_features(infeats, align[0])
         all_features.append(f)
     else:
         for i in range(0, len(align)-2):
-            feats = [feat for feat in seqs[i].features if feat.type != "source" and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-            l = 0
-            feat_names = {}
-            feat_nums = {}
-            for f in feats:
-                l += 1
-                feat_name = ''
-                if re.search("\d", f.type):
-                    feat_names.update({f.type: f})
-                else:
-                    if f.type not in feat_nums:
-                        if(f.type == "UTR"):
-                            feat_name = "five_prime_UTR"
-                            feat_nums.update({f.type: 1})
-                            feat_names.update({feat_name: f})
-                        else:
-                            feat_name = f.type + "_" + str(1)
-                            feat_nums.update({f.type: 1})
-                            feat_names.update({feat_name: f})
-                    else:
-                        if(f.type == "UTR"):
-                            feat_name = "three_prime_UTR"
-                            feat_names.update({feat_name: f})
-                        else:
-                            num = feat_nums[f.type] + 1
-                            feat_name = f.type + "_" + str(num)
-                            feat_nums[f.type] = num
-                            feat_names.update({feat_name: f})
-
-            f = get_features(feat_names, align[i])
+            infeats = get_seqfeat(seqs[i])
+            f = find_features(infeats, align[i])
             all_features.append(f)
 
-    cleanup(randid)
+    annotation = resolve_feats(all_features, align[len(align)-1])
+    return annotation, insers, dels
 
 
-    return resolve_feats(all_features, align[len(align)-1])
-
-
-def get_features(feats, sequ):
+def find_features(feats, sequ):
     feats_a = list(feats.keys())
+
     j = 0
+    s = 0
+    start = 0
+    en = 0
     for i in range(0, len(sequ)):
         if j <= len(feats_a)-1:
             if i > int(feats[feats_a[j]].location.end):
                 j += 1
             if(sequ[i] == '-'):
-                feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[j]].location.start), ExactPosition(int(feats[feats_a[j]].location.end + 1)), strand=1), type=feats[feats_a[j]].type)
-                if j != len(feats_a):
-                    for l in range(j+1, len(feats_a)):
-                        feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+1), ExactPosition(int(feats[feats_a[l]].location.end + 1)), strand=1), type=feats[feats_a[l]].type)
+                if i == 0:
+                    start += 1
+                    en += 1
+                    s = 1
+                else:
+                    start += 1
+                    en += 1
+                    if s == 0:
+                        feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[j]].location.start), ExactPosition(int(feats[feats_a[j]].location.end + 1)), strand=1), type=feats[feats_a[j]].type)
+                        if j != len(feats_a):
+                            for l in range(j+1, len(feats_a)):
+                                feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+1), ExactPosition(int(feats[feats_a[l]].location.end + 1)), strand=1), type=feats[feats_a[l]].type)
+                      
+            else:
+                if s == 1:
+                    st = feats[feats_a[j]].location.start + start
+                    end = feats[feats_a[j]].location.end + en
+                    feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(st), ExactPosition(end), strand=1), type=feats[feats_a[j]].type)
+                    if j != len(feats_a):
+                        for l in range(j+1, len(feats_a)):
+                            feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+st+1), ExactPosition(int(feats[feats_a[l]].location.end + end)), strand=1), type=feats[feats_a[l]].type)
+
+                    s = 0
     return feats
 
 
@@ -165,7 +136,12 @@ def resolve_feats(feat_list, seq):
 
     # Look at consensus sequence
     #   gap_consensus
+    seq_covered = len(seq.seq)
+    coordinates = dict(map(lambda x: [x, 1],
+                       [i for i in range(0, len(seq.seq)+1)]))
 
+    mapping = dict(map(lambda x: [x, 1],
+                       [i for i in range(0, len(seq.seq)+1)]))
     if len(feat_list) > 1:
         print("****** resolve_feats error ******")
         for i in range(0, len(feat_list)):
@@ -178,14 +154,74 @@ def resolve_feats(feat_list, seq):
         for feat in features:
             f = features[feat]
             seqrec = f.extract(seq)
+            seq_covered -= len(seqrec.seq)
             if re.search("-", str(seqrec.seq)):
                 newseq = re.sub(r'-', '', str(seqrec.seq))
                 seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
             if seqrec.seq:
-                print(seqrec.seq)
                 full_annotation.update({feat: seqrec})
-        annotation = Annotation(annotation=full_annotation, method="clustalo")
+                for i in range(f.location.start, f.location.end):
+                    if i in coordinates:
+                        del coordinates[i]
+                    mapping[i] = feat
+
+        blocks = getblocks(coordinates)
+        annotation = Annotation(annotation=full_annotation,
+                                method="clustalo",
+                                blocks=blocks)
         return annotation
+
+
+def count_diffs(align, feats):
+
+    nfeats = len(feats.keys())
+    mm = 0
+    insr = 0
+    dels = 0
+    gaps = 0
+    match = 0
+    lastb = ''
+    l = len(align[0]) if len(align[0]) > len(align[1]) else len(align[1])
+
+    for i in range(0, l):
+        if align[0][i] == "-" or align[1][i] == "-":
+            if align[0][i] == "-":
+                insr += 1
+                if lastb != '-':
+                    gaps += 1
+                lastb = "-"
+            if align[1][i] == "-":
+                dels += 1
+                if lastb != '-':
+                    gaps += 1
+                lastb = "-"
+        else:
+            lastb = ''
+            if align[0][i] != align[1][i]:
+                mm += 1
+            else:
+                match += 1
+
+    print("----")
+    gper = gaps / nfeats
+    delper = dels / l
+    iper = insr / l
+    mmper = mm / l
+    mper = match / l
+    print(list(feats.keys()))
+    print('{:<22}{:<6d}'.format("Number of feats: ", nfeats))
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper))
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper))
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper))
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper))
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper))
+    print("----")
+    indel = iper + delper
+    if (indel > 0.5 or mmper > 0.05 or gper > .50):
+        return Annotation(complete_annotation=False)
+    else:
+        return insr, dels
+
 
 
 

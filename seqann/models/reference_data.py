@@ -43,7 +43,7 @@ from datetime import date, datetime
 from typing import List, Dict
 from seqann.util import deserialize_model
 import pymysql
-
+import collections
 is_kir = lambda x: True if re.search("KIR", x) else False
 
 
@@ -62,6 +62,7 @@ class ReferenceData(Model):
         :param dbversion: The dbversion of this ReferenceData.
         :type dbversion: str
         """
+        tree = lambda: collections.defaultdict(tree)
         self.data_types = {
             'server': BioSeqDatabase,
             'datafile': str,
@@ -110,15 +111,15 @@ class ReferenceData(Model):
                 hla_names.append("HLA-" + name)
             f.close()
 
-        feature_lengths = {}
+        feature_lengths = tree()
         columns = ['mean', 'std', 'min', 'max']
         featurelength_file = data_dir + "/../data/feature_lengths.csv"
         with open(featurelength_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                feat_loc = str(row['locus']) + "_" + str(row['feature'])
+                #feat_loc = str(row['locus']) + "_" + str(row['feature'])
                 ldata = [row[c] for c in columns]
-                feature_lengths.update({feat_loc: ldata})
+                feature_lengths[row['locus']][row['feature']] = ldata
 
         self._feature_lengths = feature_lengths
         self._hla_names = hla_names
@@ -370,7 +371,8 @@ class ReferenceData(Model):
                 "seq.bioentry_id = ent.bioentry_id " + \
                 "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
                 "LIMIT " + n
-            conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='', db='bioseqdb')
+            conn = pymysql.connect(host='localhost', port=3306,
+                                   user='root', passwd='', db='bioseqdb')
             cur = conn.cursor()
             cur.execute(select_stm)
 

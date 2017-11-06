@@ -122,35 +122,10 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertTrue(ann.complete_annotation)
             self.assertGreater(len(ann.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
-            expected = db.lookup(name=allele)
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
 
             n_diffs = 0
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected = db.lookup(name=allele)
+            expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             for feat in expected_seqs:
                 if feat not in ann.annotation:
@@ -191,34 +166,9 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(ann.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
 
             n_diffs = 0
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             for feat in expected_seqs:
                 if feat not in ann.annotation:
@@ -262,33 +212,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(ann.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(ann.annotation.keys()), 1)
 
@@ -331,33 +255,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(ann.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(ann.annotation.keys()), 1)
 
@@ -399,33 +297,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(annotation.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(annotation.annotation.keys()), 1)
             for feat in expected_seqs:
@@ -433,7 +305,7 @@ class TestBioSeqAnn(unittest.TestCase):
                     self.assertEqual(feat, None)
                 else:
                     self.assertEqual(str(expected_seqs[feat]),
-                                     str(annotation.annotation[feat].seq))
+                                     str(annotation.annotation[feat]))
         server.close()
         pass
 
@@ -457,33 +329,7 @@ class TestBioSeqAnn(unittest.TestCase):
             expected = [a for a in seqann.refdata.imgtdat
                         if a.description.split(",")[0] == allele][0]
 
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(annotation.annotation.keys()), 1)
             for feat in expected_seqs:

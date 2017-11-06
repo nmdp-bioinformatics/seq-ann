@@ -10,7 +10,8 @@
         {
             "locus": "HLA-DQB1",
             "name": "HLA-DQB1*02:01:01",
-            "feats":["exon_1", "exon_2", "exon_3", "exon_5"],
+            "feats":["exon_1", "exon_2", "exon_3", "exon_6"],
+            "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
             "index": "1"
         }
     ],
