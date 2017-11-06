@@ -24,7 +24,7 @@ var/
 .installed.cfg
 *.egg
 combos_test.py
-
+venv/
 
 log/
 *.out
