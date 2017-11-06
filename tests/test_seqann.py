@@ -23,33 +23,27 @@
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
 
-
-
 """
 test_seqann
 ----------------------------------
 
 Tests for `seqann` module.
 """
-import sys
+import os
+import json
+import pymysql
 import unittest
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
-from seqann.models.reference_data import ReferenceData
-from BioSQL.BioSeq import DBSeqRecord
-from seqann.sequence_annotation import BioSeqAnn
-from seqann.models.annotation import Annotation
-from Bio.SeqFeature import SeqFeature
-import os
-import pymysql
-import json
 from seqann.util import get_features
-
+from seqann.models.annotation import Annotation
+from seqann.sequence_annotation import BioSeqAnn
+from seqann.models.reference_data import ReferenceData
 
 # TODO:
 #   - add ability to detect insertions at beginning or end
 #     of exons and introns.
-#   - 
+
 
 def conn():
     try:
@@ -265,7 +259,6 @@ class TestBioSeqAnn(unittest.TestCase):
 
             for feat in ex['feats']:
                 if feat in ex['diff']:
-                    print(feat)
                     self.assertNotEqual(str(expected_seqs[feat]),
                                         str(ann.annotation[feat].seq))
                 else:

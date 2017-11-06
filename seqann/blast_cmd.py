@@ -64,7 +64,7 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
                    if "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
 
     # ***********************************
-    # TODO: sort alleles by number of features they contain
+    # TODO: sort alleles by number of features they contain and evalue
     # ***********************************
 
     # Use biosql db if provided

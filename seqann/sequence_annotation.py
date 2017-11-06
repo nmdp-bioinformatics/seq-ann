@@ -74,7 +74,6 @@ class BioSeqAnn(Model):
             return matched_annotation
 
         blast = blastn(sequence, locus, nseqs, refdata=self.refdata)
-
         if blast.failed:
             return self.broad_align(sequence, locus)
 

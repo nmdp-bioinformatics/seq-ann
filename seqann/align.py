@@ -24,24 +24,19 @@
 
 from __future__ import absolute_import
 
-from datetime import date, datetime
-from typing import List, Dict
-from seqann.util import deserialize_model, randomid, cleanup
-
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Align.Applications import ClustalOmegaCommandline
-from Bio import AlignIO
-from Bio import SeqIO
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
-from collections import OrderedDict
-from Bio.Alphabet import IUPAC
-from seqann.models.annotation import Annotation
 import re
-from seqann.util import get_features, get_seqfeat
-from Bio.SeqUtils import nt_search
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio import AlignIO
+from Bio.Alphabet import IUPAC
+from datetime import date, datetime
 from seqann.seq_search import getblocks
+from seqann.models.annotation import Annotation
+from seqann.util import get_features, get_seqfeat
+from Bio.Align.Applications import ClustalOmegaCommandline
+from seqann.util import deserialize_model, randomid, cleanup
+from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
+
 # def align_seq(found_seq, sequence, locus,
 #               match=2, mismatch=-1, startgap=-10,
 #               extendgap=-3):
