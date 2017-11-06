@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/mhalagan-nmdp/gfe/issues.
+Report bugs at https://github.com/nmdp-bioinformatics/SeqAnn/issues.
 
 If you are reporting a bug, please include:
 
@@ -38,8 +38,8 @@ and "help wanted" is open to whoever wants to implement it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-GFE could always use more documentation, whether as part of the
-official GFE docs, in docstrings, or even on the web in blog posts,
+SeqAnn could always use more documentation, whether as part of the
+official SeqAnn docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
 Submit Feedback
@@ -62,12 +62,12 @@ Ready to contribute? Here's how to set up `gfe` for local development.
 1. Fork the `gfe` repo on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:your_name_here/gfe.git
+    $ git clone git@github.com:your_name_here/SeqAnn.git
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv gfe
-    $ cd gfe/
+    $ mkvirtualenv SeqAnn
+    $ cd SeqAnn/
     $ python setup.py develop
 
 4. Create a branch for local development::
@@ -102,7 +102,7 @@ Before you submit a pull request, check that it meets these guidelines:
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
 3. The pull request should work for Python 2.6, 2.7, 3.3, 3.4 and 3.5, and for PyPy. Check
-   https://travis-ci.org/mhalagan-nmdp/gfe/pull_requests
+   https://travis-ci.org/nmdp-bioinformatics/SeqAnn/pull_requests
    and make sure that the tests pass for all supported Python versions.
 
 Tips
@@ -111,4 +111,4 @@ Tips
 To run a subset of tests::
 
 
-    $ python -m unittest tests.test_gfe
+    $ python -m unittest tests.test_seqann.TestBioSeqAnn.test_004_insertion

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#    gfe GFE.
+#    seqann Sequence Annotation.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -32,19 +32,16 @@ test_blast
 Tests for `seqann.blast_cmd` module.
 """
 
-
-import sys
+import os
+import pymysql
 import unittest
 
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
+
 from seqann.models.reference_data import ReferenceData
-from seqann.blast_cmd import blastn
-from BioSQL.BioSeq import DBSeqRecord
 from seqann.models.blast import Blast
-from seqann.util import cleanup
-import os
-import pymysql
+from seqann.blast_cmd import blastn
 
 
 def conn():

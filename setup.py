@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#    gfe GFE.
+#    seqann Sequence Annotation.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -24,7 +24,6 @@
 #
 
 
-
 from setuptools import setup
 
 with open('README.rst') as readme_file:
@@ -34,7 +33,11 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    # TODO: put package requirements here
+    'biopython',
+    'numpy',
+    'PyMySQL',
+    'six',
+    'bson'
 ]
 
 test_requirements = [
@@ -44,17 +47,19 @@ test_requirements = [
 setup(
     name='seqann',
     version='0.0.1',
-    description="Gene Feature Enumeration",
+    description="Sequence Annotation",
     long_description=readme + '\n\n' + history,
     author="Mike Halagan",
     author_email='mhalagan@nmdp.org',
-    url='https://github.com/mhalagan-nmdp/seqann',
+    url='https://github.com/nmdp-bioinformatics/seqann',
     packages=[
         'seqann',
     ],
     package_dir={'seqann':
                  'seqann'},
-    include_package_data=True,
+    package_data={'seqann': ['data/*.structure',
+                             'data/*.csv', 'data/blast/*',
+                             'data/allele_lists/*']},
     install_requires=requirements,
     license="LGPL 3.0",
     zip_safe=False,

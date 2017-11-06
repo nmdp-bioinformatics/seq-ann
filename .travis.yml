@@ -28,5 +28,5 @@ deploy:
     secure: PLEASE_REPLACE_ME
   on:
     tags: true
-    repo: mhalagan-nmdp/gfe
+    repo: mhalagan-nmdp/SeqAnn
     condition: $TOXENV == py27

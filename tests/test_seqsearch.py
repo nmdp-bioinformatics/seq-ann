@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#    gfe GFE.
+#    seqann Sequence Annotation.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -40,26 +40,8 @@ annotator.annotate()
 Tests for `seqann.seqsearch` module.
 """
 
-
-import sys
-import unittest
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
-from Bio import SeqIO
-from BioSQL import BioSeqDatabase
-from seqann.models.reference_data import ReferenceData
-from seqann.blast_cmd import blastn
-from seqann.seq_search import SeqSearch
-from BioSQL.BioSeq import DBSeqRecord
-from seqann.models.blast import Blast
-from seqann.util import cleanup
-from seqann.models.annotation import Annotation
 import os
-from seqann.align import align_seqs
-from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
-from Bio.Alphabet import IUPAC
-from seqann.util import randomid
-import pprint
+import unittest
 import pymysql
 
 

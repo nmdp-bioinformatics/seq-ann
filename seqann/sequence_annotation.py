@@ -24,30 +24,21 @@
 
 # TODO: change file name to seq_annotation.py
 #
-from seqann.models.annotation import Annotation
+import re
+
+from Bio.Seq import Seq
+from Bio.Alphabet import IUPAC
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature
+from Bio.SeqFeature import ExactPosition
+from Bio.SeqFeature import FeatureLocation
+
 from seqann.models.reference_data import ReferenceData
 from seqann.blast_cmd import blastn
 from seqann.seq_search import SeqSearch
 from seqann.models.base_model_ import Model
-
-from Bio import SeqIO
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from collections import OrderedDict
-from Bio.Alphabet import IUPAC
-from Bio import SearchIO
-from Bio.Align.Applications import ClustalOmegaCommandline
-from Bio.Blast.Applications import NcbiblastnCommandline
-from Bio.SeqUtils import nt_search
-import os
-import glob
-from Bio import AlignIO
-from BioSQL import BioSeqDatabase
-import re
 from seqann.align import align_seqs
 from seqann.util import randomid
-from seqann.util import get_features
 
 isexon = lambda f: True if re.search("exon", f) else False
 isutr = lambda f: True if re.search("UTR", f) else False
@@ -126,8 +117,6 @@ class BioSeqAnn(Model):
                                                            b)
                 for combseqr in combosrecs:
                     mbtmp = []
-                    #print("")
-                    #print('{:*^30}'.format(""))
                     an, ins, dels = align_seqs(combseqr, feat, locus)
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:

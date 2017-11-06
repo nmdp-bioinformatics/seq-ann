@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 #
-#    gfe GFE.
+#    seqann Sequence Annotation.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -32,21 +31,15 @@ test_seqann
 Tests for `seqann.align` module.
 """
 
-
-import sys
+import os
+import json
+import pymysql
 import unittest
 
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
-from seqann.models.reference_data import ReferenceData
-from seqann.blast_cmd import blastn
-from BioSQL.BioSeq import DBSeqRecord
-from seqann.sequence_annotation import BioSeqAnn
-from Bio.SeqFeature import SeqFeature
+
 from seqann.align import align_seqs
-import os
-import pymysql
-import json
 from seqann.util import get_features
 
 

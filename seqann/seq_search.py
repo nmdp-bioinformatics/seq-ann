@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#    gene_feature_enumeration Gene Feature Enumeration.
+#    seqann Sequence Annotation.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -23,17 +23,18 @@
 #
 
 from __future__ import absolute_import
-from seqann.models.base_model_ import Model
-from datetime import date, datetime
-from typing import List, Dict
-from BioSQL.BioSeq import DBSeqRecord
-from seqann.util import deserialize_model
 
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
+import re
+
 from Bio.SeqUtils import nt_search
+from Bio.SeqFeature import SeqFeature
+from Bio.SeqFeature import FeatureLocation
+from Bio.SeqFeature import ExactPosition
+
 from seqann.models.reference_data import ReferenceData
 from seqann.models.annotation import Annotation
-import re
+from seqann.models.base_model_ import Model
+from seqann.util import deserialize_model
 from seqann.util import get_features
 
 
@@ -122,8 +123,6 @@ class SeqSearch(Model):
         # If the partial annotation is provided
         # then make the found_feats equal to
         # what has already been annotated
-        # print(partial_ann)
-        # print("--")
         if partial_ann:
             print("seqsearch -> partial annotation")
             found_feats = partial_ann.features
@@ -214,7 +213,6 @@ class SeqSearch(Model):
                           mapping, found_feats, loc, rerun=False):
 
         # If
-
         exon_only = True
         found_exons = 0
         for f in found_feats:
@@ -224,7 +222,6 @@ class SeqSearch(Model):
                 found_exons += 1
 
         # Count the number of exons for the given loci
-        # TODO: Add to refdata
         num_exons = 0
         for f in self.refdata.structures[loc]:
             if re.search("exon", f):
