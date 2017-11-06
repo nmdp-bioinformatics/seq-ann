@@ -125,7 +125,6 @@ class BioSeqAnn(Model):
                                                            annotation,
                                                            feat,
                                                            b)
-                anntemp = annotation.annotation
                 for combseqr in combosrecs:
                     mbtmp = []
                     #print("")
@@ -143,26 +142,28 @@ class BioSeqAnn(Model):
                             # min and max lengths expected
                             max_length = length + lengthsd + ins
                             min_length = length - lengthsd - dels
-                            # print('{:<6.2f}\t{:<6.2f}\t{:<6d}'
-                            #       .format(max_length, min_length,
-                            #               len(an.annotation[f])))
 
                             if(len(an.annotation[f]) <= max_length and
                                     len(an.annotation[f]) >= min_length):
                                 #print("MET LENGTH LIMITS")
-                                anntemp.update({f: an.annotation[f]})
+                                annotation.annotation.update({f:
+                                                              an.annotation[f]
+                                                              })
                                 if an.blocks:
                                     mbtmp += an.blocks
+                                else:
+                                    print("DELETING: " + f)
+                                    if b in missing_blocks:
+                                        del missing_blocks[missing_blocks.index(b)]
                             else:
                                 mbtmp.append(b)
                     else:
                         mbtmp.append(b)
-                    tempfullan = Annotation(annotation=anntemp,
-                                            blocks=mbtmp,
-                                            missing=annotation.missing)
-                    tempfullan.check_annotation()
-                    if tempfullan.complete_annotation:
-                        return tempfullan
+                    annotation.blocks = mbtmp
+                    annotation.check_annotation()
+                    if annotation.complete_annotation:
+                        print("MAPPED COMBOS")
+                        return annotation
 
                     # TODO: Add ability for
                     #       partial annotations at this
@@ -173,7 +174,7 @@ class BioSeqAnn(Model):
                 exonan, ins, dels = align_seqs(exons, feat, locus)
                 mapped_exons = list(exonan.annotation.keys())
                 if len(mapped_exons) >= 1:
-
+                    print("MAPPED EXONS")
                     for f in exonan.annotation:
                         annotation.annotation.update({f: exonan.annotation[f]})
                     del missing_blocks[missing_blocks.index(b)]
@@ -196,6 +197,7 @@ class BioSeqAnn(Model):
                 annotation.blocks = missing_blocks
                 annotation.check_annotation()
                 if annotation.complete_annotation:
+                    print("MAPPED ALL")
                     return annotation
 
             return annotation
