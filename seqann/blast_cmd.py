@@ -49,6 +49,9 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
     loc = locus.split("-")[1]
     blast_qresult = SearchIO.read(output_xml, 'blast-xml')
 
+    #   Delete files
+    cleanup(file_id)
+
     if len(blast_qresult.hits) == 0:
         return Blast(failed=True)
 
@@ -61,7 +64,7 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
                    if "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
 
     # ***********************************
-    # TODO: sort alleles by number of features they contain
+    # TODO: sort alleles by number of features they contain and evalue
     # ***********************************
 
     # Use biosql db if provided
@@ -73,9 +76,6 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
     else:
         full_sequences = [a for a in refdata.imgtdat
                           if a.description.split(",")[0] in alleles]
-
-    #   Delete files
-    cleanup(file_id)
 
     #   Build Blast object
     blast_o = Blast(match_seqs=full_sequences, alleles=alleles)

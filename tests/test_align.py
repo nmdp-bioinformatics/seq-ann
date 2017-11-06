@@ -47,6 +47,7 @@ from seqann.align import align_seqs
 import os
 import pymysql
 import json
+from seqann.util import get_features
 
 
 def conn():
@@ -85,34 +86,8 @@ class TestAlign(unittest.TestCase):
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
             db = server["3290_" + loc]
             refseq = db.lookup(name=allele)
-            ann = align_seqs(refseq, in_seq, locus)
-            feats = [[feat.type, feat.extract(refseq.seq)]
-                     for feat in refseq.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            ann, ins, dels = align_seqs(refseq, in_seq, locus)
+            expected_seqs = get_features(refseq)
             self.assertGreater(len(expected_seqs.keys()), 1)
             for feat in expected_seqs:
                 if feat not in ann.annotation:
@@ -138,35 +113,9 @@ class TestAlign(unittest.TestCase):
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
             db = server["3290_" + loc]
             refseq = db.lookup(name=allele)
-            ann = align_seqs(refseq, in_seq, locus)
-            feats = [[feat.type, feat.extract(refseq.seq)]
-                     for feat in refseq.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
+            ann, ins, dels = align_seqs(refseq, in_seq, locus)
             n_diffs = 0
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
-
+            expected_seqs = get_features(refseq)
             self.assertGreater(len(expected_seqs.keys()), 1)
             for feat in expected_seqs:
                 if feat not in ann.annotation:

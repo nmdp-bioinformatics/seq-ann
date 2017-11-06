@@ -30,6 +30,9 @@ from Bio.SeqRecord import SeqRecord
 from collections import OrderedDict
 from Bio.Alphabet import IUPAC
 from seqann.models.annotation import Annotation
+from seqann.util import get_features
+
+import csv
 
 import os
 import glob
@@ -40,7 +43,7 @@ from datetime import date, datetime
 from typing import List, Dict
 from seqann.util import deserialize_model
 import pymysql
-
+import collections
 is_kir = lambda x: True if re.search("KIR", x) else False
 
 
@@ -59,11 +62,13 @@ class ReferenceData(Model):
         :param dbversion: The dbversion of this ReferenceData.
         :type dbversion: str
         """
+        tree = lambda: collections.defaultdict(tree)
         self.data_types = {
             'server': BioSeqDatabase,
             'datafile': str,
             'dbversion': str,
             'hla_names': List[str],
+            'feature_lengths': Dict,
             'structure_max': Dict,
             'struct_order': Dict,
             'structures': Dict,
@@ -78,6 +83,7 @@ class ReferenceData(Model):
             'dbversion': 'dbversion',
             'hla_names': 'hla_names',
             'structure_max': 'structure_max',
+            'feature_lengths': 'feature_lengths',
             'struct_order': 'struct_order',
             'structures': 'structures',
             'blastdb': 'blastdb',
@@ -105,6 +111,17 @@ class ReferenceData(Model):
                 hla_names.append("HLA-" + name)
             f.close()
 
+        feature_lengths = tree()
+        columns = ['mean', 'std', 'min', 'max']
+        featurelength_file = data_dir + "/../data/feature_lengths.csv"
+        with open(featurelength_file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                #feat_loc = str(row['locus']) + "_" + str(row['feature'])
+                ldata = [row[c] for c in columns]
+                feature_lengths[row['locus']][row['feature']] = ldata
+
+        self._feature_lengths = feature_lengths
         self._hla_names = hla_names
         struture_files = glob.glob(data_dir + '/../data/*.structure')
         structures = {}
@@ -262,6 +279,16 @@ class ReferenceData(Model):
         return self._struct_order
 
     @property
+    def feature_lengths(self) -> Dict:
+        """
+        Gets the feature_lengths of this ReferenceData.
+
+        :return: The feature_lengths of this ReferenceData.
+        :rtype: Dict
+        """
+        return self._feature_lengths
+
+    @property
     def hla_names(self) -> List[str]:
         """
         Gets the hla_names of this ReferenceData.
@@ -338,13 +365,14 @@ class ReferenceData(Model):
     def refseqs(self, locus, n):
         hla, loc = locus.split('-')
         if self.server_avail:
-            p1 = "SELECT ent.name "
-            p2 = "FROM bioentry ent,biosequence seq,biodatabase dbb "
-            p3 = "WHERE dbb.biodatabase_id = ent.biodatabase_id AND seq.bioentry_id = ent.bioentry_id "
-            p4 = "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" "
-            p5 = "LIMIT " + n
-            select_stm = p1 + p2 + p3 + p4 + p5
-            conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='', db='bioseqdb')
+            select_stm = "SELECT ent.name " + \
+                "FROM bioentry ent,biosequence seq,biodatabase dbb " + \
+                "WHERE dbb.biodatabase_id = ent.biodatabase_id AND " + \
+                "seq.bioentry_id = ent.bioentry_id " + \
+                "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
+                "LIMIT " + n
+            conn = pymysql.connect(host='localhost', port=3306,
+                                   user='root', passwd='', db='bioseqdb')
             cur = conn.cursor()
             cur.execute(select_stm)
 
@@ -383,28 +411,7 @@ class ReferenceData(Model):
         :rtype: Annotation
         """
         seqrecord = self.seqrecord(allele, locus)
-
-        feat_types = {}
-        complete_annotation = {}
-        for feat in seqrecord.features:
-            feat_name = ''
-            if feat.type != "source" and feat.type != "CDS":
-                if feat.type not in feat_types:
-                    if feat.type == "UTR":
-                        feat_name = 'five_prime_UTR'
-                        feat_types.update({feat.type: 1})
-                    else:
-                        feat_name = feat.type + "_" + str(1)
-                        feat_types.update({feat.type: 1})
-                else:
-                    if(feat.type == "UTR"):
-                        feat_name = "three_prime_UTR"
-                    else:
-                        num = feat_types[feat.type] + 1
-                        feat_name = feat.type + "_" + str(num)
-                        feat_types[feat.type] = num
-                complete_annotation.update({feat_name:
-                                            feat.extract(seq)})
+        complete_annotation = get_features(seqrecord)
         annotation = Annotation(annotation=complete_annotation,
                                 method='match',
                                 complete_annotation=True)

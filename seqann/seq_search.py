@@ -34,6 +34,29 @@ from Bio.SeqUtils import nt_search
 from seqann.models.reference_data import ReferenceData
 from seqann.models.annotation import Annotation
 import re
+from seqann.util import get_features
+
+
+def getblocks(coords):
+    block = []
+    blocks = []
+    sorted_i = sorted(coords.keys())
+    for i in range(0, len(sorted_i)-1):
+        j = i+1
+        if i == 0:
+            block.append(sorted_i[i])
+        if(j <= len(sorted_i)-1):
+            if(sorted_i[i] == sorted_i[j]-1):
+                block.append(sorted_i[j])
+            else:
+                blocks.append(block)
+                block = []
+                block.append(sorted_i[j])
+        else:
+            block.append(sorted_i[j])
+    if len(block) > 1:
+        blocks.append(block)
+    return blocks
 
 
 class SeqSearch(Model):
@@ -74,9 +97,9 @@ class SeqSearch(Model):
 
         # Extract out the sequences and feature names
         # from the reference sequences
-        feats = [[feat.type, feat.extract(seqrec.seq)]
-                 for feat in seqrec.features if feat.type != "source"
-                 and feat.type != "CDS" and isinstance(feat, SeqFeature)]
+        # feats = [[feat.type, feat.extract(seqrec.seq)]
+        #          for feat in seqrec.features if feat.type != "source"
+        #          and feat.type != "CDS" and isinstance(feat, SeqFeature)]
 
         # The mapped features will be subtracted from seq_covered
         # so the final seq_covered number will reflect the remaining
@@ -93,7 +116,6 @@ class SeqSearch(Model):
                            [i for i in range(0, len(in_seq.seq)+1)]))
 
         ambig_map = {}
-        feat_types = {}
         found_feats = {}
         feat_missing = {}
 
@@ -112,26 +134,8 @@ class SeqSearch(Model):
             seq_covered = partial_ann.covered
             mapping = partial_ann.mapping
 
-        for i in range(0, len(feats)):
-            feat_name = ''
-            if feats[i][0] not in feat_types:
-                if(feats[i][0] == "UTR"):
-                    feat_name = "five_prime_UTR"
-                    feat_types.update({feats[i][0]: 1})
-                    feats[i].append(feat_name)
-                else:
-                    feat_name = feats[i][0] + "_" + str(1)
-                    feat_types.update({feats[i][0]: 1})
-                    feats[i].append(feat_name)
-            else:
-                if(feats[i][0] == "UTR"):
-                    feat_name = "three_prime_UTR"
-                    feats[i].append(feat_name)
-                else:
-                    num = feat_types[feats[i][0]] + 1
-                    feat_name = feats[i][0] + "_" + str(num)
-                    feat_types[feats[i][0]] = num
-                    feats[i].append(feat_name)
+        feats = get_features(seqrec)
+        for feat_name in feats:
 
             # skip if partial annotation is provided
             # and the feat name is not one of the
@@ -143,10 +147,10 @@ class SeqSearch(Model):
             # input sequence. Record the coordinates if it's
             # found and if it's found in multiple spots. If it
             # is not found, then record that feature as missing.
-            seq_search = nt_search(str(in_seq.seq), str(feats[i][1]))
+            seq_search = nt_search(str(in_seq.seq), str(feats[feat_name]))
             if len(seq_search) == 2:
-                seq_covered -= len(str(feats[i][1]))
-                end = int(len(str(feats[i][1])) + seq_search[1])
+                seq_covered -= len(str(feats[feat_name]))
+                end = int(len(str(feats[feat_name])) + seq_search[1])
 
                 # If the feature is found and it's a five_prime_UTR then
                 # the start should always be 0, so insertions at the
@@ -167,12 +171,12 @@ class SeqSearch(Model):
                         print("seqsearch - WTF?")
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
-                feat_missing.update({feat_name: feats[i]})
+                feat_missing.update({feat_name: feats[feat_name]})
                 ambig_map.update({feat_name: seq_search[1:len(seq_search)]})
             else:
-                feat_missing.update({feat_name: feats[i]})
+                feat_missing.update({feat_name: feats[feat_name]})
 
-        blocks = self._getblocks(coordinates)
+        blocks = getblocks(coordinates)
 
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
@@ -186,9 +190,7 @@ class SeqSearch(Model):
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
-            #print(mb)
-            #print(mapping)
-            #print(seq_covered)
+
             annotation = Annotation(features=annotated_feats,
                                     covered=seq_covered,
                                     seq=in_seq,
@@ -207,27 +209,6 @@ class SeqSearch(Model):
                                     method=method,
                                     mapping=mapping)
         return annotation
-
-    def _getblocks(self, coords):
-        block = []
-        blocks = []
-        sorted_i = sorted(coords.keys())
-        for i in range(0, len(sorted_i)-1):
-            j = i+1
-            if i == 0:
-                block.append(sorted_i[i])
-            if(j <= len(sorted_i)-1):
-                if(sorted_i[i] == sorted_i[j]-1):
-                    block.append(sorted_i[j])
-                else:
-                    blocks.append(block)
-                    block = []
-                    block.append(sorted_i[j])
-            else:
-                block.append(sorted_i[j])
-        if len(block) > 1:
-            blocks.append(block)
-        return blocks
 
     def _resolve_unmapped(self, blocks, feat_missing, ambig_map,
                           mapping, found_feats, loc, rerun=False):
@@ -393,13 +374,9 @@ class SeqSearch(Model):
 
         # If it failed to map all features when only looking
         # at the exons, then try again and look at all features
-        #print("FOUND FEATS")
-        #print(list(found_feats.keys()))
-        #print("------")
-        #print("EXON ONLY " + str(exon_only) + " " + str(rerun))
         if exon_only and not rerun and missing_blocks:
             print("RERUNNING seqsearch")
-            print(missing_blocks)
+            #print(found_feats)
             return self._resolve_unmapped(missing_blocks, feat_missing,
                                           ambig_map,
                                           mapping, found_feats,

@@ -46,6 +46,7 @@ import os
 import pymysql
 from Bio.SeqFeature import SeqFeature
 import json
+from seqann.util import get_features
 
 
 def conn():
@@ -131,39 +132,14 @@ class TestRefdata(unittest.TestCase):
             self.assertGreater(len(annotation.annotation.keys()), 1)
             db = refdata.server[refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
-            feats = [[feat.type, feat.extract(expected.seq)]
-                     for feat in expected.features if feat.type != "source"
-                     and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
-            feat_types = {}
-            expected_seqs = {}
-            for i in range(0, len(feats)):
-                feat_name = ''
-                if feats[i][0] not in feat_types:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "five_prime_UTR"
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        feat_name = feats[i][0] + "_" + str(1)
-                        feat_types.update({feats[i][0]: 1})
-                        expected_seqs.update({feat_name: feats[i][1]})
-                else:
-                    if(feats[i][0] == "UTR"):
-                        feat_name = "three_prime_UTR"
-                        expected_seqs.update({feat_name: feats[i][1]})
-                    else:
-                        num = feat_types[feats[i][0]] + 1
-                        feat_name = feats[i][0] + "_" + str(num)
-                        feat_types[feats[i][0]] = num
-                        expected_seqs.update({feat_name: feats[i][1]})
+            expected_seqs = get_features(expected)
 
             for feat in expected_seqs:
                 if feat not in annotation.annotation:
                     self.assertEqual(feat, None)
                 else:
                     self.assertEqual(str(expected_seqs[feat]),
-                                     str(annotation.annotation[feat].seq))
+                                     str(annotation.annotation[feat]))
         server.close()
         pass
 
@@ -178,61 +154,11 @@ class TestRefdata(unittest.TestCase):
         datseqs = [a for a in refdata2.imgtdat
                    if a.description.split(",")[0] == 'HLA-A*01:01:01:01'][0]
 
-        feats1 = [[feat.type, feat.extract(datseqs.seq)]
-                  for feat in datseqs.features if feat.type != "source"
-                  and feat.type != "CDS" and isinstance(feat, SeqFeature)]
-
         db = refdata1.server[refdata1.dbversion + "_" + 'A']
         expected = db.lookup(name='HLA-A*01:01:01:01')
-        feats2 = [[feat.type, feat.extract(expected.seq)]
-                  for feat in expected.features if feat.type != "source"
-                  and feat.type != "CDS" and isinstance(feat, SeqFeature)]
 
-        feat_types1 = {}
-        expected_seqs1 = {}
-        for i in range(0, len(feats1)):
-            feat_name = ''
-            if feats1[i][0] not in feat_types1:
-                if(feats1[i][0] == "UTR"):
-                    feat_name = "five_prime_UTR"
-                    feat_types1.update({feats1[i][0]: 1})
-                    expected_seqs1.update({feat_name: feats1[i][1]})
-                else:
-                    feat_name = feats1[i][0] + "_" + str(1)
-                    feat_types1.update({feats1[i][0]: 1})
-                    expected_seqs1.update({feat_name: feats1[i][1]})
-            else:
-                if(feats1[i][0] == "UTR"):
-                    feat_name = "three_prime_UTR"
-                    expected_seqs1.update({feat_name: feats1[i][1]})
-                else:
-                    num = feat_types1[feats1[i][0]] + 1
-                    feat_name = feats1[i][0] + "_" + str(num)
-                    feat_types1[feats1[i][0]] = num
-                    expected_seqs1.update({feat_name: feats1[i][1]})
-
-        feat_types2 = {}
-        expected_seqs2 = {}
-        for i in range(0, len(feats2)):
-            feat_name = ''
-            if feats2[i][0] not in feat_types2:
-                if(feats2[i][0] == "UTR"):
-                    feat_name = "five_prime_UTR"
-                    feat_types2.update({feats2[i][0]: 1})
-                    expected_seqs2.update({feat_name: feats2[i][1]})
-                else:
-                    feat_name = feats2[i][0] + "_" + str(1)
-                    feat_types2.update({feats2[i][0]: 1})
-                    expected_seqs2.update({feat_name: feats2[i][1]})
-            else:
-                if(feats2[i][0] == "UTR"):
-                    feat_name = "three_prime_UTR"
-                    expected_seqs2.update({feat_name: feats2[i][1]})
-                else:
-                    num = feat_types2[feats2[i][0]] + 1
-                    feat_name = feats2[i][0] + "_" + str(num)
-                    feat_types2[feats2[i][0]] = num
-                    expected_seqs2.update({feat_name: feats2[i][1]})
+        expected_seqs1 = get_features(datseqs)
+        expected_seqs2 = get_features(expected)
 
         for feat in expected_seqs1:
             if feat not in expected_seqs2:

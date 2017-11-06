@@ -354,14 +354,19 @@ class Annotation(Model):
 
         self.complete_annotation = True
         self.method = "nt_search and clustalo"
+        # print("check_annotation")
+        # print(self.missing)
+        # print(self.ambig)
+        # print("")
+        if self.missing:
+            for feat in self.missing:
+                if feat not in self.annotation:
+                    self.complete_annotation = False
 
-        for feat in self.missing:
-            if feat not in self.annotation:
-                self.complete_annotation = False
-
-        for feat in self.ambig:
-            if feat not in self.annotation:
-                self.complete_annotation = False
+        if self.ambig:
+            for feat in self.ambig:
+                if feat not in self.annotation:
+                    self.complete_annotation = False
 
         if self.blocks:
             self.complete_annotation = False
