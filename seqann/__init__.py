@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#    gfe GFE.
+#    seqann SeqAnn.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it

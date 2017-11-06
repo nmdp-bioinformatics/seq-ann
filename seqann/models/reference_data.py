@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-
 #
-#    gene_feature_enumeration Gene Feature Enumeration.
+#    seqann Sequence Annotation.
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -23,28 +22,33 @@
 #
 from __future__ import absolute_import
 
+import re
+import os
+import csv
+import glob
+import pymysql
+import collections
+import urllib.request
+from typing import List, Dict
+from datetime import date, datetime
+
 from Bio import SeqIO
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from collections import OrderedDict
 from Bio.Alphabet import IUPAC
+from BioSQL import BioSeqDatabase
+from Bio.SeqRecord import SeqRecord
+
+from seqann.util import deserialize_model
+from seqann.models.base_model_ import Model
 from seqann.models.annotation import Annotation
 from seqann.util import get_features
 
-import csv
 
-import os
-import glob
-from BioSQL import BioSeqDatabase
-import re
-from seqann.models.base_model_ import Model
-from datetime import date, datetime
-from typing import List, Dict
-from seqann.util import deserialize_model
-import pymysql
-import collections
 is_kir = lambda x: True if re.search("KIR", x) else False
+
+
+def download_dat(dat):
+    url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/3290/hla.dat'
+    urllib.request.urlretrieve(url, dat)
 
 
 class ReferenceData(Model):
@@ -159,6 +163,8 @@ class ReferenceData(Model):
 
         if not self._server_avail:
             hladat = data_dir + '/../data/hla.dat'
+            if not os.path.isfile(hladat):
+                download_dat(hladat)
             hladata = list(SeqIO.parse(hladat, "imgt"))
             print("serverless load")
             self._imgtdat = hladata

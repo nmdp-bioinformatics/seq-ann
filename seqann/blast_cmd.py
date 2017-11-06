@@ -25,11 +25,11 @@
 from Bio import SeqIO
 from Bio import SearchIO
 from Bio.Blast.Applications import NcbiblastnCommandline
-from seqann.models.blast import Blast
-from seqann.util import randomid
+
 from seqann.util import cleanup
+from seqann.util import randomid
+from seqann.models.blast import Blast
 from seqann.models.reference_data import ReferenceData
-import re
 
 
 def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):

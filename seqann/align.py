@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #
-#    gene_feature_enumeration Gene Feature Enumeration.
+#    seqann Sequence Annotation
 #    Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All Rights Reserved.
 #
 #    This library is free software; you can redistribute it and/or modify it
@@ -25,29 +25,21 @@
 from __future__ import absolute_import
 
 import re
+
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio import AlignIO
 from Bio.Alphabet import IUPAC
-from datetime import date, datetime
+from Bio.SeqFeature import SeqFeature
+from Bio.SeqFeature import FeatureLocation
+from Bio.SeqFeature import ExactPosition
+from Bio.Align.Applications import ClustalOmegaCommandline
+
+from seqann.util import cleanup
+from seqann.util import randomid
+from seqann.util import get_seqfeat
 from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
-from seqann.util import get_features, get_seqfeat
-from Bio.Align.Applications import ClustalOmegaCommandline
-from seqann.util import deserialize_model, randomid, cleanup
-from Bio.SeqFeature import SeqFeature, FeatureLocation, ExactPosition
-
-# def align_seq(found_seq, sequence, locus,
-#               match=2, mismatch=-1, startgap=-10,
-#               extendgap=-3):
-
-# *** return annotation ONLY IF the variation with
-#     the mapped features is within the expected
-#     amount
-
-# ** use different parameters depending on how big the difference
-#    is between found and inputsequence
-#     alignments = pairwise2.align.globalms(seq1, seq2, 2, -1, -10, -2)
 
 
 def align_seqs(found_seqs, sequence, locus):

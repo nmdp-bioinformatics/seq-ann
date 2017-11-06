@@ -1,34 +1,51 @@
 ===============================
-GFE
+SeqAnn
 ===============================
 
 
-.. image:: https://img.shields.io/pypi/v/gfe.svg
-        :target: https://pypi.python.org/pypi/gfe
+.. image:: https://img.shields.io/pypi/v/seqann.svg
+        :target: https://pypi.python.org/pypi/seqann
 
-.. image:: https://img.shields.io/travis/mhalagan-nmdp/gfe.svg
-        :target: https://travis-ci.org/mhalagan-nmdp/gfe
+.. image:: https://img.shields.io/travis/nmdp-bioinformatics/seqann.svg
+        :target: https://travis-ci.org/nmdp-bioinformatics/seqann
 
-.. image:: https://readthedocs.org/projects/gfe/badge/?version=latest
-        :target: https://gfe.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/seqann/badge/?version=latest
+        :target: https://seqann.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/mhalagan-nmdp/gfe/shield.svg
-     :target: https://pyup.io/repos/github/mhalagan-nmdp/gfe/
+.. image:: https://pyup.io/repos/github/nmdp-bioinformatics/gfe/shield.svg
+     :target: https://pyup.io/repos/github/nmdp-bioinformatics/seqann/
      :alt: Updates
 
 
-Gene Feature Enumeration
+Sequence Annotation
 
 
 * Free software: LGPL 3.0
-* Documentation: https://gfe.readthedocs.io.
+* Documentation: https://seqann.readthedocs.io.
 
 
 Features
 --------
 
-* TODO
+With mysql connection:
+
+.. code-block:: python3
+
+	import pymysql
+	from Bio import SeqIO
+	from BioSQL import BioSeqDatabase
+	from seqann.sequence_annotation import BioSeqAnn
+
+	server = BioSeqDatabase.open_database(driver="pymysql", user="root",
+	                                      passwd="", host="localhost",
+	                                      db="bioseqdb")
+	seqann = BioSeqAnn(server=server)
+	for seq in SeqIO.parse(input_seq, "fasta"):
+		annotation = seqann.annotate(seq, "HLA-A")
+		for feat in annotation.annotation:
+			print(feat, annotation.annotation[feat], sep="\t")
+
 
 Credits
 ---------
