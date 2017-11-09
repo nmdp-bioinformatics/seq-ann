@@ -32,7 +32,6 @@ With mysql connection:
 
 .. code-block:: python3
 
-	import pymysql
 	from Bio import SeqIO
 	from BioSQL import BioSeqDatabase
 	from seqann.sequence_annotation import BioSeqAnn
@@ -45,6 +44,23 @@ With mysql connection:
 		annotation = seqann.annotate(seq, "HLA-A")
 		for feat in annotation.annotation:
 			print(feat, annotation.annotation[feat], sep="\t")
+
+
+Without mysql connection:
+
+.. code-block:: python3
+
+	from Bio import SeqIO
+	from seqann.sequence_annotation import BioSeqAnn
+
+	# ** If you don't have a copy of the hla.dat
+	# ** file it will download it
+	seqann = BioSeqAnn()
+	for seq in SeqIO.parse(input_seq, "fasta"):
+		annotation = seqann.annotate(seq, "HLA-A")
+		for feat in annotation.annotation:
+			print(feat, annotation.annotation[feat], sep="\t")
+
 
 
 Credits

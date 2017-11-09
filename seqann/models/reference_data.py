@@ -56,7 +56,7 @@ class ReferenceData(Model):
     classdocs
     '''
     def __init__(self, server: BioSeqDatabase=None, datafile: str=None,
-                 dbversion: str='3290'):
+                 dbversion: str='3290', verbose: bool=False):
         """
         ReferenceData - a model defined in Swagger
         :param server: The server of this ReferenceData.
@@ -78,6 +78,7 @@ class ReferenceData(Model):
             'structures': Dict,
             'blastdb': str,
             'server_avail': bool,
+            'verbose': bool,
             'imgtdat': List[SeqRecord]
         }
 
@@ -93,8 +94,10 @@ class ReferenceData(Model):
             'blastdb': 'blastdb',
             'hla_loci': 'hla_loci',
             'server_avail': 'server_avail',
-            'imgtdat': 'imgtdat'
+            'imgtdat': 'imgtdat',
+            'verbose': 'verbose'
         }
+        self._verbose = verbose
         self._dbversion = dbversion
         self._server = server
         self._datafile = datafile
@@ -210,6 +213,25 @@ class ReferenceData(Model):
         """
         self._server = server
 
+    @property
+    def verbose(self) -> bool:
+        """
+        Gets the server of this ReferenceData.
+
+        :return: The server of this ReferenceData.
+        :rtype: BioSeqDatabase
+        """
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, verbose: bool):
+        """
+        Sets the verbose of this bool.
+
+        :param verbose: The server of this ReferenceData.
+        :type verbose: bool
+        """
+        self._verbose = verbose
 
     @property
     def datafile(self) -> str:
@@ -415,6 +437,7 @@ class ReferenceData(Model):
         :return: The Annotation from the found sequence
         :rtype: Annotation
         """
+        # TODO: add try statement
         db = self.server[self.dbversion + "_" + locus]
         seqrecord = db.lookup(name=allele)
         return seqrecord

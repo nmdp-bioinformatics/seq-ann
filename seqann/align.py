@@ -43,7 +43,7 @@ from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
 
 
-def align_seqs(found_seqs, sequence, locus):
+def align_seqs(found_seqs, sequence, locus, verbose=False):
 
     randid = randomid()
     input_fasta = str(randid) + ".fasta"
@@ -65,7 +65,7 @@ def align_seqs(found_seqs, sequence, locus):
     all_features = []
     if len(align)-2 == 0:
         infeats = get_seqfeat(seqs[0])
-        diffs = count_diffs(align, infeats, sequence)
+        diffs = count_diffs(align, infeats, sequence, verbose)
         if isinstance(diffs, Annotation):
             return diffs, 0, 0
         else:
@@ -78,7 +78,7 @@ def align_seqs(found_seqs, sequence, locus):
             f = find_features(infeats, align[i])
             all_features.append(f)
 
-    annotation = resolve_feats(all_features, align[len(align)-1])
+    annotation = resolve_feats(all_features, align[len(align)-1], verbose)
     return annotation, insers, dels
 
 
@@ -120,7 +120,7 @@ def find_features(feats, sequ):
     return feats
 
 
-def resolve_feats(feat_list, seq):
+def resolve_feats(feat_list, seq, verbose):
 
     # Look at consensus sequence
     #   gap_consensus
@@ -131,7 +131,8 @@ def resolve_feats(feat_list, seq):
     mapping = dict(map(lambda x: [x, 1],
                        [i for i in range(0, len(seq.seq)+1)]))
     if len(feat_list) > 1:
-        print("****** resolve_feats error ******", file=sys.stderr)
+        if verbose:
+            print("****** resolve_feats error ******", file=sys.stderr)
         for i in range(0, len(feat_list)):
             for j in range(0, len(feat_list)):
                 if i != j:
@@ -160,7 +161,7 @@ def resolve_feats(feat_list, seq):
         return annotation
 
 
-def count_diffs(align, feats, inseq):
+def count_diffs(align, feats, inseq, verbose):
 
     nfeats = len(feats.keys())
     mm = 0
@@ -196,15 +197,17 @@ def count_diffs(align, feats, inseq):
     mmper = mm / l
     mper = match / l
     mper2 = match / len(inseq)
-    print(list(feats.keys()), file=sys.stderr)
-    print('{:<22}{:<6d}'.format("Number of feats: ", nfeats), file=sys.stderr)
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper), file=sys.stderr)
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper), file=sys.stderr)
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper), file=sys.stderr)
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper), file=sys.stderr)
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper), file=sys.stderr)
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2), file=sys.stderr)
-    print("----", file=sys.stderr)
+
+    if verbose:
+        print(list(feats.keys()), file=sys.stderr)
+        print('{:<22}{:<6d}'.format("Number of feats: ", nfeats), file=sys.stderr)
+        print('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper), file=sys.stderr)
+        print('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper), file=sys.stderr)
+        print('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper), file=sys.stderr)
+        print('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper), file=sys.stderr)
+        print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper), file=sys.stderr)
+        print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2), file=sys.stderr)
+        print("----", file=sys.stderr)
     indel = iper + delper
     if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
         return Annotation(complete_annotation=False)

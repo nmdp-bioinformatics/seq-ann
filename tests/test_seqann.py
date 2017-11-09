@@ -42,10 +42,6 @@ from seqann.models.annotation import Annotation
 from seqann.sequence_annotation import BioSeqAnn
 from seqann.models.reference_data import ReferenceData
 
-# TODO:
-#   - add ability to detect insertions at beginning or end
-#     of exons and introns.
-
 
 def conn():
     try:
@@ -342,7 +338,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db="bioseqdb")
         seqann = BioSeqAnn(server=server, dbversion='3290')
         self.assertIsInstance(seqann, BioSeqAnn)
-        input_seq = self.data_dir + '/classi_seq5-nomatch.fasta'
+        input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
         annotation = seqann.annotate(in_seq, "HLA-A")
         self.assertIsInstance(annotation, Annotation)

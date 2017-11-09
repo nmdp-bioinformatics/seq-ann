@@ -63,20 +63,13 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
         alleles = ["HLA-" + blast_qresult[i].id.split("_")[0] for i in range(0, l)
                    if "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
 
-    # ***********************************
     # TODO: sort alleles by number of features they contain and evalue
-    # ***********************************
     # Use biosql db if provided
     # otherwise use IMGT dat file
     if refdata.server_avail:
         db = refdata.server[refdata.dbversion + "_" + loc]
         full_sequences = [db.lookup(name=n) for n in alleles
                           if n in refdata.hla_names]
-        #print(full_sequences[0].seq)
-        # for f in full_sequences:
-        #     print(f)
-        #     print("")
-        #print(full_sequences)
     else:
         full_sequences = [a for a in refdata.imgtdat
                           if a.description.split(",")[0] in alleles]

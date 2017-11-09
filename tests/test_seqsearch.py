@@ -44,6 +44,10 @@ import os
 import unittest
 import pymysql
 
+from BioSQL import BioSeqDatabase
+from seqann.models.reference_data import ReferenceData
+from seqann.seq_search import SeqSearch
+
 
 def conn():
     try:
@@ -65,14 +69,14 @@ class TestSeqSearch(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestSeqAnn 001 Requires MySQL connection")
     def test_001_wrefdata(self):
-        # server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-        #                                       passwd="", host="localhost",
-        #                                       db="bioseqdb")
-        # refdata = ReferenceData(server=server, dbversion='3290')
-        # seqsearch = SeqSearch(refdata=refdata)
-        # self.assertIsInstance(seqsearch, SeqSearch)
-        # self.assertTrue(seqsearch.refdata.server_avail)
-        # server.close()
+        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
+                                              passwd="", host="localhost",
+                                              db="bioseqdb")
+        refdata = ReferenceData(server=server, dbversion='3290')
+        seqsearch = SeqSearch(refdata=refdata)
+        self.assertIsInstance(seqsearch, SeqSearch)
+        self.assertTrue(seqsearch.refdata.server_avail)
+        server.close()
         pass
 
     # @unittest.skipUnless(conn(), "TestSeqAnn 002 Requires MySQL connection")
