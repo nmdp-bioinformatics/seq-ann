@@ -189,7 +189,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'gfedoc'
+htmlhelp_basename = 'seqanndoc'
 
 
 # -- Options for LaTeX output ------------------------------------------
@@ -210,7 +210,7 @@ latex_elements = {
 # [howto/manual]).
 latex_documents = [
     ('index', 'seqann.tex',
-     u'GFE Documentation',
+     u'SeqAnn Documentation',
      u'Mike Halagan', 'manual'),
 ]
 
