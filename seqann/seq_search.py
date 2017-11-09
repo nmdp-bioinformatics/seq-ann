@@ -25,6 +25,7 @@
 from __future__ import absolute_import
 
 import re
+import sys
 
 from Bio.SeqUtils import nt_search
 from Bio.SeqFeature import SeqFeature
@@ -124,7 +125,7 @@ class SeqSearch(Model):
         # then make the found_feats equal to
         # what has already been annotated
         if partial_ann:
-            print("seqsearch -> partial annotation")
+            print("seqsearch -> partial annotation", file=sys.stderr)
             found_feats = partial_ann.features
             coordinates = dict(map(lambda l: [l, 1],
                                    [item for sublist
@@ -167,7 +168,7 @@ class SeqSearch(Model):
                     if i in coordinates:
                         del coordinates[i]
                     else:
-                        print("seqsearch - WTF?")
+                        print("seqsearch - WTF?", file=sys.stderr)
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
                 feat_missing.update({feat_name: feats[feat_name]})
@@ -207,12 +208,12 @@ class SeqSearch(Model):
                                     ambig=ambig_map,
                                     method=method,
                                     mapping=mapping)
+
         return annotation
 
     def _resolve_unmapped(self, blocks, feat_missing, ambig_map,
                           mapping, found_feats, loc, rerun=False):
 
-        # If
         exon_only = True
         found_exons = 0
         for f in found_feats:
@@ -372,7 +373,7 @@ class SeqSearch(Model):
         # If it failed to map all features when only looking
         # at the exons, then try again and look at all features
         if exon_only and not rerun and missing_blocks:
-            print("RERUNNING seqsearch")
+            print("RERUNNING seqsearch", file=sys.stderr)
             #print(found_feats)
             return self._resolve_unmapped(missing_blocks, feat_missing,
                                           ambig_map,

@@ -54,6 +54,7 @@ setup(
     url='https://github.com/nmdp-bioinformatics/seqann',
     packages=[
         'seqann',
+        'seqann.models'
     ],
     package_dir={'seqann':
                  'seqann'},

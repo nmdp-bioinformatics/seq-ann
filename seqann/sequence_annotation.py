@@ -25,6 +25,7 @@
 # TODO: change file name to seq_annotation.py
 #
 import re
+import sys
 
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -39,6 +40,7 @@ from seqann.seq_search import SeqSearch
 from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
 from seqann.util import randomid
+from seqann.util import get_features
 
 isexon = lambda f: True if re.search("exon", f) else False
 isutr = lambda f: True if re.search("UTR", f) else False
@@ -66,7 +68,8 @@ class BioSeqAnn(Model):
 
         blast = blastn(sequence, locus, nseqs, refdata=self.refdata)
         if blast.failed:
-            return self.broad_align(sequence, locus)
+            # TODO: return error object
+            return
 
         partial_ann = None
         found = blast.match_seqs
@@ -74,6 +77,7 @@ class BioSeqAnn(Model):
             annotation = self.seqsearch.search_seqs(found[i],
                                                     sequence, locus,
                                                     partial_ann=partial_ann)
+
             if annotation.complete_annotation:
                 return annotation
             else:
@@ -82,8 +86,10 @@ class BioSeqAnn(Model):
                 if aligned_ann.complete_annotation:
                     return aligned_ann
                 else:
-                    print("Using partial annotation")
+                    print("Using partial annotation", file=sys.stderr)
                     partial_ann = aligned_ann
+
+        # MAKE guess with full alignment
         return self.ref_align(found, sequence, locus, nseqs,
                               partial_ann=partial_ann)
 
@@ -140,7 +146,7 @@ class BioSeqAnn(Model):
                                 if an.blocks:
                                     mbtmp += an.blocks
                                 else:
-                                    print("DELETING: " + f)
+                                    print("DELETING: " + f, file=sys.stderr)
                                     if b in missing_blocks:
                                         del missing_blocks[missing_blocks.index(b)]
                             else:
@@ -150,59 +156,48 @@ class BioSeqAnn(Model):
                     annotation.blocks = mbtmp
                     annotation.check_annotation()
                     if annotation.complete_annotation:
-                        print("MAPPED COMBOS")
                         return annotation
-
-                    # TODO: Add ability for
-                    #       partial annotations at this
-                    #       point to be used in with
-                    #       the next combo
-                    #print('{:*^30}'.format(""))
 
                 exonan, ins, dels = align_seqs(exons, feat, locus)
                 mapped_exons = list(exonan.annotation.keys())
                 if len(mapped_exons) >= 1:
-                    print("MAPPED EXONS")
+                    print("MAPPED EXONS", file=sys.stderr)
                     for f in exonan.annotation:
                         annotation.annotation.update({f: exonan.annotation[f]})
                     del missing_blocks[missing_blocks.index(b)]
 
-                annotation.blocks = missing_blocks
-                annotation.check_annotation()
-                if annotation.complete_annotation:
-                    return annotation
+                    annotation.blocks = missing_blocks
+                    annotation.check_annotation()
+                    if annotation.complete_annotation:
+                        return annotation
 
                 # Run full sequence
                 fullref = align_seqs(fullrec, feat, locus)
-                mapped_full = list(fullref.annotation.keys())
-                if len(mapped_full) >= 1:
-                    # If it wasn't found
-                    del missing_blocks[missing_blocks.index(b)]
+                if hasattr(fullref, 'annotation'):
+                    mapped_full = list(fullref.annotation.keys())
+                    if len(mapped_full) >= 1:
+                        # If it wasn't found
+                        del missing_blocks[missing_blocks.index(b)]
 
-                    for f in fullref.annotation:
-                        annotation.update({f: fullref.annotation[f]})
+                        for f in fullref.annotation:
+                            annotation.update({f: fullref.annotation[f]})
 
-                annotation.blocks = missing_blocks
-                annotation.check_annotation()
-                if annotation.complete_annotation:
-                    print("MAPPED ALL")
-                    return annotation
-
+                    annotation.blocks = missing_blocks
+                    annotation.check_annotation()
+                    if annotation.complete_annotation:
+                        print("MAPPED ALL", file=sys.stderr)
+                        return annotation
+            print("RETURNINGS", file=sys.stderr)
             return annotation
-
-    def broad_align(self, sequence, locus, N=8):
-        #if self._valid(sequence):
-            # refseqs = self.refdata.refseqs(locus, N)
-            # aligned_ann = align_seqs(refseqs, sequence, locus)
-            # if(aligned_ann.complete_annotation):
-            #     return aligned_ann.annotation
-            # else:
-            #     print("Failed")
-            #     return
-        #else:
-        #    print("Failed")
-        print("Failed")
-        return
+        elif partial_ann:
+            # Do full sequence alignments
+            # any only extract out the part
+            # that couldn't be explained from above
+            return
+        else:
+            # Option for user that just want to
+            # align a set of sequences
+            return
 
     def _refseqs(self, locus, start_pos, annotation, feat, block):
 
@@ -306,6 +301,8 @@ class BioSeqAnn(Model):
 
             if start_ord == nxt_order-1:
                 nfeat = self.refdata.struct_order[locus][start_ord]
+                if nfeat not in all_seqrecs:
+                    continue
                 rec = all_seqrecs[nfeat]
 
                 length = float(self.refdata.feature_lengths[locus][f][0])
@@ -328,6 +325,8 @@ class BioSeqAnn(Model):
                 combo_feats = []
                 for i in range(start_ord, nxt_order):
                     nfeat = self.refdata.struct_order[locus][i]
+                    if nfeat not in all_seqrecs:
+                        continue
                     ref_feats.append(nfeat)
 
                     length, lengthsd = 0, 0
