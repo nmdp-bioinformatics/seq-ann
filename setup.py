@@ -33,22 +33,22 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'numpy',
     'biopython',
     'PyMySQL',
     'six',
     'bson',
-    'pytz'
+    'pytz',
+    'numpy'
 ]
 
 test_requirements = [
-    'numpy',
     'pytz',
     'biopython',
     'PyMySQL',
     'six',
     'bson',
-    'unittest'
+    'unittest',
+    'numpy'
 ]
 
 setup(
