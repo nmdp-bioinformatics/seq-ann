@@ -53,13 +53,15 @@ class BioSeqAnn(Model):
     seqanno = seqann.BioSeqAnn()
     annotations = [an.annotate(rec, loc) for rec in list(SeqIO.read(file,'fasta'))]
     '''
-    def __init__(self, server=None, dbversion='3290', datfile='', rerun=False, rerun_n=3):
+    def __init__(self, server=None, dbversion='3290', datfile='',
+                 rerun=False, rerun_n=3, verbose=False):
         self.server = server
         self.rerun = rerun
         self.rerun_n = rerun_n
+        self.verbose = verbose
         self.refdata = ReferenceData(server=server,
                                      dbversion=dbversion)
-        self.seqsearch = SeqSearch(refdata=self.refdata)
+        self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
 
     def annotate(self, sequence, locus, nseqs=8):
         matched_annotation = self.refdata.search_refdata(sequence, locus)
@@ -86,12 +88,14 @@ class BioSeqAnn(Model):
                 if aligned_ann.complete_annotation:
                     return aligned_ann
                 else:
-                    print("Using partial annotation", file=sys.stderr)
+                    if self.verbose:
+                        print("Using partial annotation", file=sys.stderr)
                     partial_ann = aligned_ann
 
-        # MAKE guess with full alignment
-        return self.ref_align(found, sequence, locus, nseqs,
-                              partial_ann=partial_ann)
+        # TODO: make guess with full alignment
+        # return self.ref_align(found, sequence, locus, nseqs,
+        #                       partial_ann=partial_ann)
+        return
 
     def ref_align(self, found_seqs, sequence, locus, nseqs=3,
                   annotation=None, partial_ann=None):
@@ -123,11 +127,10 @@ class BioSeqAnn(Model):
                                                            b)
                 for combseqr in combosrecs:
                     mbtmp = []
-                    an, ins, dels = align_seqs(combseqr, feat, locus)
+                    an, ins, dels = align_seqs(combseqr, feat, locus, verbose=self.verbose)
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
 
-                        #print("**Aligned combo " + combseqr.id)
                         for f in an.annotation:
                             length, lengthsd = 0, 0
                             length = float(self.refdata.feature_lengths[locus][f][0])
@@ -139,14 +142,14 @@ class BioSeqAnn(Model):
 
                             if(len(an.annotation[f]) <= max_length and
                                     len(an.annotation[f]) >= min_length):
-                                #print("MET LENGTH LIMITS")
                                 annotation.annotation.update({f:
                                                               an.annotation[f]
                                                               })
                                 if an.blocks:
                                     mbtmp += an.blocks
                                 else:
-                                    print("DELETING: " + f, file=sys.stderr)
+                                    if self.verbose:
+                                        print("DELETING: " + f, file=sys.stderr)
                                     if b in missing_blocks:
                                         del missing_blocks[missing_blocks.index(b)]
                             else:
@@ -158,10 +161,11 @@ class BioSeqAnn(Model):
                     if annotation.complete_annotation:
                         return annotation
 
-                exonan, ins, dels = align_seqs(exons, feat, locus)
+                exonan, ins, dels = align_seqs(exons, feat, locus, verbose=self.verbose)
                 mapped_exons = list(exonan.annotation.keys())
                 if len(mapped_exons) >= 1:
-                    print("MAPPED EXONS", file=sys.stderr)
+                    if self.verbose:
+                        print("MAPPED EXONS", file=sys.stderr)
                     for f in exonan.annotation:
                         annotation.annotation.update({f: exonan.annotation[f]})
                     del missing_blocks[missing_blocks.index(b)]
@@ -172,7 +176,7 @@ class BioSeqAnn(Model):
                         return annotation
 
                 # Run full sequence
-                fullref = align_seqs(fullrec, feat, locus)
+                fullref = align_seqs(fullrec, feat, locus, verbose=self.verbose)
                 if hasattr(fullref, 'annotation'):
                     mapped_full = list(fullref.annotation.keys())
                     if len(mapped_full) >= 1:
@@ -185,9 +189,10 @@ class BioSeqAnn(Model):
                     annotation.blocks = missing_blocks
                     annotation.check_annotation()
                     if annotation.complete_annotation:
-                        print("MAPPED ALL", file=sys.stderr)
+                        if self.verbose:
+                            print("MAPPED ALL", file=sys.stderr)
                         return annotation
-            print("RETURNINGS", file=sys.stderr)
+
             return annotation
         elif partial_ann:
             # Do full sequence alignments

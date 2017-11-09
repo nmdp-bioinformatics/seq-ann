@@ -22,7 +22,7 @@
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
 from __future__ import absolute_import
-#from .sequence_annotation import BioSeqAnn
+from .sequence_annotation import BioSeqAnn
 
 
 __author__ = """Mike Halagan"""

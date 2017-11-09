@@ -65,23 +65,26 @@ class SeqSearch(Model):
     '''
     classdocs
     '''
-    def __init__(self, refdata: ReferenceData=None):
+    def __init__(self, refdata: ReferenceData=None, verbose: bool=False):
         """
         ReferenceData
         :param refdata: The reference data of this SeqSearch.
         :type refdata: ReferenceData
         """
         self.data_types = {
-            'refdata': ReferenceData
+            'refdata': ReferenceData,
+            'verbose': bool
         }
 
         self.attribute_map = {
-            'refdata': 'refdata'
+            'refdata': 'refdata',
+            'verbose': 'verbose'
         }
         if not refdata:
             refdata = ReferenceData()
 
         self._refdata = refdata
+        self._verbose = verbose
 
     @classmethod
     def from_dict(cls, dikt) -> 'SeqSearch':
@@ -125,7 +128,8 @@ class SeqSearch(Model):
         # then make the found_feats equal to
         # what has already been annotated
         if partial_ann:
-            print("seqsearch -> partial annotation", file=sys.stderr)
+            if self.verbose:
+                print("seqsearch -> partial annotation", file=sys.stderr)
             found_feats = partial_ann.features
             coordinates = dict(map(lambda l: [l, 1],
                                    [item for sublist
@@ -168,7 +172,9 @@ class SeqSearch(Model):
                     if i in coordinates:
                         del coordinates[i]
                     else:
-                        print("seqsearch - WTF?", file=sys.stderr)
+                        if self.verbose:
+                            print("seqsearch - shouldnt be here!!",
+                                  file=sys.stderr)
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
                 feat_missing.update({feat_name: feats[feat_name]})
@@ -373,8 +379,8 @@ class SeqSearch(Model):
         # If it failed to map all features when only looking
         # at the exons, then try again and look at all features
         if exon_only and not rerun and missing_blocks:
-            print("RERUNNING seqsearch", file=sys.stderr)
-            #print(found_feats)
+            if self.verbose:
+                print("RERUNNING seqsearch", file=sys.stderr)
             return self._resolve_unmapped(missing_blocks, feat_missing,
                                           ambig_map,
                                           mapping, found_feats,
@@ -403,3 +409,23 @@ class SeqSearch(Model):
         :type refdata: ReferenceData
         """
         self._refdata = refdata
+
+    @property
+    def verbose(self) -> bool:
+        """
+        Gets the verbose of this SeqSearch.
+
+        :return: The verbose of this SeqSearch.
+        :rtype: ReferenceData
+        """
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, verbose: bool):
+        """
+        Sets the verbose of this SeqSearch.
+
+        :param verbose: The verbose of this SeqSearch.
+        :type verbose: ReferenceData
+        """
+        self._verbose = verbose

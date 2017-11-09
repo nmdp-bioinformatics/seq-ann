@@ -37,11 +37,18 @@ requirements = [
     'biopython',
     'PyMySQL',
     'six',
-    'bson'
+    'bson',
+    'pytz'
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'numpy',
+    'pytz',
+    'biopython',
+    'PyMySQL',
+    'six',
+    'bson',
+    'unittest'
 ]
 
 setup(
