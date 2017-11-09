@@ -12,7 +12,7 @@ To install GFE, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install gfe
+    $ pip install seqann
 
 This is the preferred method to install GFE, as it will always install the most recent stable release. 
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/mhalagan-nmdp/gfe
+    $ git clone git://github.com/nmdp-bioinformatics/seqann
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/mhalagan-nmdp/gfe/tarball/master
+    $ curl  -OL https://github.com/nmdp-bioinformatics/seqann/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/mhalagan-nmdp/gfe
-.. _tarball: https://github.com/mhalagan-nmdp/gfe/tarball/master
+.. _Github repo: https://github.com/nmdp-bioinformatics/seqann
+.. _tarball: https://github.com/nmdp-bioinformatics/seqann/tarball/master
