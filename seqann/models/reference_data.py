@@ -108,6 +108,8 @@ class ReferenceData(Model):
         blastdb = data_dir + '/../data/blast/' + dbversion
         allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
                                + dbversion + '.txt'
+
+        # TODO: add try
         with open(allele_list, 'r') as f:
             for line in f:
                 line = line.rstrip()
@@ -118,6 +120,8 @@ class ReferenceData(Model):
         feature_lengths = tree()
         columns = ['mean', 'std', 'min', 'max']
         featurelength_file = data_dir + "/../data/feature_lengths.csv"
+
+        # TODO: add try
         with open(featurelength_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
@@ -134,6 +138,7 @@ class ReferenceData(Model):
         for inputfile in struture_files:
             file_path = inputfile.split("/")
             locus = file_path[len(file_path)-1].split(".")[0]
+            # TODO: add try
             with open(inputfile, 'r') as f:
                 features_order = {}
                 features = {}
@@ -165,6 +170,8 @@ class ReferenceData(Model):
             hladat = data_dir + '/../data/hla.dat'
             if not os.path.isfile(hladat):
                 download_dat(hladat)
+
+            # TODO: add try
             hladata = list(SeqIO.parse(hladat, "imgt"))
             print("serverless load")
             self._imgtdat = hladata
@@ -350,6 +357,7 @@ class ReferenceData(Model):
             p5 = "AND seq.seq = \"" + str(seq.seq) + "\""
             select_stm = p1 + p2 + p3 + p4 + p5
 
+            # TODO: add try statement
             conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='', db='bioseqdb')
             cur = conn.cursor()
             cur.execute(select_stm)
@@ -377,6 +385,8 @@ class ReferenceData(Model):
                 "seq.bioentry_id = ent.bioentry_id " + \
                 "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
                 "LIMIT " + n
+
+            # TODO: add try statement
             conn = pymysql.connect(host='localhost', port=3306,
                                    user='root', passwd='', db='bioseqdb')
             cur = conn.cursor()

@@ -25,6 +25,7 @@
 from __future__ import absolute_import
 
 import re
+import sys
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -64,7 +65,7 @@ def align_seqs(found_seqs, sequence, locus):
     all_features = []
     if len(align)-2 == 0:
         infeats = get_seqfeat(seqs[0])
-        diffs = count_diffs(align, infeats)
+        diffs = count_diffs(align, infeats, sequence)
         if isinstance(diffs, Annotation):
             return diffs, 0, 0
         else:
@@ -86,8 +87,8 @@ def find_features(feats, sequ):
 
     j = 0
     s = 0
-    start = 0
     en = 0
+    start = 0
     for i in range(0, len(sequ)):
         if j <= len(feats_a)-1:
             if i > int(feats[feats_a[j]].location.end):
@@ -130,7 +131,7 @@ def resolve_feats(feat_list, seq):
     mapping = dict(map(lambda x: [x, 1],
                        [i for i in range(0, len(seq.seq)+1)]))
     if len(feat_list) > 1:
-        print("****** resolve_feats error ******")
+        print("****** resolve_feats error ******", file=sys.stderr)
         for i in range(0, len(feat_list)):
             for j in range(0, len(feat_list)):
                 if i != j:
@@ -159,7 +160,7 @@ def resolve_feats(feat_list, seq):
         return annotation
 
 
-def count_diffs(align, feats):
+def count_diffs(align, feats, inseq):
 
     nfeats = len(feats.keys())
     mm = 0
@@ -189,22 +190,23 @@ def count_diffs(align, feats):
             else:
                 match += 1
 
-    print("----")
     gper = gaps / nfeats
     delper = dels / l
     iper = insr / l
     mmper = mm / l
     mper = match / l
-    print(list(feats.keys()))
-    print('{:<22}{:<6d}'.format("Number of feats: ", nfeats))
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper))
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper))
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper))
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper))
-    print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper))
-    print("----")
+    mper2 = match / len(inseq)
+    print(list(feats.keys()), file=sys.stderr)
+    print('{:<22}{:<6d}'.format("Number of feats: ", nfeats), file=sys.stderr)
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper), file=sys.stderr)
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper), file=sys.stderr)
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper), file=sys.stderr)
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper), file=sys.stderr)
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper), file=sys.stderr)
+    print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2), file=sys.stderr)
+    print("----", file=sys.stderr)
     indel = iper + delper
-    if (indel > 0.5 or mmper > 0.05 or gper > .50):
+    if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
         return Annotation(complete_annotation=False)
     else:
         return insr, dels
