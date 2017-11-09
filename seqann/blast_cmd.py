@@ -73,6 +73,7 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
     else:
         full_sequences = [a for a in refdata.imgtdat
                           if a.description.split(",")[0] in alleles]
+        full_sequences.reverse()
 
     #   Build Blast object
     blast_o = Blast(match_seqs=full_sequences, alleles=alleles)

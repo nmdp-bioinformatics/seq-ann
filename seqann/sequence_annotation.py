@@ -127,7 +127,7 @@ class BioSeqAnn(Model):
                                                            b)
                 for combseqr in combosrecs:
                     mbtmp = []
-                    an, ins, dels = align_seqs(combseqr, feat, locus)
+                    an, ins, dels = align_seqs(combseqr, feat, locus, verbose=self.verbose)
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
 
@@ -161,7 +161,7 @@ class BioSeqAnn(Model):
                     if annotation.complete_annotation:
                         return annotation
 
-                exonan, ins, dels = align_seqs(exons, feat, locus)
+                exonan, ins, dels = align_seqs(exons, feat, locus, verbose=self.verbose)
                 mapped_exons = list(exonan.annotation.keys())
                 if len(mapped_exons) >= 1:
                     if self.verbose:
@@ -176,7 +176,7 @@ class BioSeqAnn(Model):
                         return annotation
 
                 # Run full sequence
-                fullref = align_seqs(fullrec, feat, locus)
+                fullref = align_seqs(fullrec, feat, locus, verbose=self.verbose)
                 if hasattr(fullref, 'annotation'):
                     mapped_full = list(fullref.annotation.keys())
                     if len(mapped_full) >= 1:
