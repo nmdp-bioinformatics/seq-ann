@@ -373,4 +373,9 @@ class Annotation(Model):
         else:
             self.complete_annotation = True
 
+    def clean(self):
+        self.missing = ''
+        self.ambig = ''
+        self.mapping = ''
+
 
