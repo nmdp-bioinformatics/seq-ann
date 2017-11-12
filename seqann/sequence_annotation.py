@@ -64,6 +64,62 @@ class BioSeqAnn(Model):
         self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
 
     def annotate(self, sequence, locus, nseqs=8):
+        """
+        annotate - method for annotating a Biopython sequence record
+        :param sequence: The input sequence record.
+        :type sequence: Seq
+        :param locus: The gene locus associated with the sequence.
+        :type locus: str
+        :param nseqs: The number of blast sequences to use.
+        :type nseqs: int
+
+        Returns:
+            Annotation: complete annotation is successful.
+
+            The annotate function return an ``Annotation`` object that
+            contains the sequence features and names associated with them.
+
+            Example output::
+
+                {
+                     'annotation': {'exon_1': SeqRecord(seq=Seq('AGAGACTCTCCCG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[]),
+                                    'exon_2': SeqRecord(seq=Seq('AGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACCAACGGGACGGAGC...GAG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[]),
+                                    'exon_3': SeqRecord(seq=Seq('TGGAGCCCACAGTGACCATCTCCCCATCCAGGACAGAGGCCCTCAACCACCACA...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='<unknown name>', description='HLA:HLA00630', dbxrefs=[])},
+                     'complete_annotation': True,
+                     'features': {'exon_1': SeqFeature(FeatureLocation(ExactPosition(0), ExactPosition(13), strand=1), type='exon_1'),
+                                  'exon_2': SeqFeature(FeatureLocation(ExactPosition(13), ExactPosition(283), strand=1), type='exon_2')},
+                     'method': 'nt_search and clustalo',
+                     'refmissing': ['five_prime_UTR',
+                                    'intron_1',
+                                    'intron_2',
+                                    'exon_3',
+                                    'intron_3',
+                                    'exon_4',
+                                    'intron_4',
+                                    'exon_5',
+                                    'intron_5',
+                                    'exon_6',
+                                    'three_prime_UTR'],
+                     'seq': SeqRecord(seq=Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[])
+                }
+
+
+        Examples:
+
+            >>> from Bio.Seq import Seq
+            >>> from Bio.SeqRecord import SeqRecord
+            >>> import seqann
+            >>> seqrec = SeqRecord(seq=Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet()), id='HLA:HLA00630')
+            >>> seqann = seqann.BioSeqAnn()
+            >>> ann = seqann.annotate(seqrec)
+            >>> for f in ann.annotation:
+            ...    print(f, ann.method, ann.annotation[f], sep="\t")
+            exon_2  nt_search and clustalo  AGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACCAACGGGACGGAGCGCGTGCGTTATGTGACCAGATACATCTATAACCGAGAGGAGTACGCACGCTTCGACAGCGACGTGGAGGTGTACCGGGCGGTGACGCCGCTGGGGCCGCCTGCCGCCGAGTACTGGAACAGCCAGAAGGAAGTCCTGGAGAGGACCCGGGCGGAGTTGGACACGGTGTGCAGACACAACTACCAGTTGGAGCTCCGCACGACCTTGCAGCGGCGAG
+            exon_3  nt_search and clustalo  TGGAGCCCACAGTGACCATCTCCCCATCCAGGACAGAGGCCCTCAACCACCACAACCTGCTGGTCTGCTCAGTGACAGATTTCTATCCAGCCCAGATCAAAGTCCGGTGGTTTCGGAATGACCAGGAGGAGACAACCGGCGTTGTGTCCACCCCCCTTATTAGGAACGGTGACTGGACCTTCCAGATCCTGGTGATGCTGGAAATGACTCCCCAGCATGGAGACGTCTACACCTGCCACGTGGAGCACCCCAGCCTCCAGAACCCCATCACCGTGGAGTGGC
+            exon_1  nt_search and clustalo  AGAGACTCTCCCG
+            exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
+
+        """
         matched_annotation = self.refdata.search_refdata(sequence, locus)
         if matched_annotation:
             return matched_annotation
@@ -81,11 +137,13 @@ class BioSeqAnn(Model):
                                                     partial_ann=partial_ann)
 
             if annotation.complete_annotation:
+                annotation.clean()
                 return annotation
             else:
                 aligned_ann = self.ref_align(found[i], sequence, locus,
-                                             nseqs, annotation=annotation)
+                                             annotation=annotation)
                 if aligned_ann.complete_annotation:
+                    aligned_ann.clean()
                     return aligned_ann
                 else:
                     if self.verbose:
@@ -93,13 +151,25 @@ class BioSeqAnn(Model):
                     partial_ann = aligned_ann
 
         # TODO: make guess with full alignment
-        # return self.ref_align(found, sequence, locus, nseqs,
+        # return self.ref_align(found, sequence, locus,
         #                       partial_ann=partial_ann)
         return
 
-    def ref_align(self, found_seqs, sequence, locus, nseqs=3,
+    def ref_align(self, found_seqs, sequence, locus,
                   annotation=None, partial_ann=None):
-
+        """
+        ref_aling - method for annotating a Biopython sequence record
+        :param found_seqs: The input sequence record.
+        :type found_seqs: Seq
+        :param sequence: The input sequence record.
+        :type sequence: Seq
+        :param locus: The gene locus associated with the sequence.
+        :type locus: str
+        :param annotation: The incomplete annotation from a previous iteration.
+        :type annotation: Annotation
+        :param partial_ann: The partial annotation after looping through all of the blast sequences.
+        :type partial_ann: Annotation
+        """
         if annotation:
             # Extract the missing blocks and
             # only align those blocks to the known
