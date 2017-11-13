@@ -46,7 +46,7 @@ import sys
 is_kir = lambda x: True if re.search("KIR", x) else False
 
 
-def download_dat(dat, url):
+def download_dat(url, dat):
     urllib.request.urlretrieve(url, dat)
 
 
