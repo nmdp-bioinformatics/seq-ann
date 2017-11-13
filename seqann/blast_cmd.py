@@ -32,7 +32,7 @@ from seqann.models.blast import Blast
 from seqann.models.reference_data import ReferenceData
 
 
-def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
+def blastn(sequences, locus, nseqs, kir=False, refdata=None, evalue=0.001):
 
     if not refdata:
         refdata = ReferenceData()
@@ -46,7 +46,10 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
                                          evalue=evalue, outfmt=5,
                                          out=output_xml)
     stdout, stderr = blastn_cline()
-    loc = locus.split("-")[1]
+    loc = locus
+
+    if not kir:
+        loc = locus.split("-")[1]
     blast_qresult = SearchIO.read(output_xml, 'blast-xml')
 
     #   Delete files
@@ -59,9 +62,15 @@ def blastn(sequences, locus, nseqs, refdata=None, evalue=0.001):
     full_sequences = []
     l = len(blast_qresult.hits) if nseqs > len(blast_qresult.hits) else nseqs
 
-    if locus in refdata.hla_loci:
+    if locus in refdata.hla_loci and not kir:
         alleles = ["HLA-" + blast_qresult[i].id.split("_")[0] for i in range(0, l)
                    if "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
+
+    if kir:
+        for i in range(0, l):
+            print(blast_qresult[i].id, locus)
+        alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)
+                   if blast_qresult[i].id.split("*")[0] == locus]
 
     # TODO: sort alleles by number of features they contain and evalue
     # Use biosql db if provided

@@ -54,13 +54,16 @@ class BioSeqAnn(Model):
     annotations = [an.annotate(rec, loc) for rec in list(SeqIO.read(file,'fasta'))]
     '''
     def __init__(self, server=None, dbversion='3290', datfile='',
-                 rerun=False, rerun_n=3, verbose=False):
+                 rerun=False, rerun_n=3, verbose=False,
+                 kir=False):
+        self.kir = kir
         self.server = server
         self.rerun = rerun
         self.rerun_n = rerun_n
         self.verbose = verbose
         self.refdata = ReferenceData(server=server,
-                                     dbversion=dbversion)
+                                     dbversion=dbversion,
+                                     kir=kir)
         self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
 
     def annotate(self, sequence, locus, nseqs=8):
@@ -124,9 +127,10 @@ class BioSeqAnn(Model):
         if matched_annotation:
             return matched_annotation
 
-        blast = blastn(sequence, locus, nseqs, refdata=self.refdata)
+        blast = blastn(sequence, locus, nseqs, kir=self.kir, refdata=self.refdata)
         if blast.failed:
             # TODO: return error object
+            print("BLAST FAILED!")
             return
 
         partial_ann = None
@@ -405,6 +409,7 @@ class BioSeqAnn(Model):
                     ref_feats.append(nfeat)
 
                     length, lengthsd = 0, 0
+
                     for fr in ref_feats:
                         length += float(self.refdata.feature_lengths[locus][fr][0])
                         lengthsd += float(self.refdata.feature_lengths[locus][fr][1])

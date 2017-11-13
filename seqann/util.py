@@ -23,7 +23,7 @@
 #
 import os
 import string
-import random as rand
+import random as r
 from typing import GenericMeta
 from datetime import datetime, date
 from six import integer_types, iteritems
@@ -75,8 +75,8 @@ def get_features(seqrecord):
 
 
 def randomid(N=6):
-    random_id = ''.join(rand.choices(string.ascii_uppercase + string.digits,
-                                     k=N))
+    random_id = ''.join(r.choices(string.ascii_uppercase + string.digits,
+                                  k=N))
     fastafile = str(random_id) + ".fasta"
     xmlfile = str(random_id) + ".xml"
     if os.path.isfile(fastafile) or os.path.isfile(xmlfile):
