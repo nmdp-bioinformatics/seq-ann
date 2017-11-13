@@ -67,8 +67,8 @@ def blastn(sequences, locus, nseqs, kir=False, refdata=None, evalue=0.001):
                    if "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
 
     if kir:
-        alleles = ["KIR" + blast_qresult[i].id.split("_")[0] for i in range(0, l)
-                   if "KIR" + blast_qresult[i].id.split("*")[0] == locus]
+        alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)
+                   if blast_qresult[i].id.split("*")[0] == locus]
 
     # TODO: sort alleles by number of features they contain and evalue
     # Use biosql db if provided
