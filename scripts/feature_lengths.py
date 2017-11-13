@@ -42,7 +42,8 @@ from Bio.SeqUtils import molecular_weight
 
 is_kir = lambda x: True if re.search("KIR", x) else False
 
-hladat = 'seqann/data/hla.dat'
+hladat = 'kir.dat'
+#hladat = 'seqann/data/hla.dat'
 hladata = SeqIO.parse(hladat, "imgt")
 
 loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
@@ -53,10 +54,12 @@ feature_cnts = []
 for a in hladata:
     allele_name = a.description.split(",")[0]
     loc, allele = allele_name.split("*")
-    if loc not in loci or not a.features:
+    # if loc not in loci or not a.features:
+    #     continue
+    if not a.features:
         continue
 
-    print(allele_name)
+    #print(allele_name)
     fiveutr = [["five_prime_UTR-0", a.features[i].extract(a.seq)] for i in range(0, 3) if a.features[i].type != "source"
                and a.features[i].type != "CDS" and isinstance(a.features[i], SeqFeature)
                and not a.features[i].qualifiers]
@@ -72,17 +75,26 @@ for a in hladata:
         feat_name, rank = feature[0].split("-")
         gc_content = GC(feature[1])
         weight = molecular_weight(feature[1])
-        feature_cnts.append([loc, feat_name, rank, len(feature[1]), gc_content, weight])
+        feature_cnts.append([loc, feat_name, rank, len(feature[1])])
 
-counts_df = pd.DataFrame(feature_cnts, columns=['locus', 'feature', 'rank', 'length', 'gc_content', 'molecular_weight'])
-summary1 = counts_df.groupby(['locus', 'feature'])['length'].describe()
-summary1.to_csv("feature-only_lengths.csv")
+counts_df = pd.DataFrame(feature_cnts, columns=['locus', 'feature', 'rank', 'length'])
+summary1 = counts_df.groupby(['locus', 'feature', 'rank'])['length'].describe()
+# print("Summary")
+# print(summary1['count'])
 
-summary2 = counts_df.groupby(['locus', 'feature'])['gc_content'].describe()
-summary2.to_csv("gc_content2.csv")
+data = {}
+rows = []
+for r in summary1.keys():
+    if r[0] not in data:
+        data.update
 
-summary3 = counts_df.groupby(['locus', 'feature'])['molecular_weight'].describe()
-summary3.to_csv("molecular_weight2.csv")
+summary1.to_csv("kir-lengths.csv")
+
+# summary2 = counts_df.groupby(['locus', 'feature'])['gc_content'].describe()
+# summary2.to_csv("kir-gc_content.csv")
+
+# summary3 = counts_df.groupby(['locus', 'feature'])['molecular_weight'].describe()
+# summary3.to_csv("kir-molecular_weight.csv")
 
 
 

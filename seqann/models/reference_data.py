@@ -41,13 +41,12 @@ from seqann.util import deserialize_model
 from seqann.models.base_model_ import Model
 from seqann.models.annotation import Annotation
 from seqann.util import get_features
-
+import sys
 
 is_kir = lambda x: True if re.search("KIR", x) else False
 
 
-def download_dat(dat):
-    url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/3290/hla.dat'
+def download_dat(dat, url):
     urllib.request.urlretrieve(url, dat)
 
 
@@ -56,7 +55,8 @@ class ReferenceData(Model):
     classdocs
     '''
     def __init__(self, server: BioSeqDatabase=None, datafile: str=None,
-                 dbversion: str='3290', verbose: bool=False):
+                 dbversion: str='3290', verbose: bool=False,
+                 kir: bool=False):
         """
         ReferenceData - a model defined in Swagger
         :param server: The server of this ReferenceData.
@@ -94,35 +94,52 @@ class ReferenceData(Model):
             'blastdb': 'blastdb',
             'hla_loci': 'hla_loci',
             'server_avail': 'server_avail',
+            'kir': 'kir',
             'imgtdat': 'imgtdat',
             'verbose': 'verbose'
         }
+        self._kir = kir
         self._verbose = verbose
         self._dbversion = dbversion
         self._server = server
         self._datafile = datafile
         self._server_avail = True if server else False
 
+        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/3290/hla.dat'
+        kir_url = 'ftp://ftp.ebi.ac.uk/pub/databases/ipd/kir/KIR.dat'
         hla_loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
                     'HLA-DPB1', 'HLA-DQA1', 'HLA-DPA1', 'HLA-DRB3',
                     'HLA-DRB4']
         hla_names = []
         data_dir = os.path.dirname(__file__)
-        blastdb = data_dir + '/../data/blast/' + dbversion
-        allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
-                               + dbversion + '.txt'
+        if kir:
+            blastdb = data_dir + '/../data/blast/KIR'
+            allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
+                                   + 'KIR.txt'
+        else:
+            blastdb = data_dir + '/../data/blast/' + dbversion
+            allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
+                                   + dbversion + '.txt'
 
         # TODO: add try
         with open(allele_list, 'r') as f:
             for line in f:
                 line = line.rstrip()
                 accession, name = line.split(" ")
-                hla_names.append("HLA-" + name)
+                if not kir:
+                    hla_names.append("HLA-" + name)
+                else:
+                    hla_names.append(name)
             f.close()
 
         feature_lengths = tree()
         columns = ['mean', 'std', 'min', 'max']
-        featurelength_file = data_dir + "/../data/feature_lengths.csv"
+
+        featurelength_file = ''
+        if kir:
+            featurelength_file = data_dir + "/../data/kir-feature_lengths.csv"
+        else:
+            featurelength_file = data_dir + "/../data/feature_lengths.csv"
 
         # TODO: add try
         with open(featurelength_file, newline='') as csvfile:
@@ -161,7 +178,10 @@ class ReferenceData(Model):
                     else:
                         structures.update({"HLA-" + locus: features})
                         struct_order.update({"HLA-" + locus: features_order})
-                structure_max.update({"HLA-" + locus: n})
+                if is_kir(locus):
+                    structure_max.update({locus: n})
+                else:
+                    structure_max.update({"HLA-" + locus: n})
             f.close()
         self._structures = structures
         self._struct_order = struct_order
@@ -170,12 +190,18 @@ class ReferenceData(Model):
         self._hla_loci = hla_loci
 
         if not self._server_avail:
-            hladat = data_dir + '/../data/hla.dat'
-            if not os.path.isfile(hladat):
-                download_dat(hladat)
+            datfile = ''
+            if kir:
+                datfile = data_dir + '/../data/kir.dat'
+            else:
+                datfile = data_dir + '/../data/hla.dat'
+            if not os.path.isfile(datfile) and not kir:
+                download_dat(hla_url, datfile)
+            elif not os.path.isfile(datfile) and kir:
+                download_dat(kir_url, datfile)
 
             # TODO: add try
-            hladata = list(SeqIO.parse(hladat, "imgt"))
+            hladata = list(SeqIO.parse(datfile, "imgt"))
             print("serverless load")
             self._imgtdat = hladata
         else:
@@ -332,6 +358,16 @@ class ReferenceData(Model):
         :rtype: Dict
         """
         return self._hla_names
+
+    @property
+    def kir(self) -> bool:
+        """
+        Gets the kir of this ReferenceData.
+
+        :return: The kir of this ReferenceData.
+        :rtype: bool
+        """
+        return self._kir
 
     @property
     def hla_loci(self) -> List[str]:
