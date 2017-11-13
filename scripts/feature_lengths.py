@@ -42,7 +42,7 @@ from Bio.SeqUtils import molecular_weight
 
 is_kir = lambda x: True if re.search("KIR", x) else False
 
-hladat = 'kir.dat'
+hladat = 'NHP.dat'
 #hladat = 'seqann/data/hla.dat'
 hladata = SeqIO.parse(hladat, "imgt")
 
@@ -88,7 +88,7 @@ for r in summary1.keys():
     if r[0] not in data:
         data.update
 
-summary1.to_csv("kir-lengths.csv")
+summary1.to_csv("nhp-lengths.csv")
 
 # summary2 = counts_df.groupby(['locus', 'feature'])['gc_content'].describe()
 # summary2.to_csv("kir-gc_content.csv")

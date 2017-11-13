@@ -66,6 +66,7 @@ Dependencies
 ------------
 * `Clustal Omega`_ 1.2.0 or higher
 * `Python 3.6`_
+* blastn_
 
 Credits
 ---------
@@ -74,6 +75,7 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. _`Python 3.6`: https://www.python.org/downloads
 .. _`Clustal Omega`: http://www.clustal.org/omega/
+.. _blastn: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 
