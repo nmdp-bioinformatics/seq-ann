@@ -25,6 +25,17 @@ Sequence Annotation
 * Documentation: https://seqann.readthedocs.io.
 
 
+Docker
+--------
+* docker pull nmdpbioinformatics/pygfe
+
+.. code-block:: 
+
+	docker run -it --rm -v $PWD:/opt nmdpbioinformatics/pygfe seq2gfe \
+		-f /opt/your_fastafile.fasta -l HLA-A
+
+
+
 Features
 --------
 
