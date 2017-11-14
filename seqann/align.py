@@ -59,6 +59,7 @@ def align_seqs(found_seqs, sequence, locus, verbose=False):
                                                  verbose=True, auto=True)
     stdout, stderr = clustalomega_cline()
     align = AlignIO.read(output_clu, "clustal")
+
     cleanup(randid)
 
     insers, dels = 0, 0

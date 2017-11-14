@@ -109,7 +109,7 @@ class Annotation(Model):
                     f = features[feat]
                     full_annotation.update({feat: f.extract(seq)})
                 self._annotation = full_annotation
-            self._missing = missing_blocks
+                self._missing = missing_blocks
 
             if blocks:
                 self._complete_annotation = False
@@ -354,10 +354,7 @@ class Annotation(Model):
 
         self.complete_annotation = True
         self.method = "nt_search and clustalo"
-        # print("check_annotation")
-        # print(self.missing)
-        # print(self.ambig)
-        # print("")
+
         if self.missing:
             for feat in self.missing:
                 if feat not in self.annotation:
@@ -376,6 +373,5 @@ class Annotation(Model):
     def clean(self):
         self.missing = ''
         self.ambig = ''
-        self.mapping = ''
 
 
