@@ -191,10 +191,12 @@ class ReferenceData(Model):
 
         if not self._server_avail:
             datfile = ''
+
             if kir:
-                datfile = data_dir + '/../data/kir.dat'
+                datfile = data_dir + '/../data/KIR.dat'
             else:
                 datfile = data_dir + '/../data/hla.dat'
+
             if not os.path.isfile(datfile) and not kir:
                 download_dat(hla_url, datfile)
             elif not os.path.isfile(datfile) and kir:
@@ -202,7 +204,7 @@ class ReferenceData(Model):
 
             # TODO: add try
             hladata = list(SeqIO.parse(datfile, "imgt"))
-            print("serverless load")
+            #print("serverless load")
             self._imgtdat = hladata
         else:
             self._imgtdat = []

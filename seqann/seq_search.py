@@ -186,6 +186,13 @@ class SeqSearch(Model):
 
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
+        # print("FOUND")
+        # print(found_feats)
+        # print("MISSING")
+        # print(list(feat_missing.keys()))
+        # print("BLOCK")
+        # print(blocks)
+        #print(ambig_map)
         annotated_feats, mb = self._resolve_unmapped(blocks,
                                                      feat_missing,
                                                      ambig_map, mapping,
@@ -193,6 +200,7 @@ class SeqSearch(Model):
 
         method = "nt_search" if not partial_ann else partial_ann.method
 
+        #
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
@@ -251,10 +259,10 @@ class SeqSearch(Model):
                 start_i = b[0]-1
                 end_i = b[len(b)-1]+1
                 feat_num = self.refdata.structures[loc][featname]
-
                 if feat_num+add_num <= self.refdata.structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
                         and end_i <= len(mapping) - 1:
+                        x = feat_num-add_num
                         expected_p = self.refdata.struct_order[loc][feat_num-add_num]
                         expected_n = self.refdata.struct_order[loc][feat_num+add_num]
                         previous_feat = mapping[start_i]
@@ -314,7 +322,8 @@ class SeqSearch(Model):
                     if feat_num+1 <= self.refdata.structure_max[loc] \
                         and feat_num-1 >= 1 \
                             and end_i <= len(mapping) - 1 \
-                            and start_i >= 0:
+                            and start_i >= 0 \
+                            and feat_num-add_num > 0:
                         expected_p = self.refdata.struct_order[loc][feat_num-add_num]
                         expected_n = self.refdata.struct_order[loc][feat_num+add_num]
                         previous_feat = mapping[start_i]

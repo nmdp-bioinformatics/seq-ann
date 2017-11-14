@@ -204,7 +204,6 @@ class BioSeqAnn(Model):
                     an, ins, dels = align_seqs(combseqr, feat, locus, verbose=self.verbose)
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
-
                         for f in an.annotation:
                             length, lengthsd = 0, 0
                             length = float(self.refdata.feature_lengths[locus][f][0])
@@ -235,45 +234,49 @@ class BioSeqAnn(Model):
                     if annotation.complete_annotation:
                         return annotation
 
-                exonan, ins, dels = align_seqs(exons, feat, locus, verbose=self.verbose)
-                mapped_exons = list(exonan.annotation.keys())
-                if len(mapped_exons) >= 1:
-                    if self.verbose:
-                        print("MAPPED EXONS", file=sys.stderr)
-                    for f in exonan.annotation:
-                        annotation.annotation.update({f: exonan.annotation[f]})
-                    del missing_blocks[missing_blocks.index(b)]
-
-                    annotation.blocks = missing_blocks
-                    annotation.check_annotation()
-                    if annotation.complete_annotation:
-                        return annotation
-
-                # Run full sequence
-                fullref = align_seqs(fullrec, feat, locus, verbose=self.verbose)
-                if hasattr(fullref, 'annotation'):
-                    mapped_full = list(fullref.annotation.keys())
-                    if len(mapped_full) >= 1:
-                        # If it wasn't found
+                if len(exons.seq) >= 4:
+                    exonan, ins, dels = align_seqs(exons, feat, locus, verbose=self.verbose)
+                    mapped_exons = list(exonan.annotation.keys())
+                    if len(mapped_exons) >= 1:
+                        if self.verbose:
+                            print("MAPPED EXONS", file=sys.stderr)
+                        for f in exonan.annotation:
+                            annotation.annotation.update({f: exonan.annotation[f]})
                         del missing_blocks[missing_blocks.index(b)]
 
-                        for f in fullref.annotation:
-                            annotation.update({f: fullref.annotation[f]})
+                        annotation.blocks = missing_blocks
+                        annotation.check_annotation()
+                        if annotation.complete_annotation:
+                            return annotation
 
-                    annotation.blocks = missing_blocks
-                    annotation.check_annotation()
-                    if annotation.complete_annotation:
-                        if self.verbose:
-                            print("MAPPED ALL", file=sys.stderr)
-                        return annotation
+                # Run full sequence
+                if len(fullrec.seq) >= 4:
+                    fullref = align_seqs(fullrec, feat, locus, verbose=self.verbose)
+                    if hasattr(fullref, 'annotation'):
+                        mapped_full = list(fullref.annotation.keys())
+                        if len(mapped_full) >= 1:
+                            # If it wasn't found
+                            del missing_blocks[missing_blocks.index(b)]
+
+                            for f in fullref.annotation:
+                                annotation.update({f: fullref.annotation[f]})
+
+                        annotation.blocks = missing_blocks
+                        annotation.check_annotation()
+                        if annotation.complete_annotation:
+                            if self.verbose:
+                                print("MAPPED ALL", file=sys.stderr)
+                            return annotation
 
             return annotation
         elif partial_ann:
+            print("HERE partial")
             # Do full sequence alignments
             # any only extract out the part
             # that couldn't be explained from above
             return
         else:
+            print("HERE partial2")
             # Option for user that just want to
             # align a set of sequences
             return
