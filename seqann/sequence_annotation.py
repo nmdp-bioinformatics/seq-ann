@@ -36,6 +36,7 @@ from Bio.SeqFeature import FeatureLocation
 
 from seqann.models.reference_data import ReferenceData
 from seqann.blast_cmd import blastn
+from seqann.blast_cmd import get_locus
 from seqann.seq_search import SeqSearch
 from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
@@ -66,7 +67,7 @@ class BioSeqAnn(Model):
                                      kir=kir)
         self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
 
-    def annotate(self, sequence, locus, nseqs=8):
+    def annotate(self, sequence, locus=None, nseqs=8):
         """
         annotate - method for annotating a Biopython sequence record
         :param sequence: The input sequence record.
@@ -123,6 +124,16 @@ class BioSeqAnn(Model):
             exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
 
         """
+
+        # TODO: format stderr printing
+        if not locus:
+            print("No locus provided", file=sys.stderr)
+            locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
+            print("Locus -> ", locus, file=sys.stderr)
+            if not locus:
+                print("Locus could not be assigned!", file=sys.stderr)
+                return ''
+
         matched_annotation = self.refdata.search_refdata(sequence, locus)
         if matched_annotation:
             return matched_annotation
@@ -130,7 +141,7 @@ class BioSeqAnn(Model):
         blast = blastn(sequence, locus, nseqs, kir=self.kir, refdata=self.refdata)
         if blast.failed:
             # TODO: return error object
-            print("BLAST FAILED!")
+            print("BLAST FAILED!", file=sys.stderr)
             return
 
         partial_ann = None
@@ -157,7 +168,7 @@ class BioSeqAnn(Model):
         # TODO: make guess with full alignment
         # return self.ref_align(found, sequence, locus,
         #                       partial_ann=partial_ann)
-        return
+        return ''
 
     def ref_align(self, found_seqs, sequence, locus,
                   annotation=None, partial_ann=None):
@@ -479,7 +490,33 @@ class BioSeqAnn(Model):
             return seq_feat, start
 
 
+class SeqAnnException(Exception):
 
+    def __init__(self, status=None, reason=None, http_resp=None):
+        if http_resp:
+            self.status = http_resp.status
+            self.reason = http_resp.reason
+            self.body = http_resp.data
+            self.headers = http_resp.getheaders()
+        else:
+            self.status = status
+            self.reason = reason
+            self.body = None
+            self.headers = None
+
+    def __str__(self):
+        """
+        Custom error messages for exception
+        """
+        error_message = "({0})\n"\
+                        "Reason: {1}\n".format(self.status, self.reason)
+        if self.headers:
+            error_message += "HTTP response headers: {0}\n".format(self.headers)
+
+        if self.body:
+            error_message += "HTTP response body: {0}\n".format(self.body)
+
+        return error_message
 
 
 

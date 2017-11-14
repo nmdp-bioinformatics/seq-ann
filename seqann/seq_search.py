@@ -102,9 +102,6 @@ class SeqSearch(Model):
 
         # Extract out the sequences and feature names
         # from the reference sequences
-        # feats = [[feat.type, feat.extract(seqrec.seq)]
-        #          for feat in seqrec.features if feat.type != "source"
-        #          and feat.type != "CDS" and isinstance(feat, SeqFeature)]
 
         # The mapped features will be subtracted from seq_covered
         # so the final seq_covered number will reflect the remaining
@@ -186,21 +183,19 @@ class SeqSearch(Model):
 
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
-        # print("FOUND")
-        # print(found_feats)
-        # print("MISSING")
-        # print(list(feat_missing.keys()))
-        # print("BLOCK")
-        # print(blocks)
-        #print(ambig_map)
         annotated_feats, mb = self._resolve_unmapped(blocks,
                                                      feat_missing,
                                                      ambig_map, mapping,
                                                      found_feats, locus)
+        if self.verbose:
+            print("Found features: ",
+                  list(annotated_feats.keys()),
+                  file=sys.stderr)
+            print("Missing features: ",
+                  list(feat_missing.keys()),
+                  file=sys.stderr)
 
         method = "nt_search" if not partial_ann else partial_ann.method
-
-        #
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]

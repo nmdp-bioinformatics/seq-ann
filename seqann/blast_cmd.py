@@ -32,7 +32,7 @@ from seqann.models.blast import Blast
 from seqann.models.reference_data import ReferenceData
 
 
-def blastn(sequences, locus, nseqs, kir=False, refdata=None, evalue=0.001):
+def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
 
     if not refdata:
         refdata = ReferenceData()
@@ -46,8 +46,45 @@ def blastn(sequences, locus, nseqs, kir=False, refdata=None, evalue=0.001):
                                          evalue=evalue, outfmt=5,
                                          out=output_xml)
     stdout, stderr = blastn_cline()
-    loc = locus
+    blast_qresult = SearchIO.read(output_xml, 'blast-xml')
 
+    #   Delete files
+    cleanup(file_id)
+
+    if len(blast_qresult.hits) == 0:
+        return ''
+
+    loci = []
+    for i in range(0, 3):
+        if kir:
+            loci.append(blast_qresult[i].id.split("*")[0])
+        else:
+            loci.append("HLA-" + blast_qresult[i].id.split("*")[0])
+
+    locus = set(loci)
+    if len(locus) == 1:
+        return loci[0]
+    else:
+        return ''
+
+
+def blastn(sequences, locus, nseqs, kir=False,
+           verbose=False, refdata=None, evalue=0.001):
+
+    if not refdata:
+        refdata = ReferenceData()
+
+    file_id = str(randomid())
+    input_fasta = file_id + ".fasta"
+    output_xml = file_id + ".xml"
+    SeqIO.write(sequences, input_fasta, "fasta")
+    blastn_cline = NcbiblastnCommandline(query=input_fasta,
+                                         db=refdata.blastdb,
+                                         evalue=evalue, outfmt=5,
+                                         out=output_xml)
+    stdout, stderr = blastn_cline()
+
+    loc = locus
     if not kir:
         loc = locus.split("-")[1]
     blast_qresult = SearchIO.read(output_xml, 'blast-xml')
@@ -69,6 +106,9 @@ def blastn(sequences, locus, nseqs, kir=False, refdata=None, evalue=0.001):
     if kir:
         alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)
                    if blast_qresult[i].id.split("*")[0] == locus]
+
+    if verbose:
+        print("Blast Alleles: ", alleles)
 
     # TODO: sort alleles by number of features they contain and evalue
     # Use biosql db if provided

@@ -347,6 +347,20 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 007 Requires MySQL connection")
+    def test_008_noloc(self):
+        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
+                                              passwd="", host="localhost",
+                                              db="bioseqdb")
+        seqann = BioSeqAnn(server=server, dbversion='3290')
+        self.assertIsInstance(seqann, BioSeqAnn)
+        input_seq = self.data_dir + '/nomatch_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        annotation = seqann.annotate(in_seq)
+        self.assertIsInstance(annotation, Annotation)
+        self.assertGreater(len(annotation.annotation.keys()), 1)
+        self.assertTrue(annotation.complete_annotation)
+        server.close()
+        pass
 
 
