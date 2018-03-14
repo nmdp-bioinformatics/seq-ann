@@ -105,11 +105,11 @@ class ReferenceData(Model):
         self._datafile = datafile
         self._server_avail = True if server else False
 
-        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/3290/hla.dat'
+        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/Latest/hla.dat'
         kir_url = 'ftp://ftp.ebi.ac.uk/pub/databases/ipd/kir/KIR.dat'
         hla_loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
                     'HLA-DPB1', 'HLA-DQA1', 'HLA-DPA1', 'HLA-DRB3',
-                    'HLA-DRB4']
+                    'HLA-DRB4', 'HLA-DRB5']
         hla_names = []
         data_dir = os.path.dirname(__file__)
         if kir:
