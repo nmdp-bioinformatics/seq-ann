@@ -39,6 +39,7 @@ class Annotation(Model):
                  annotation: Dict={}, blocks: List[List[int]]=None,
                  method: str=None, mapping: Dict=None,
                  refmissing: List[str]=None,
+                 exact_match: List[str]=None,
                  complete_annotation: bool=False):
         """
         Annotation
@@ -59,11 +60,14 @@ class Annotation(Model):
             'blocks': List[List[int]],
             'method': str,
             'mapping': Dict,
-            'refmissing': List[str]
+            'aligned': Dict,
+            'refmissing': List[str],
+            'exact_match': List[str]
         }
 
         self.attribute_map = {
             'seq': 'seq',
+            'aligned': 'aligned',
             'features': 'features',
             'covered': 'covered',
             'missing': 'missing',
@@ -73,9 +77,11 @@ class Annotation(Model):
             'blocks': 'blocks',
             'method': 'method',
             'mapping': 'mapping',
-            'refmissing': 'refmissing'
+            'refmissing': 'refmissing',
+            'exact_match': 'exact_match'
         }
-
+        self._aligned = ''
+        self._exact_match = exact_match
         self._refmissing = refmissing
         self._mapping = mapping
         self._method = method
@@ -311,6 +317,26 @@ class Annotation(Model):
         self._refmissing = refmissing
 
     @property
+    def exact_match(self) ->List[str]:
+        """
+        Gets the exact_match of this Annotation.
+
+        :return: The exact_match of this Annotation.
+        :rtype: List[str]
+        """
+        return self._exact_match
+
+    @exact_match.setter
+    def exact_match(self, exact_match: List[str]):
+        """
+        Sets the exact_match of this Annotation.
+
+        :param exact_match: The exact_match of this Annotation.
+        :type exact_match: List[str]
+        """
+        self._exact_match = exact_match
+
+    @property
     def annotation(self) ->Dict:
         """
         Gets the coverage of this Annotation.
@@ -350,6 +376,26 @@ class Annotation(Model):
         """
         self._blocks = blocks
 
+    @property
+    def aligned(self) ->Dict:
+        """
+        Gets the coverage of this Annotation.
+
+        :return: The aligned of this Annotation.
+        :rtype: Dict
+        """
+        return self._aligned
+
+    @aligned.setter
+    def aligned(self, aligned: Dict):
+        """
+        Sets the aligned of this Annotation.
+
+        :param aligned: The aligned of this Annotation.
+        :type aligned: Dict
+        """
+        self._aligned = aligned
+
     def check_annotation(self):
 
         self.complete_annotation = True
@@ -373,5 +419,6 @@ class Annotation(Model):
     def clean(self):
         self.missing = ''
         self.ambig = ''
+        self.mapping = ''
 
 

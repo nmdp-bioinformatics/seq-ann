@@ -44,7 +44,14 @@ from seqann.models.annotation import Annotation
 
 
 def align_seqs(found_seqs, sequence, locus, verbose=False):
+    """
+    Aligns sequences with clustalw
 
+    :param locus: string containing HLA locus.
+    :param sequence: string containing sequence data.
+
+    :return: GFEobject.
+    """
     randid = randomid()
     input_fasta = str(randid) + ".fasta"
     output_clu = str(randid) + ".clu"
@@ -123,6 +130,14 @@ def find_features(feats, sequ):
 
 
 def resolve_feats(feat_list, seq, verbose):
+    """
+    Aligns sequences with clustalw
+
+    :param locus: string containing HLA locus.
+    :param sequence: string containing sequence data.
+
+    :return: GFEobject.
+    """
 
     # Look at consensus sequence
     #   gap_consensus
@@ -132,6 +147,8 @@ def resolve_feats(feat_list, seq, verbose):
 
     mapping = dict(map(lambda x: [x, 1],
                        [i for i in range(0, len(seq.seq)+1)]))
+
+    # TODO: use loggin
     if len(feat_list) > 1:
         if verbose:
             print("****** resolve_feats error ******", file=sys.stderr)
@@ -164,6 +181,14 @@ def resolve_feats(feat_list, seq, verbose):
 
 
 def count_diffs(align, feats, inseq, verbose):
+    """
+    Aligns sequences with clustalw
+
+    :param locus: string containing HLA locus.
+    :param sequence: string containing sequence data.
+
+    :return: GFEobject.
+    """
 
     nfeats = len(feats.keys())
     mm = 0
@@ -200,6 +225,7 @@ def count_diffs(align, feats, inseq, verbose):
     mper = match / l
     mper2 = match / len(inseq)
 
+    # TODO: use logging
     if verbose:
         print(list(feats.keys()), file=sys.stderr)
         print('{:<22}{:<6d}'.format("Number of feats: ", nfeats), file=sys.stderr)

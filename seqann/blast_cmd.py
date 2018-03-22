@@ -33,7 +33,14 @@ from seqann.models.reference_data import ReferenceData
 
 
 def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
+    """
+    Gets the locus of the sequence by running blastn
 
+    :param sequences: sequenences to blast
+    :param kir: bool whether the sequences are KIR or not
+
+    :return: GFEobject.
+    """
     if not refdata:
         refdata = ReferenceData()
 
