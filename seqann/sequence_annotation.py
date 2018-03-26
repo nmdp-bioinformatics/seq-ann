@@ -172,7 +172,9 @@ class BioSeqAnn(Model):
                 aligned_ann = self.ref_align(found[i], sequence, locus,
                                              annotation=annotation)
                 if aligned_ann.complete_annotation:
-                    aligned_ann.clean()
+                    if self.align:
+                        annotation = self.add_alignment(found[i], annotation)
+                    annotation.clean()
                     return aligned_ann
                 else:
                     if self.verbose:
@@ -230,28 +232,29 @@ class BioSeqAnn(Model):
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
                         for f in an.annotation:
-                            length, lengthsd = 0, 0
-                            length = float(self.refdata.feature_lengths[locus][f][0])
-                            lengthsd = float(self.refdata.feature_lengths[locus][f][1])
+                            if f in annotation.missing:
+                                length, lengthsd = 0, 0
+                                length = float(self.refdata.feature_lengths[locus][f][0])
+                                lengthsd = float(self.refdata.feature_lengths[locus][f][1])
 
-                            # min and max lengths expected
-                            max_length = length + lengthsd + ins
-                            min_length = length - lengthsd - dels
+                                # min and max lengths expected
+                                max_length = length + lengthsd + ins
+                                min_length = length - lengthsd - dels
 
-                            if(len(an.annotation[f]) <= max_length and
-                                    len(an.annotation[f]) >= min_length):
-                                annotation.annotation.update({f:
-                                                              an.annotation[f]
-                                                              })
-                                if an.blocks:
-                                    mbtmp += an.blocks
+                                if(len(an.annotation[f]) <= max_length and
+                                        len(an.annotation[f]) >= min_length):
+                                    annotation.annotation.update({f:
+                                                                  an.annotation[f]
+                                                                  })
+                                    if an.blocks:
+                                        mbtmp += an.blocks
+                                    else:
+                                        if self.verbose:
+                                            print("DELETING: " + f, file=sys.stderr)
+                                        if b in missing_blocks:
+                                            del missing_blocks[missing_blocks.index(b)]
                                 else:
-                                    if self.verbose:
-                                        print("DELETING: " + f, file=sys.stderr)
-                                    if b in missing_blocks:
-                                        del missing_blocks[missing_blocks.index(b)]
-                            else:
-                                mbtmp.append(b)
+                                    mbtmp.append(b)
                     else:
                         mbtmp.append(b)
                     annotation.blocks = mbtmp
