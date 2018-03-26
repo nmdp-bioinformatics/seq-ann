@@ -56,7 +56,7 @@ class ReferenceData(Model):
     classdocs
     '''
     def __init__(self, server: BioSeqDatabase=None, datafile: str=None,
-                 dbversion: str='3290', verbose: bool=False,
+                 dbversion: str='3310', verbose: bool=False,
                  kir: bool=False, alignments: bool=False):
         """
         ReferenceData - a model defined in Swagger
@@ -99,6 +99,7 @@ class ReferenceData(Model):
             'kir': 'kir',
             'imgtdat': 'imgtdat',
             'alignments': 'alignments',
+            'alignments': 'alignments',
             'verbose': 'verbose'
         }
         self._alignments = alignments
@@ -126,18 +127,6 @@ class ReferenceData(Model):
             blastdb = data_dir + '/../data/blast/' + dbversion
             allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
                                    + dbversion + '.txt'
-
-        self.annoated_alignments = {}
-        if alignments:
-            print("Loading alignment")
-            pickle_dir = data_dir + '/../data/alignments/' + dbversion
-            pickle_files = glob.glob(pickle_dir + '/*.pickle')
-            for pickle_file in pickle_files:
-                locus = pickle_file.split("/")[len(pickle_file.split("/"))-1].split(".")[0].split("_")[0]
-                with open(pickle_file, 'rb') as handle:
-                    self.annoated_alignments.update({locus:
-                                                     pickle.load(handle)})
-                print("Finished loading " + locus)
 
         # TODO: add try
         with open(allele_list, 'r') as f:
@@ -173,6 +162,8 @@ class ReferenceData(Model):
         structures = {}
         struct_order = {}
         structure_max = {}
+
+        # *** TODO: ADD DQA1
         for inputfile in struture_files:
             file_path = inputfile.split("/")
             locus = file_path[len(file_path)-1].split(".")[0]
@@ -206,6 +197,42 @@ class ReferenceData(Model):
         self._structure_max = structure_max
         self._blastdb = blastdb
         self._hla_loci = hla_loci
+
+        self.location = {"HLA-A": -300, "HLA-B": -284, "HLA-C": -283,
+                         "HLA-DRB1": -599, "HLA-DRB3": -327, "HLA-DRB4": -313,
+                         "HLA-DQB1": -525, "HLA-DPB1": -366, "HLA-DPA1": -523,
+                         "HLA-DQA1": -746}
+
+        self.align_coordinates = {}
+        self.annoated_alignments = {}
+        if alignments:
+            # TODO: Use logging
+            pickle_dir = data_dir + '/../data/alignments/' + dbversion
+            print("Loading alignment " + dbversion)
+            pickle_files = glob.glob(pickle_dir + '/*.pickle')
+            for pickle_file in pickle_files:
+                locus = pickle_file.split("/")[len(pickle_file.split("/"))-1].split(".")[0].split("_")[0]
+                with open(pickle_file, 'rb') as handle:
+                    self.annoated_alignments.update({locus:
+                                                     pickle.load(handle)})
+                #print("Finished loading " + locus)
+                allele = list(self.annoated_alignments[locus].keys())[0]
+                #print(self.annoated_alignments[locus][allele].keys())
+                if not locus in self.align_coordinates and "HLA-" + locus in self.struct_order:
+                    feat_order = list(self.struct_order["HLA-" + locus].keys())
+                    feat_order.sort()
+                    start = 0
+                    self.align_coordinates.update({locus: {}})
+                    for i in feat_order:
+                        feat = self.struct_order["HLA-" + locus][i]
+                        seq = self.annoated_alignments[locus][allele][feat]['Seq']
+                        end = start + len(seq)
+                        #print(i, locus, feat, start, end)
+                        for j in range(start, end):
+                            self.align_coordinates[locus].update({j: feat})
+                        start = end
+                    # print("LOCUS ", locus)
+                    # print(set(align_coordinates[locus].values()))
 
         # TODO: ADD DB VERSION!
         # TODO: Be able to load KIR and HLA

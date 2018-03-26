@@ -60,7 +60,7 @@ class BioSeqAnn(Model):
     seqanno = seqann.BioSeqAnn()
     annotations = [an.annotate(rec, loc) for rec in list(SeqIO.read(file,'fasta'))]
     '''
-    def __init__(self, server=None, dbversion='3290', datfile='',
+    def __init__(self, server=None, dbversion='3310', datfile='',
                  rerun=False, rerun_n=3, verbose=False,
                  kir=False, align=False):
         self.align = align

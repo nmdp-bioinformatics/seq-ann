@@ -25,6 +25,7 @@ var/
 *.egg
 combos_test.py
 venv/
+misc/
 
 log/
 *.out
