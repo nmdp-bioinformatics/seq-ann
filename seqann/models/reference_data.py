@@ -47,6 +47,27 @@ import pickle
 is_kir = lambda x: True if re.search("KIR", x) else False
 
 
+biosqlpass = "my-secret-pw"
+if os.getenv("BIOSQLPASS"):
+    biosqlpass = os.getenv("BIOSQLPASS")
+
+biosqluser = 'root'
+if os.getenv("BIOSQLUSER"):
+    biosqluser = os.getenv("BIOSQLUSER")
+
+biosqlhost = "localhost"
+if os.getenv("BIOSQLHOST"):
+    biosqlhost = os.getenv("BIOSQLHOST")
+
+biosqldb = "bioseqdb"
+if os.getenv("BIOSQLDB"):
+    biosqldb = os.getenv("BIOSQLDB")
+
+biosqlport = 3306
+if os.getenv("BIOSQLPORT"):
+    biosqlport = os.getenv("BIOSQLPORT")
+
+
 def download_dat(url, dat):
     urllib.request.urlretrieve(url, dat)
 
@@ -488,7 +509,8 @@ class ReferenceData(Model):
             select_stm = p1 + p2 + p3 + p4 + p5
 
             # TODO: add try statement
-            conn = pymysql.connect(host='localhost', port=3306, user='root', passwd="my-secret-pw", db='bioseqdb')
+            conn = pymysql.connect(host=biosqlhost, port=biosqlport,
+                                   user=biosqluser, passwd=biosqlpass, db=biosqldb)
             cur = conn.cursor()
             cur.execute(select_stm)
 
@@ -519,8 +541,8 @@ class ReferenceData(Model):
             # TODO: ONLY MAKE ONE CONNECTION
             # TODO: add try statement
             # TODO: take password from environment variable
-            conn = pymysql.connect(host='localhost', port=3306,
-                                   user='root', passwd="my-secret-pw", db='bioseqdb')
+            conn = pymysql.connect(host=biosqlhost, port=biosqlport,
+                                   user=biosqluser, passwd=biosqlpass, db=biosqldb)
             cur = conn.cursor()
             cur.execute(select_stm)
 
