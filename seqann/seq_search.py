@@ -39,6 +39,7 @@ from seqann.util import deserialize_model
 from seqann.util import get_features
 
 
+# TODO: Add to util.py
 def getblocks(coords):
     block = []
     blocks = []
@@ -181,19 +182,22 @@ class SeqSearch(Model):
 
         blocks = getblocks(coordinates)
 
+        exact_matches = list(found_feats.keys())
+
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
         annotated_feats, mb = self._resolve_unmapped(blocks,
                                                      feat_missing,
                                                      ambig_map, mapping,
                                                      found_feats, locus)
-        if self.verbose:
-            print("Found features: ",
-                  list(annotated_feats.keys()),
-                  file=sys.stderr)
-            print("Missing features: ",
-                  list(feat_missing.keys()),
-                  file=sys.stderr)
+
+        # if self.verbose:
+        #     print("Found features: ",
+        #           list(annotated_feats.keys()),
+        #           file=sys.stderr)
+        #     print("Missing features: ",
+        #           list(feat_missing.keys()),
+        #           file=sys.stderr)
 
         method = "nt_search" if not partial_ann else partial_ann.method
         if mb:
@@ -208,7 +212,8 @@ class SeqSearch(Model):
                                     blocks=mb,
                                     method=method,
                                     refmissing=refmissing,
-                                    mapping=mapping)
+                                    mapping=mapping,
+                                    exact_match=exact_matches)
         else:
             annotation = Annotation(features=annotated_feats,
                                     covered=seq_covered,
@@ -216,7 +221,8 @@ class SeqSearch(Model):
                                     missing=feat_missing,
                                     ambig=ambig_map,
                                     method=method,
-                                    mapping=mapping)
+                                    mapping=mapping,
+                                    exact_match=exact_matches)
 
         return annotation
 

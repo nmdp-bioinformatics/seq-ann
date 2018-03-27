@@ -53,7 +53,7 @@ test_requirements = [
 
 setup(
     name='seqann',
-    version='0.0.7',
+    version='0.0.10',
     description="Sequence Annotation",
     long_description=readme + '\n\n' + history,
     author="Mike Halagan",
@@ -67,7 +67,11 @@ setup(
                  'seqann'},
     package_data={'seqann': ['data/*.structure',
                              'data/*.csv', 'data/blast/*',
-                             'data/allele_lists/*']},
+                             'data/allele_lists/*',
+                             'data/alignments/3300/*',
+                             'data/alignments/3290/*',
+                             'data/alignments/3310/*'
+                             ]},
     install_requires=requirements,
     license="LGPL 3.0",
     zip_safe=False,

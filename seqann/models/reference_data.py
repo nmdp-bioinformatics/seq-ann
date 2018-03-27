@@ -42,8 +42,30 @@ from seqann.models.base_model_ import Model
 from seqann.models.annotation import Annotation
 from seqann.util import get_features
 import sys
+import pickle
 
 is_kir = lambda x: True if re.search("KIR", x) else False
+
+
+biosqlpass = "my-secret-pw"
+if os.getenv("BIOSQLPASS"):
+    biosqlpass = os.getenv("BIOSQLPASS")
+
+biosqluser = 'root'
+if os.getenv("BIOSQLUSER"):
+    biosqluser = os.getenv("BIOSQLUSER")
+
+biosqlhost = "localhost"
+if os.getenv("BIOSQLHOST"):
+    biosqlhost = os.getenv("BIOSQLHOST")
+
+biosqldb = "bioseqdb"
+if os.getenv("BIOSQLDB"):
+    biosqldb = os.getenv("BIOSQLDB")
+
+biosqlport = 3306
+if os.getenv("BIOSQLPORT"):
+    biosqlport = os.getenv("BIOSQLPORT")
 
 
 def download_dat(url, dat):
@@ -55,8 +77,8 @@ class ReferenceData(Model):
     classdocs
     '''
     def __init__(self, server: BioSeqDatabase=None, datafile: str=None,
-                 dbversion: str='3290', verbose: bool=False,
-                 kir: bool=False):
+                 dbversion: str='3310', verbose: bool=False,
+                 kir: bool=False, alignments: bool=False):
         """
         ReferenceData - a model defined in Swagger
         :param server: The server of this ReferenceData.
@@ -79,6 +101,7 @@ class ReferenceData(Model):
             'blastdb': str,
             'server_avail': bool,
             'verbose': bool,
+            'alignments': bool,
             'imgtdat': List[SeqRecord]
         }
 
@@ -96,8 +119,11 @@ class ReferenceData(Model):
             'server_avail': 'server_avail',
             'kir': 'kir',
             'imgtdat': 'imgtdat',
+            'alignments': 'alignments',
+            'alignments': 'alignments',
             'verbose': 'verbose'
         }
+        self._alignments = alignments
         self._kir = kir
         self._verbose = verbose
         self._dbversion = dbversion
@@ -105,11 +131,13 @@ class ReferenceData(Model):
         self._datafile = datafile
         self._server_avail = True if server else False
 
-        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/3290/hla.dat'
+        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/' + dbversion + '/hla.dat'
         kir_url = 'ftp://ftp.ebi.ac.uk/pub/databases/ipd/kir/KIR.dat'
         hla_loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
                     'HLA-DPB1', 'HLA-DQA1', 'HLA-DPA1', 'HLA-DRB3',
-                    'HLA-DRB4']
+                    'HLA-DRB4', 'HLA-DRB5']
+
+        # TODO: Download! Don't have in package!
         hla_names = []
         data_dir = os.path.dirname(__file__)
         if kir:
@@ -155,6 +183,8 @@ class ReferenceData(Model):
         structures = {}
         struct_order = {}
         structure_max = {}
+
+        # *** TODO: ADD DQA1
         for inputfile in struture_files:
             file_path = inputfile.split("/")
             locus = file_path[len(file_path)-1].split(".")[0]
@@ -189,13 +219,51 @@ class ReferenceData(Model):
         self._blastdb = blastdb
         self._hla_loci = hla_loci
 
+        self.location = {"HLA-A": -300, "HLA-B": -284, "HLA-C": -283,
+                         "HLA-DRB1": -599, "HLA-DRB3": -327, "HLA-DRB4": -313,
+                         "HLA-DQB1": -525, "HLA-DPB1": -366, "HLA-DPA1": -523,
+                         "HLA-DQA1": -746}
+
+        self.align_coordinates = {}
+        self.annoated_alignments = {}
+        if alignments:
+            # TODO: Use logging
+            pickle_dir = data_dir + '/../data/alignments/' + dbversion
+            print("Loading alignment " + dbversion)
+            pickle_files = glob.glob(pickle_dir + '/*.pickle')
+            for pickle_file in pickle_files:
+                locus = pickle_file.split("/")[len(pickle_file.split("/"))-1].split(".")[0].split("_")[0]
+                with open(pickle_file, 'rb') as handle:
+                    self.annoated_alignments.update({locus:
+                                                     pickle.load(handle)})
+                #print("Finished loading " + locus)
+                allele = list(self.annoated_alignments[locus].keys())[0]
+                #print(self.annoated_alignments[locus][allele].keys())
+                if not locus in self.align_coordinates and "HLA-" + locus in self.struct_order:
+                    feat_order = list(self.struct_order["HLA-" + locus].keys())
+                    feat_order.sort()
+                    start = 0
+                    self.align_coordinates.update({locus: {}})
+                    for i in feat_order:
+                        feat = self.struct_order["HLA-" + locus][i]
+                        seq = self.annoated_alignments[locus][allele][feat]['Seq']
+                        end = start + len(seq)
+                        #print(i, locus, feat, start, end)
+                        for j in range(start, end):
+                            self.align_coordinates[locus].update({j: feat})
+                        start = end
+                    # print("LOCUS ", locus)
+                    # print(set(align_coordinates[locus].values()))
+
+        # TODO: ADD DB VERSION!
+        # TODO: Be able to load KIR and HLA
         if not self._server_avail:
             datfile = ''
 
             if kir:
                 datfile = data_dir + '/../data/KIR.dat'
             else:
-                datfile = data_dir + '/../data/hla.dat'
+                datfile = data_dir + '/../data/' + dbversion + '.hla.dat'
 
             if not os.path.isfile(datfile) and not kir:
                 download_dat(hla_url, datfile)
@@ -260,6 +328,26 @@ class ReferenceData(Model):
         :type verbose: bool
         """
         self._verbose = verbose
+
+    @property
+    def alignments(self) -> bool:
+        """
+        Gets the alignments of this ReferenceData.
+
+        :return: The alignments of this ReferenceData.
+        :rtype: BioSeqDatabase
+        """
+        return self._alignments
+
+    @alignments.setter
+    def alignments(self, alignments: bool):
+        """
+        Sets the alignments of this bool.
+
+        :param alignments: The server of this ReferenceData.
+        :type alignments: bool
+        """
+        self._alignments = alignments
 
     @property
     def datafile(self) -> str:
@@ -408,6 +496,9 @@ class ReferenceData(Model):
         :rtype: Annotation
         mysql --user=root bioseqdb -e "select * from biodatabase"
         """
+        # TODO: ONLY MAKE ONE CONNECTION
+        # TODO: add try statement
+        # TODO: take password from environment variable
         if self.server_avail:
             hla, loc = locus.split('-')
             p1 = "SELECT ent.name "
@@ -418,7 +509,8 @@ class ReferenceData(Model):
             select_stm = p1 + p2 + p3 + p4 + p5
 
             # TODO: add try statement
-            conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='', db='bioseqdb')
+            conn = pymysql.connect(host=biosqlhost, port=biosqlport,
+                                   user=biosqluser, passwd=biosqlpass, db=biosqldb)
             cur = conn.cursor()
             cur.execute(select_stm)
 
@@ -446,9 +538,11 @@ class ReferenceData(Model):
                 "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
                 "LIMIT " + n
 
+            # TODO: ONLY MAKE ONE CONNECTION
             # TODO: add try statement
-            conn = pymysql.connect(host='localhost', port=3306,
-                                   user='root', passwd='', db='bioseqdb')
+            # TODO: take password from environment variable
+            conn = pymysql.connect(host=biosqlhost, port=biosqlport,
+                                   user=biosqluser, passwd=biosqlpass, db=biosqldb)
             cur = conn.cursor()
             cur.execute(select_stm)
 
@@ -475,7 +569,7 @@ class ReferenceData(Model):
         :return: The Annotation from the found sequence
         :rtype: Annotation
         """
-        # TODO: add try statement
+        # TODO: Add try statement
         db = self.server[self.dbversion + "_" + locus]
         seqrecord = db.lookup(name=allele)
         return seqrecord

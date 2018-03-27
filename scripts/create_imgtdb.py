@@ -21,7 +21,7 @@ def download_allelelist(db):
     return alist
 
 
-dblist = ["".join([str(i), str("0")]) for i in range(326, 330)]
+dblist = ["".join([str(i), str("0")]) for i in range(326, 331)]
 server = BioSeqDatabase.open_database(driver="pymysql", user="root",
                                       passwd="", host="localhost",
                                       db="bioseqdb")

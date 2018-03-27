@@ -28,7 +28,9 @@ import re
 import sys
 
 from Bio.Seq import Seq
+from Bio import pairwise2
 from Bio.Alphabet import IUPAC
+from BioSQL.BioSeq import DBSeq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import ExactPosition
@@ -42,6 +44,10 @@ from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
 from seqann.util import randomid
 from seqann.util import get_features
+from seqann.util import get_seqs
+
+from itertools import repeat
+
 
 isexon = lambda f: True if re.search("exon", f) else False
 isutr = lambda f: True if re.search("UTR", f) else False
@@ -54,9 +60,10 @@ class BioSeqAnn(Model):
     seqanno = seqann.BioSeqAnn()
     annotations = [an.annotate(rec, loc) for rec in list(SeqIO.read(file,'fasta'))]
     '''
-    def __init__(self, server=None, dbversion='3290', datfile='',
+    def __init__(self, server=None, dbversion='3310', datfile='',
                  rerun=False, rerun_n=3, verbose=False,
-                 kir=False):
+                 kir=False, align=False):
+        self.align = align
         self.kir = kir
         self.server = server
         self.rerun = rerun
@@ -64,6 +71,7 @@ class BioSeqAnn(Model):
         self.verbose = verbose
         self.refdata = ReferenceData(server=server,
                                      dbversion=dbversion,
+                                     alignments=align,
                                      kir=kir)
         self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
 
@@ -124,8 +132,7 @@ class BioSeqAnn(Model):
             exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
 
         """
-
-        # TODO: format stderr printing
+        # TODO: use logging
         if not locus:
             print("No locus provided", file=sys.stderr)
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
@@ -134,6 +141,7 @@ class BioSeqAnn(Model):
                 print("Locus could not be assigned!", file=sys.stderr)
                 return ''
 
+        # Exact match found
         matched_annotation = self.refdata.search_refdata(sequence, locus)
         if matched_annotation:
             return matched_annotation
@@ -141,6 +149,7 @@ class BioSeqAnn(Model):
         blast = blastn(sequence, locus, nseqs, kir=self.kir, refdata=self.refdata)
         if blast.failed:
             # TODO: return error object
+            # TODO: Add logging
             print("BLAST FAILED!", file=sys.stderr)
             return
 
@@ -152,13 +161,20 @@ class BioSeqAnn(Model):
                                                     partial_ann=partial_ann)
 
             if annotation.complete_annotation:
+                # TODO: Add options to clean
+                # TODO: change clean to cleanup
+                # TODO: A
+                if self.align:
+                    annotation = self.add_alignment(found[i], annotation)
                 annotation.clean()
                 return annotation
             else:
                 aligned_ann = self.ref_align(found[i], sequence, locus,
                                              annotation=annotation)
                 if aligned_ann.complete_annotation:
-                    aligned_ann.clean()
+                    if self.align:
+                        annotation = self.add_alignment(found[i], annotation)
+                    annotation.clean()
                     return aligned_ann
                 else:
                     if self.verbose:
@@ -216,28 +232,29 @@ class BioSeqAnn(Model):
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
                         for f in an.annotation:
-                            length, lengthsd = 0, 0
-                            length = float(self.refdata.feature_lengths[locus][f][0])
-                            lengthsd = float(self.refdata.feature_lengths[locus][f][1])
+                            if f in annotation.missing:
+                                length, lengthsd = 0, 0
+                                length = float(self.refdata.feature_lengths[locus][f][0])
+                                lengthsd = float(self.refdata.feature_lengths[locus][f][1])
 
-                            # min and max lengths expected
-                            max_length = length + lengthsd + ins
-                            min_length = length - lengthsd - dels
+                                # min and max lengths expected
+                                max_length = length + lengthsd + ins
+                                min_length = length - lengthsd - dels
 
-                            if(len(an.annotation[f]) <= max_length and
-                                    len(an.annotation[f]) >= min_length):
-                                annotation.annotation.update({f:
-                                                              an.annotation[f]
-                                                              })
-                                if an.blocks:
-                                    mbtmp += an.blocks
+                                if(len(an.annotation[f]) <= max_length and
+                                        len(an.annotation[f]) >= min_length):
+                                    annotation.annotation.update({f:
+                                                                  an.annotation[f]
+                                                                  })
+                                    if an.blocks:
+                                        mbtmp += an.blocks
+                                    else:
+                                        if self.verbose:
+                                            print("DELETING: " + f, file=sys.stderr)
+                                        if b in missing_blocks:
+                                            del missing_blocks[missing_blocks.index(b)]
                                 else:
-                                    if self.verbose:
-                                        print("DELETING: " + f, file=sys.stderr)
-                                    if b in missing_blocks:
-                                        del missing_blocks[missing_blocks.index(b)]
-                            else:
-                                mbtmp.append(b)
+                                    mbtmp.append(b)
                     else:
                         mbtmp.append(b)
                     annotation.blocks = mbtmp
@@ -292,8 +309,58 @@ class BioSeqAnn(Model):
             # align a set of sequences
             return
 
-    def _refseqs(self, locus, start_pos, annotation, feat, block):
+    def add_alignment(self, ref_seq, annotation):
+        """
+        ref_aling - method for annotating a Biopython sequence record
+        :param found_seqs: The input sequence record.
+        :type found_seqs: Seq
+        :param sequence: The input sequence record.
+        :type sequence: Seq
+        :param locus: The gene locus associated with the sequence.
+        :type locus: str
+        :param annotation: The incomplete annotation from a previous iteration.
+        :type annotation: Annotation
+        :param partial_ann: The partial annotation after looping through all of the blast sequences.
+        :type partial_ann: Annotation
+        """
+        seq_features = get_seqs(ref_seq)
+        annoated_align = {}
+        allele = ref_seq.description.split(",")[0]
+        locus = allele.split("*")[0].split("-")[1]
+        for feat in seq_features:
+            if feat in annotation.annotation:
+                if isinstance(annotation.annotation[feat], DBSeq):
+                    seq_len = len(str(annotation.annotation[feat]))
+                    ref_len = len(seq_features[feat])
+                else:
+                    seq_len = len(str(annotation.annotation[feat].seq))
+                    ref_len = len(seq_features[feat])
+                if seq_len == ref_len:
+                    seq = list(annotation.annotation[feat].seq)
+                    gaps = self.refdata.annoated_alignments[locus][allele][feat]['Gaps']
+                    for i in range(0, len(gaps)):
+                        for j in gaps[i]:
+                            loc = j
+                            seq.insert(loc, '-')
+                    nseq = ''.join(seq)
+                    annoated_align.update({feat: nseq})
+                else:
+                    in_seq = str(annotation.annotation[feat].seq)
+                    ref_seq = seq_features[feat]
+                    # TODO: add logging
+                    if seq_len == ref_len:
+                        alignment = pairwise2.align.globalxx(ref_seq, in_seq)
+                        annoated_align.update({feat: alignment[0][0]})
+                    else:
+                        alignment = pairwise2.align.globalxx(in_seq, ref_seq)
+                        annoated_align.update({feat: alignment[0][0]})
+            else:
+                nseq = ''.join(list(repeat('-', len(seq_features[feat]))))
+                annoated_align.update({feat: nseq})
+        annotation.aligned = annoated_align
+        return annotation
 
+    def _refseqs(self, locus, start_pos, annotation, feat, block):
         # refseqs = _refseqs(locus, start, annotation,
         #                          sequence.seq, feat,
         #                           b)

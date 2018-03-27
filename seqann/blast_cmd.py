@@ -33,7 +33,14 @@ from seqann.models.reference_data import ReferenceData
 
 
 def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
+    """
+    Gets the locus of the sequence by running blastn
 
+    :param sequences: sequenences to blast
+    :param kir: bool whether the sequences are KIR or not
+
+    :return: GFEobject.
+    """
     if not refdata:
         refdata = ReferenceData()
 
@@ -83,7 +90,6 @@ def blastn(sequences, locus, nseqs, kir=False,
                                          evalue=evalue, outfmt=5,
                                          out=output_xml)
     stdout, stderr = blastn_cline()
-
     loc = locus
     if not kir:
         loc = locus.split("-")[1]
@@ -92,16 +98,19 @@ def blastn(sequences, locus, nseqs, kir=False,
     #   Delete files
     cleanup(file_id)
 
+    # TODO: Use logging
     if len(blast_qresult.hits) == 0:
+        print("Failed here...")
         return Blast(failed=True)
 
     alleles = []
     full_sequences = []
     l = len(blast_qresult.hits) if nseqs > len(blast_qresult.hits) else nseqs
 
+    # TODO: update all blast files to have HLA-
     if locus in refdata.hla_loci and not kir:
-        alleles = ["HLA-" + blast_qresult[i].id.split("_")[0] for i in range(0, l)
-                   if "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
+        alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)
+                   if blast_qresult[i].id.split("*")[0] == locus]
 
     if kir:
         alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)

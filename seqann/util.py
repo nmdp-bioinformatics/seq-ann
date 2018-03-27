@@ -49,6 +49,23 @@ def get_seqfeat(seqrecord):
     return(annotation)
 
 
+def get_seqs(seqrecord):
+    fiveutr = [["five_prime_UTR", str(seqrecord.features[i].extract(seqrecord.seq))] for i in range(0, 3) if seqrecord.features[i].type != "source"
+               and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
+               and not seqrecord.features[i].qualifiers]
+    feats = [[str(feat.type + "_" + feat.qualifiers['number'][0]), str(feat.extract(seqrecord.seq))]
+             for feat in seqrecord.features if feat.type != "source"
+             and feat.type != "CDS" and isinstance(feat, SeqFeature)
+             and 'number' in feat.qualifiers]
+    threeutr = [["three_prime_UTR", str(seqrecord.features[i].extract(seqrecord.seq))] for i in range(len(seqrecord.features)-1, len(seqrecord.features)) if seqrecord.features[i].type != "source"
+                and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
+                and not seqrecord.features[i].qualifiers]
+    feat_list = fiveutr + feats + threeutr
+    annotation = {k[0]: str(k[1]) for k in feat_list}
+    #print(annotation)
+    return(annotation)
+
+
 # TODO: change name to get_featseq
 def get_features(seqrecord):
     # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
