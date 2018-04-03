@@ -41,6 +41,8 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
 
     :return: GFEobject.
     """
+    # TODO: DO ALL ON COMMAND LINE
+    #       and use pipes so no files are created
     if not refdata:
         refdata = ReferenceData()
 

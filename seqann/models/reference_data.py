@@ -32,6 +32,9 @@ import urllib.request
 from typing import List, Dict
 from datetime import date, datetime
 
+from seqann.util import get_structures
+from seqann.util import get_structorder
+
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC
 from BioSQL import BioSeqDatabase
@@ -179,45 +182,19 @@ class ReferenceData(Model):
 
         self._feature_lengths = feature_lengths
         self._hla_names = hla_names
-        struture_files = glob.glob(data_dir + '/../data/*.structure')
-        structures = {}
-        struct_order = {}
-        structure_max = {}
 
-        # *** TODO: ADD DQA1
-        for inputfile in struture_files:
-            file_path = inputfile.split("/")
-            locus = file_path[len(file_path)-1].split(".")[0]
-            # TODO: add try
-            with open(inputfile, 'r') as f:
-                features_order = {}
-                features = {}
-                n = 0
-                for line in f:
-                    line = line.rstrip()
-                    [feature, rank] = line.split("\t")
-                    feature_name = "_".join([feature, rank])
-                    if feature == "three_prime_UTR" or feature == "five_prime_UTR":
-                        feature_name = feature
-                    n += 1
-                    features.update({feature_name: n})
-                    features_order.update({n: feature_name})
-                    if is_kir(locus):
-                        structures.update({locus: features})
-                        struct_order.update({locus: features_order})
-                    else:
-                        structures.update({"HLA-" + locus: features})
-                        struct_order.update({"HLA-" + locus: features_order})
-                if is_kir(locus):
-                    structure_max.update({locus: n})
-                else:
-                    structure_max.update({"HLA-" + locus: n})
-            f.close()
-        self._structures = structures
-        self._struct_order = struct_order
-        self._structure_max = structure_max
         self._blastdb = blastdb
         self._hla_loci = hla_loci
+        self._structures = get_structures()
+        self._struct_order = get_structorder()
+        self._structure_max = {'KIR2DP1': 20, 'KIR2DL5A': 20, 'KIR2DS4': 20,
+                               'HLA-DPB1': 11, 'KIR2DS2': 20, 'KIR3DP1': 20,
+                               'HLA-DRB4': 13, 'KIR2DL1': 20, 'KIR2DS5': 20,
+                               'HLA-DRB3': 13, 'KIR2DS3': 20, 'KIR3DL1': 20,
+                               'HLA-A': 17, 'HLA-DRB5': 13, 'KIR2DL4': 20,
+                               'HLA-DQB1': 13, 'KIR3DL2': 20, 'HLA-B': 15,
+                               'KIR3DS1': 20, 'KIR2DL5B': 20, 'HLA-DRB1': 13,
+                               'KIR3DL3': 20, 'KIR2DS1': 20, 'HLA-C': 17}
 
         self.location = {"HLA-A": -300, "HLA-B": -284, "HLA-C": -283,
                          "HLA-DRB1": -599, "HLA-DRB3": -327, "HLA-DRB4": -313,
@@ -248,12 +225,9 @@ class ReferenceData(Model):
                         feat = self.struct_order["HLA-" + locus][i]
                         seq = self.annoated_alignments[locus][allele][feat]['Seq']
                         end = start + len(seq)
-                        #print(i, locus, feat, start, end)
                         for j in range(start, end):
                             self.align_coordinates[locus].update({j: feat})
                         start = end
-                    # print("LOCUS ", locus)
-                    # print(set(align_coordinates[locus].values()))
 
         # TODO: ADD DB VERSION!
         # TODO: Be able to load KIR and HLA
@@ -542,7 +516,8 @@ class ReferenceData(Model):
             # TODO: add try statement
             # TODO: take password from environment variable
             conn = pymysql.connect(host=biosqlhost, port=biosqlport,
-                                   user=biosqluser, passwd=biosqlpass, db=biosqldb)
+                                   user=biosqluser, passwd=biosqlpass,
+                                   db=biosqldb)
             cur = conn.cursor()
             cur.execute(select_stm)
 
