@@ -31,6 +31,13 @@ from seqann.util import randomid
 from seqann.models.blast import Blast
 from seqann.models.reference_data import ReferenceData
 import logging
+import re
+
+has_hla = lambda x: True if re.search("HLA", x) else False
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
 
 
 def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
@@ -115,22 +122,29 @@ def blastn(sequences, locus, nseqs, kir=False,
     # TODO: update all blast files to have HLA-
     if locus in refdata.hla_loci and not kir:
         alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)
-                   if blast_qresult[i].id.split("*")[0] == locus]
-
+                   if blast_qresult[i].id.split("*")[0] == locus or "HLA-" + blast_qresult[i].id.split("*")[0] == locus]
+        alleles = ["HLA-" + a if not has_hla(a) else a for a in alleles]
     if kir:
         alleles = [blast_qresult[i].id.split("_")[0] for i in range(0, l)
                    if blast_qresult[i].id.split("*")[0] == locus]
 
     if verbose:
-        logger.info("Blast alleles: ", ",".join(alleles))
+        logger.info("Blast results: " + ",".join([b.id for b in blast_qresult[0:nseqs]]))
+        logger.info("Blast alleles: " + ",".join(alleles))
 
     # TODO: sort alleles by number of features they contain and evalue
     # Use biosql db if provided
     # otherwise use IMGT dat file
     if refdata.server_avail:
         db = refdata.server[refdata.dbversion + "_" + loc]
-        full_sequences = [db.lookup(name=n) for n in alleles
-                          if n in refdata.hla_names]
+        full_sequences = []
+        for n in alleles:
+            if n in refdata.hla_names:
+                try:
+                    seq = db.lookup(name=n)
+                    full_sequences.append(seq)
+                except:
+                    logger.error("Allele doesnt exist in IMGT BioSQL DB!! " + n)
     else:
         full_sequences = [a for a in refdata.imgtdat
                           if a.description.split(",")[0] in alleles]

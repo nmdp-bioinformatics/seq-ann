@@ -43,6 +43,10 @@ from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
 import logging
 
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
+
 
 def align_seqs(found_seqs, sequence, locus, verbose=False):
     """
@@ -244,7 +248,7 @@ def count_diffs(align, feats, inseq, verbose):
         logger.info("Alignment coverage high enough to complete annotation")
         return Annotation(complete_annotation=False)
     else:
-        logger.warn("Alignment coverage NOT high enough to complete annotation")
+        logger.warning("Alignment coverage NOT high enough to complete annotation")
         return insr, dels
 
 
