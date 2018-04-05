@@ -30,6 +30,7 @@ from seqann.util import cleanup
 from seqann.util import randomid
 from seqann.models.blast import Blast
 from seqann.models.reference_data import ReferenceData
+import logging
 
 
 def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
@@ -80,6 +81,8 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
 def blastn(sequences, locus, nseqs, kir=False,
            verbose=False, refdata=None, evalue=0.001):
 
+    logger = logging.getLogger("Logger." + __name__)
+
     if not refdata:
         refdata = ReferenceData()
 
@@ -102,7 +105,7 @@ def blastn(sequences, locus, nseqs, kir=False,
 
     # TODO: Use logging
     if len(blast_qresult.hits) == 0:
-        print("Failed here...")
+        logger.error("Failed blast! No hits!")
         return Blast(failed=True)
 
     alleles = []
@@ -119,7 +122,7 @@ def blastn(sequences, locus, nseqs, kir=False,
                    if blast_qresult[i].id.split("*")[0] == locus]
 
     if verbose:
-        print("Blast Alleles: ", alleles)
+        logger.info("Blast alleles: ", ",".join(alleles))
 
     # TODO: sort alleles by number of features they contain and evalue
     # Use biosql db if provided

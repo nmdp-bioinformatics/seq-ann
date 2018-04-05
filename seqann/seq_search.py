@@ -38,6 +38,8 @@ from seqann.models.base_model_ import Model
 from seqann.util import deserialize_model
 from seqann.util import get_features
 
+import logging
+
 
 # TODO: Add to util.py
 def getblocks(coords):
@@ -86,6 +88,7 @@ class SeqSearch(Model):
 
         self._refdata = refdata
         self._verbose = verbose
+        self.logger = logging.getLogger("Logger." + __name__)
 
     @classmethod
     def from_dict(cls, dikt) -> 'SeqSearch':
@@ -127,7 +130,10 @@ class SeqSearch(Model):
         # what has already been annotated
         if partial_ann:
             if self.verbose:
-                print("seqsearch -> partial annotation", file=sys.stderr)
+                self.logger.info("SeqSearch using partial annotation | "
+                                 + locus + " "
+                                 + str(len(partial_ann.features)))
+
             found_feats = partial_ann.features
             coordinates = dict(map(lambda l: [l, 1],
                                    [item for sublist
@@ -171,8 +177,9 @@ class SeqSearch(Model):
                         del coordinates[i]
                     else:
                         if self.verbose:
-                            print("seqsearch - shouldnt be here!!",
-                                  file=sys.stderr)
+                            self.logger.error("seqsearch - shouldnt be here! "
+                                              + locus + " - "
+                                              + self.refdata.dbversion)
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
                 feat_missing.update({feat_name: feats[feat_name]})
@@ -390,7 +397,7 @@ class SeqSearch(Model):
         # at the exons, then try again and look at all features
         if exon_only and not rerun and missing_blocks:
             if self.verbose:
-                print("RERUNNING seqsearch", file=sys.stderr)
+                self.logger.info("Rerunning seqsearch to look at all features")
             return self._resolve_unmapped(missing_blocks, feat_missing,
                                           ambig_map,
                                           mapping, found_feats,
