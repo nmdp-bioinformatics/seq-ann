@@ -48,10 +48,17 @@ from seqann.util import get_seqs
 
 from itertools import repeat
 
+import logging
 
 isexon = lambda f: True if re.search("exon", f) else False
 isutr = lambda f: True if re.search("UTR", f) else False
 isfive = lambda f: True if re.search("five", f) else False
+
+is_classII = lambda x: True if re.search("HLA-D", x) else False
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
 
 
 class BioSeqAnn(Model):
@@ -62,7 +69,7 @@ class BioSeqAnn(Model):
     '''
     def __init__(self, server=None, dbversion='3310', datfile='',
                  rerun=False, rerun_n=3, verbose=False,
-                 kir=False, align=False):
+                 pid='NA', kir=False, align=False):
         self.align = align
         self.kir = kir
         self.server = server
@@ -74,8 +81,10 @@ class BioSeqAnn(Model):
                                      alignments=align,
                                      kir=kir)
         self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
+        self.logger = logging.getLogger("Logger." + __name__)
+        self.logname = "ID {:<10} -".format(str(pid))
 
-    def annotate(self, sequence, locus=None, nseqs=8):
+    def annotate(self, sequence, locus=None, nseqs=40):
         """
         annotate - method for annotating a Biopython sequence record
         :param sequence: The input sequence record.
@@ -134,56 +143,85 @@ class BioSeqAnn(Model):
         """
         # TODO: use logging
         if not locus:
-            print("No locus provided", file=sys.stderr)
+            self.logger.info(self.logname + " No locus provided! ")
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
-            print("Locus -> ", locus, file=sys.stderr)
+            self.logger.info(self.logname + " Locus prediction = " + locus)
             if not locus:
-                print("Locus could not be assigned!", file=sys.stderr)
+                self.logger.error(self.logname + " Locus count not be determined!")
                 return ''
 
         # Exact match found
         matched_annotation = self.refdata.search_refdata(sequence, locus)
         if matched_annotation:
+            if self.verbose:
+                self.logger.info(self.logname + " exact match found")
             return matched_annotation
 
-        blast = blastn(sequence, locus, nseqs, kir=self.kir, refdata=self.refdata)
+        blast = blastn(sequence, locus, nseqs,
+                       kir=self.kir, verbose=self.verbose,
+                       refdata=self.refdata)
+
         if blast.failed:
             # TODO: return error object
             # TODO: Add logging
-            print("BLAST FAILED!", file=sys.stderr)
-            return
+            self.logger.error(self.logname + " blastn failed! " + locus + " " + str(sequence.seq))
+            self.logger.error(self.logname + " loci invalid " + locus + " " + str(sequence.seq))
+            locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
+            self.logger.info(self.logname + " Locus prediction = " + locus)
+            if not locus:
+                self.logger.error(self.logname + " Locus couldn't be determined not be determined!")
+                return
+            return self.annotate(sequence, locus)
 
+        # Do seq_search first on all blast sequences
         partial_ann = None
         found = blast.match_seqs
         for i in range(0, len(found)):
+            if self.verbose:
+                self.logger.info(self.logname + " running seq_search with " + found[i].name)
             annotation = self.seqsearch.search_seqs(found[i],
                                                     sequence, locus,
                                                     partial_ann=partial_ann)
-
             if annotation.complete_annotation:
                 # TODO: Add options to clean
                 # TODO: change clean to cleanup
-                # TODO: A
                 if self.align:
+                    if self.verbose:
+                        self.logger.info(self.logname + " Adding alignment")
                     annotation = self.add_alignment(found[i], annotation)
                 annotation.clean()
                 return annotation
             else:
-                aligned_ann = self.ref_align(found[i], sequence, locus,
-                                             annotation=annotation)
-                if aligned_ann.complete_annotation:
-                    if self.align:
-                        annotation = self.add_alignment(found[i], annotation)
-                    annotation.clean()
-                    return aligned_ann
-                else:
+                partial_ann = annotation
+                if self.verbose:
+                    self.logger.info(self.logname + " Using partial annotation * run " + str(i) + " *")
+                    self.logger.info(self.logname + " Features found = " + ",".join(list(annotation.features.keys())))
+                    self.logger.info(self.logname + " Sequence unmapped = " + str(annotation.covered))
+
+        # Now loop through doing alignment
+        #for i in range(0, 2):
+        if not is_classII(locus):
+            annotation = self.seqsearch.search_seqs(found[0],
+                                                    sequence, locus,
+                                                    partial_ann=partial_ann)
+            aligned_ann = self.ref_align(found[0], sequence, locus,
+                                         annotation=annotation)
+            if aligned_ann.complete_annotation:
+                if self.align:
                     if self.verbose:
-                        print("Using partial annotation", file=sys.stderr)
-                    partial_ann = aligned_ann
+                        self.logger.info(self.logname + " Adding alignment")
+                    annotation = self.add_alignment(found[0], annotation)
+                annotation.clean()
+                return aligned_ann
+            else:
+                if self.verbose:
+                    self.logger.info(self.logname + " Using partial annotation for alignment * run " + str(0) + " *")
+                partial_ann = aligned_ann
 
         # TODO: make guess with full alignment
         # return self.ref_align(found, sequence, locus,
         #                       partial_ann=partial_ann)
+        self.logger.error(self.logname + " No annotation produced!")
         return ''
 
     def ref_align(self, found_seqs, sequence, locus,
@@ -238,8 +276,8 @@ class BioSeqAnn(Model):
                                 lengthsd = float(self.refdata.feature_lengths[locus][f][1])
 
                                 # min and max lengths expected
-                                max_length = length + lengthsd + ins
-                                min_length = length - lengthsd - dels
+                                max_length = length + (lengthsd*3) + ins
+                                min_length = length - (lengthsd*3) - dels
 
                                 if(len(an.annotation[f]) <= max_length and
                                         len(an.annotation[f]) >= min_length):
@@ -250,7 +288,7 @@ class BioSeqAnn(Model):
                                         mbtmp += an.blocks
                                     else:
                                         if self.verbose:
-                                            print("DELETING: " + f, file=sys.stderr)
+                                            self.logger.info(self.logname + " Mapped " + f + " with clustalo")
                                         if b in missing_blocks:
                                             del missing_blocks[missing_blocks.index(b)]
                                 else:
@@ -267,7 +305,7 @@ class BioSeqAnn(Model):
                     mapped_exons = list(exonan.annotation.keys())
                     if len(mapped_exons) >= 1:
                         if self.verbose:
-                            print("MAPPED EXONS", file=sys.stderr)
+                            self.logger.info(self.logname + " Mapped exons with clustalo")
                         for f in exonan.annotation:
                             annotation.annotation.update({f: exonan.annotation[f]})
                         del missing_blocks[missing_blocks.index(b)]
@@ -293,18 +331,17 @@ class BioSeqAnn(Model):
                         annotation.check_annotation()
                         if annotation.complete_annotation:
                             if self.verbose:
-                                print("MAPPED ALL", file=sys.stderr)
+                                self.logger.info(self.logname + " Mapped all features with clustalo")
                             return annotation
-
             return annotation
         elif partial_ann:
-            print("HERE partial")
+            self.logger.error(self.logname + " Partial alignment! SHOULDNT BE HERE!!")
             # Do full sequence alignments
             # any only extract out the part
             # that couldn't be explained from above
             return
         else:
-            print("HERE partial2")
+            self.logger.error(self.logname + " Full alignment! SHOULDNT BE HERE!!")
             # Option for user that just want to
             # align a set of sequences
             return

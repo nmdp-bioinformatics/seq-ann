@@ -38,6 +38,14 @@ from seqann.models.base_model_ import Model
 from seqann.util import deserialize_model
 from seqann.util import get_features
 
+import logging
+
+is_classII = lambda x: True if re.search("HLA-D", x) else False
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
+
 
 # TODO: Add to util.py
 def getblocks(coords):
@@ -86,6 +94,7 @@ class SeqSearch(Model):
 
         self._refdata = refdata
         self._verbose = verbose
+        self.logger = logging.getLogger("Logger." + __name__)
 
     @classmethod
     def from_dict(cls, dikt) -> 'SeqSearch':
@@ -122,12 +131,17 @@ class SeqSearch(Model):
         found_feats = {}
         feat_missing = {}
 
+        method = "nt_search" if not partial_ann else partial_ann.method
+
         # If the partial annotation is provided
         # then make the found_feats equal to
         # what has already been annotated
         if partial_ann:
             if self.verbose:
-                print("seqsearch -> partial annotation", file=sys.stderr)
+                self.logger.info("SeqSearch using partial annotation | "
+                                 + locus + " "
+                                 + str(len(partial_ann.features)))
+
             found_feats = partial_ann.features
             coordinates = dict(map(lambda l: [l, 1],
                                    [item for sublist
@@ -171,8 +185,9 @@ class SeqSearch(Model):
                         del coordinates[i]
                     else:
                         if self.verbose:
-                            print("seqsearch - shouldnt be here!!",
-                                  file=sys.stderr)
+                            self.logger.error("seqsearch - shouldnt be here! "
+                                              + locus + " - "
+                                              + self.refdata.dbversion)
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
                 feat_missing.update({feat_name: feats[feat_name]})
@@ -181,8 +196,49 @@ class SeqSearch(Model):
                 feat_missing.update({feat_name: feats[feat_name]})
 
         blocks = getblocks(coordinates)
-
         exact_matches = list(found_feats.keys())
+        if 'exon_2' in exact_matches and len(blocks) == 2 \
+                and is_classII(locus):
+            r = True
+            for b in blocks:
+                x = b[len(b)-1]
+                if x == max(list(mapping.keys())):
+                    x = b[0]-1
+                else:
+                    x += 1
+                f = mapping[x]
+                if f != 'exon_2':
+                    r = False
+            if r:
+                for b in blocks:
+                    x = b[len(b)-1]
+                    if x == max(list(mapping.keys())):
+                        featname = "intron_2"
+                        found_feats.update({featname:
+                                            SeqFeature(
+                                                FeatureLocation(
+                                                    ExactPosition(b[0]-1),
+                                                    ExactPosition(b[len(b)-1]),
+                                                    strand=1),
+                                                type=featname)})
+                    else:
+                        featname = "intron_1"
+                        found_feats.update({featname:
+                                            SeqFeature(
+                                                FeatureLocation(
+                                                    ExactPosition(b[0]),
+                                                    ExactPosition(b[len(b)-1]),
+                                                    strand=1),
+                                                type=featname)})
+                    seq_covered -= len(b)
+                return Annotation(features=found_feats,
+                                  covered=seq_covered,
+                                  seq=in_seq,
+                                  missing=feat_missing,
+                                  ambig=ambig_map,
+                                  method=method,
+                                  mapping=mapping,
+                                  exact_match=exact_matches)
 
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
@@ -191,15 +247,6 @@ class SeqSearch(Model):
                                                      ambig_map, mapping,
                                                      found_feats, locus)
 
-        # if self.verbose:
-        #     print("Found features: ",
-        #           list(annotated_feats.keys()),
-        #           file=sys.stderr)
-        #     print("Missing features: ",
-        #           list(feat_missing.keys()),
-        #           file=sys.stderr)
-
-        method = "nt_search" if not partial_ann else partial_ann.method
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
@@ -390,7 +437,7 @@ class SeqSearch(Model):
         # at the exons, then try again and look at all features
         if exon_only and not rerun and missing_blocks:
             if self.verbose:
-                print("RERUNNING seqsearch", file=sys.stderr)
+                self.logger.info("Rerunning seqsearch to look at all features")
             return self._resolve_unmapped(missing_blocks, feat_missing,
                                           ambig_map,
                                           mapping, found_feats,

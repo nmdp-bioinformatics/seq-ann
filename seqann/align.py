@@ -41,6 +41,11 @@ from seqann.util import randomid
 from seqann.util import get_seqfeat
 from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
 
 
 def align_seqs(found_seqs, sequence, locus, verbose=False):
@@ -151,7 +156,8 @@ def resolve_feats(feat_list, seq, verbose):
     # TODO: use loggin
     if len(feat_list) > 1:
         if verbose:
-            print("****** resolve_feats error ******", file=sys.stderr)
+            logger = logging.getLogger("Logger." + __name__)
+            logger.error("resolve_feats error")
         for i in range(0, len(feat_list)):
             for j in range(0, len(feat_list)):
                 if i != j:
@@ -225,21 +231,24 @@ def count_diffs(align, feats, inseq, verbose):
     mper = match / l
     mper2 = match / len(inseq)
 
+    logger = logging.getLogger("Logger." + __name__)
+
     # TODO: use logging
     if verbose:
-        print(list(feats.keys()), file=sys.stderr)
-        print('{:<22}{:<6d}'.format("Number of feats: ", nfeats), file=sys.stderr)
-        print('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper), file=sys.stderr)
-        print('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper), file=sys.stderr)
-        print('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper), file=sys.stderr)
-        print('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper), file=sys.stderr)
-        print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper), file=sys.stderr)
-        print('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2), file=sys.stderr)
-        print("----", file=sys.stderr)
+        logger.info("Features algined = " + ",".join(list(feats.keys())))
+        logger.info('{:<22}{:<6d}'.format("Number of feats: ", nfeats))
+        logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper))
+        logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of deletions: ", dels, delper))
+        logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of insertions: ", insr, iper))
+        logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of mismatches: ", mm, mmper))
+        logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper))
+        logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
     if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
+        logger.info("Alignment coverage high enough to complete annotation")
         return Annotation(complete_annotation=False)
     else:
+        logger.warning("Alignment coverage NOT high enough to complete annotation")
         return insr, dels
 
 
