@@ -68,12 +68,6 @@ def get_seqs(seqrecord):
 
 # TODO: change name to get_featseq
 def get_features(seqrecord):
-    # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    # print("get_features")
-    # print(seqrecord)
-    # print(seqrecord.features)
-    # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    # TODO: Make sure UTR's have type of UTR
     fiveutr = [["five_prime_UTR", seqrecord.features[i].extract(seqrecord.seq)] for i in range(0, 3) if seqrecord.features[i].type != "source"
                and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
                and not seqrecord.features[i].qualifiers]
@@ -87,11 +81,10 @@ def get_features(seqrecord):
 
     feat_list = fiveutr + feats + threeutr
     annotation = {k[0]: k[1] for k in feat_list}
-    #print(annotation)
     return(annotation)
 
 
-def randomid(N=6):
+def randomid(N=12):
     random_id = ''.join(r.choices(string.ascii_uppercase + string.digits,
                                   k=N))
     fastafile = str(random_id) + ".fasta"

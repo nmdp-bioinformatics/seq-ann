@@ -66,9 +66,9 @@ biosqldb = "bioseqdb"
 if os.getenv("BIOSQLDB"):
     biosqldb = os.getenv("BIOSQLDB")
 
-biosqlport = 3306
+biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
-    biosqlport = os.getenv("BIOSQLPORT")
+    biosqlport = int(os.getenv("BIOSQLPORT"))
 
 
 def download_dat(url, dat):
@@ -122,7 +122,6 @@ class ReferenceData(Model):
             'server_avail': 'server_avail',
             'kir': 'kir',
             'imgtdat': 'imgtdat',
-            'alignments': 'alignments',
             'alignments': 'alignments',
             'verbose': 'verbose'
         }
@@ -206,7 +205,6 @@ class ReferenceData(Model):
         if alignments:
             # TODO: Use logging
             pickle_dir = data_dir + '/../data/alignments/' + dbversion
-            print("Loading alignment " + dbversion)
             pickle_files = glob.glob(pickle_dir + '/*.pickle')
             for pickle_file in pickle_files:
                 locus = pickle_file.split("/")[len(pickle_file.split("/"))-1].split(".")[0].split("_")[0]
@@ -215,16 +213,16 @@ class ReferenceData(Model):
                                                      pickle.load(handle)})
                 #print("Finished loading " + locus)
                 allele = list(self.annoated_alignments[locus].keys())[0]
-                #print(self.annoated_alignments[locus][allele].keys())
                 if not locus in self.align_coordinates and "HLA-" + locus in self.struct_order:
+                    start = 0
                     feat_order = list(self.struct_order["HLA-" + locus].keys())
                     feat_order.sort()
-                    start = 0
                     self.align_coordinates.update({locus: {}})
                     for i in feat_order:
                         feat = self.struct_order["HLA-" + locus][i]
                         seq = self.annoated_alignments[locus][allele][feat]['Seq']
                         end = start + len(seq)
+                        # WHERE IS THIS USED??
                         for j in range(start, end):
                             self.align_coordinates[locus].update({j: feat})
                         start = end
@@ -478,8 +476,8 @@ class ReferenceData(Model):
             p1 = "SELECT ent.name "
             p2 = "FROM bioentry ent,biosequence seq,biodatabase dbb "
             p3 = "WHERE dbb.biodatabase_id = ent.biodatabase_id AND seq.bioentry_id = ent.bioentry_id "
-            p4 = "AND dbb.name = \"" + self.dbversion + "_" + loc + "\""
-            p5 = "AND seq.seq = \"" + str(seq.seq) + "\""
+            p4 = " AND dbb.name = \"" + self.dbversion + "_" + loc + "\""
+            p5 = " AND seq.seq = \"" + str(seq.seq) + "\""
             select_stm = p1 + p2 + p3 + p4 + p5
 
             # TODO: add try statement
@@ -549,18 +547,25 @@ class ReferenceData(Model):
         seqrecord = db.lookup(name=allele)
         return seqrecord
 
-    def seqannotation(self, seq, allele, locus):
+    def seqannotation(self, seq, allele, loc):
         """
         Gets the Annotation from the found sequence
 
         :return: The Annotation from the found sequence
         :rtype: Annotation
         """
-        seqrecord = self.seqrecord(allele, locus)
+
+        seqrecord = self.seqrecord(allele, loc)
         complete_annotation = get_features(seqrecord)
         annotation = Annotation(annotation=complete_annotation,
                                 method='match',
                                 complete_annotation=True)
+
+        if self.alignments:
+            alignment = {f: self.annoated_alignments[loc][allele][f]['Seq']
+                         for f in self.annoated_alignments[loc][allele].keys()}
+            annotation.aligned = alignment
+
         return annotation
 
 

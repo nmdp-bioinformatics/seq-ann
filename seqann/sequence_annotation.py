@@ -68,7 +68,7 @@ class BioSeqAnn(Model):
     annotations = [an.annotate(rec, loc) for rec in list(SeqIO.read(file,'fasta'))]
     '''
     def __init__(self, server=None, dbversion='3310', datfile='',
-                 rerun=False, rerun_n=3, verbose=False,
+                 rerun=False, rerun_n=3, verbose=False, verbosity=0,
                  pid='NA', kir=False, align=False):
         self.align = align
         self.kir = kir
@@ -76,6 +76,7 @@ class BioSeqAnn(Model):
         self.rerun = rerun
         self.rerun_n = rerun_n
         self.verbose = verbose
+        self.verbosity = verbosity
         self.refdata = ReferenceData(server=server,
                                      dbversion=dbversion,
                                      alignments=align,
@@ -84,7 +85,7 @@ class BioSeqAnn(Model):
         self.logger = logging.getLogger("Logger." + __name__)
         self.logname = "ID {:<10} -".format(str(pid))
 
-    def annotate(self, sequence, locus=None, nseqs=40):
+    def annotate(self, sequence, locus=None, nseqs=10):
         """
         annotate - method for annotating a Biopython sequence record
         :param sequence: The input sequence record.
@@ -185,10 +186,15 @@ class BioSeqAnn(Model):
             if annotation.complete_annotation:
                 # TODO: Add options to clean
                 # TODO: change clean to cleanup
+                if self.verbose:
+                    self.logger.info(self.logname + " Finished annotation with " + found[i].name)
+                
+                # Add alignment is specified
                 if self.align:
                     if self.verbose:
                         self.logger.info(self.logname + " Adding alignment")
                     annotation = self.add_alignment(found[i], annotation)
+
                 annotation.clean()
                 return annotation
             else:
@@ -200,22 +206,23 @@ class BioSeqAnn(Model):
 
         # Now loop through doing alignment
         #for i in range(0, 2):
-        if not is_classII(locus):
-            annotation = self.seqsearch.search_seqs(found[0],
+        #if not is_classII(locus):
+        for i in range(0, 2):
+            annotation = self.seqsearch.search_seqs(found[i],
                                                     sequence, locus,
                                                     partial_ann=partial_ann)
-            aligned_ann = self.ref_align(found[0], sequence, locus,
+            aligned_ann = self.ref_align(found[i], sequence, locus,
                                          annotation=annotation)
             if aligned_ann.complete_annotation:
                 if self.align:
                     if self.verbose:
                         self.logger.info(self.logname + " Adding alignment")
-                    annotation = self.add_alignment(found[0], annotation)
+                    annotation = self.add_alignment(found[i], annotation)
                 annotation.clean()
                 return aligned_ann
             else:
                 if self.verbose:
-                    self.logger.info(self.logname + " Using partial annotation for alignment * run " + str(0) + " *")
+                    self.logger.info(self.logname + " Using partial annotation for alignment * run " + str(i) + " *")
                 partial_ann = aligned_ann
 
         # TODO: make guess with full alignment
@@ -375,6 +382,10 @@ class BioSeqAnn(Model):
                 if seq_len == ref_len:
                     seq = list(annotation.annotation[feat].seq)
                     gaps = self.refdata.annoated_alignments[locus][allele][feat]['Gaps']
+                    if self.verbose and self.verbosity > 0:
+                        self.logger.info(self.logname + " Gaps at " + feat)
+                        self.logger.info(self.logname +
+                            "-".join([",".join([str(s) for s in g]) for g in gaps]))
                     for i in range(0, len(gaps)):
                         for j in gaps[i]:
                             loc = j
@@ -383,14 +394,21 @@ class BioSeqAnn(Model):
                     annoated_align.update({feat: nseq})
                 else:
                     in_seq = str(annotation.annotation[feat].seq)
-                    ref_seq = seq_features[feat]
+                    ref_seq = self.refdata.annoated_alignments[locus][allele][feat]['Seq']
                     # TODO: add logging
-                    if seq_len == ref_len:
-                        alignment = pairwise2.align.globalxx(ref_seq, in_seq)
-                        annoated_align.update({feat: alignment[0][0]})
-                    else:
-                        alignment = pairwise2.align.globalxx(in_seq, ref_seq)
-                        annoated_align.update({feat: alignment[0][0]})
+                    # if in_seq == ref_len:
+                    #     alignment = pairwise2.align.globalxx(self.refdata.annoated_alignments[locus][allele][feat]['Seq'], in_seq)
+                    #     if self.verbose and self.verbosity > 0:
+                    #         self.logger.info(self.logname + " Align1 -> in_seq == ref_len " + feat)
+                    #         self.logger.info(self.logname + " " + str(len(in_seq)) + "==" + str(ref_len))
+                    #         self.logger.info(alignment)
+                    #     annoated_align.update({feat: alignment[0][0]})
+                    # else:
+                    alignment = pairwise2.align.globalxx(in_seq, ref_seq)
+                    if self.verbose and self.verbosity > 0:
+                        self.logger.info(self.logname + " Align2 -> in_seq != ref_len " + feat)
+                        self.logger.info(self.logname + " " + str(len(in_seq)) + " == " + str(ref_len))
+                    annoated_align.update({feat: alignment[0][0]})
             else:
                 nseq = ''.join(list(repeat('-', len(seq_features[feat]))))
                 annoated_align.update({feat: nseq})
