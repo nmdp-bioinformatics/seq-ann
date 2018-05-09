@@ -45,11 +45,45 @@ from seqann.models.annotation import Annotation
 from seqann.models.reference_data import ReferenceData
 
 
+neo4jpass = 'gfedb'
+if os.getenv("NEO4JPASS"):
+    neo4jpass = os.getenv("NEO4JPASS")
+
+neo4juser = 'neo4j'
+if os.getenv("NEO4JUSER"):
+    neo4juser = os.getenv("NEO4JUSER")
+
+neo4jurl = "http://neo4j.b12x.org:80"
+if os.getenv("NEO4JURL"):
+    neo4jurl = os.getenv("NEO4JURL")
+
+biosqlpass = "my-secret-pw"
+if os.getenv("BIOSQLPASS"):
+    biosqlpass = os.getenv("BIOSQLPASS")
+
+biosqluser = 'root'
+if os.getenv("BIOSQLUSER"):
+    biosqluser = os.getenv("BIOSQLUSER")
+
+biosqlhost = "localhost"
+if os.getenv("BIOSQLHOST"):
+    biosqlhost = os.getenv("BIOSQLHOST")
+
+biosqldb = "bioseqdb"
+if os.getenv("BIOSQLDB"):
+    biosqldb = os.getenv("BIOSQLDB")
+
+biosqlport = 3307
+if os.getenv("BIOSQLPORT"):
+    biosqlport = os.getenv("BIOSQLPORT")
+
+
 def conn():
     try:
-        conn = pymysql.connect(host='localhost',
-                               port=3306, user='root',
-                               passwd='', db='bioseqdb')
+        # print(biosqlpass, biosqluser, biosqlhost, biosqldb, biosqlport, sep="\t")
+        conn = pymysql.connect(host=biosqlhost,
+                               port=biosqlport, user=biosqluser,
+                               passwd=biosqlpass, db=biosqldb)
         conn.close()
         return True
     except Exception as e:
@@ -165,6 +199,46 @@ class TestRefdata(unittest.TestCase):
         server.close()
         pass
 
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
+    def test_006_align(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport
+                                              )
+        refdata = ReferenceData(server=server, dbversion='3310',
+                                alignments=True)
+        #input_seq = self.data_dir + '/align_tests.fasta'
+        for ex in self.expected['align']:
+            #i = int(ex['index'])
+            locus = ex['locus']
+            allele = ex['name']
+            hla, loc = locus.split("-")
+            #in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
+            #print(refdata.annoated_alignments[loc][allele])
+
+            align = "".join([refdata.annoated_alignments[loc][allele][s]['Seq'] for s in refdata.annoated_alignments[loc][allele].keys()])
+            i = 0
+            print(align)
+            for f in refdata.annoated_alignments[loc][allele].keys():
+                print(f)
+                g = refdata.annoated_alignments[loc][allele][f]['Gaps']
+                
+                l = (len(refdata.annoated_alignments[loc][allele][f]['Seq'])) + i
+                print(refdata.annoated_alignments[loc][allele][f]['Seq'])
+                print(g)
+                gapn = [[j+i for j in k] for k in g]
+                print(gapn)
+                print("Pos: ",str(i), " - ", str(l))
+                i = l
+                print("")
+
+            self.assertEqual(str(align),
+                             str(ex['alignment']))
+            #print(refdata.annoated_alignments[loc][allele])
+            #print(list(refdata.annoated_alignments[loc][allele]))
 
 
 

@@ -24,8 +24,15 @@
 
 from __future__ import absolute_import
 
+import os
 import re
 import sys
+
+from Bio.Alphabet import SingleLetterAlphabet
+from Bio.SeqRecord import SeqRecord
+from subprocess import Popen
+from subprocess import PIPE
+from subprocess import STDOUT
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -43,6 +50,8 @@ from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
 import logging
 
+flatten = lambda l: [item for sublist in l for item in sublist]
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
@@ -57,23 +66,28 @@ def align_seqs(found_seqs, sequence, locus, verbose=False):
 
     :return: GFEobject.
     """
-    randid = randomid()
-    input_fasta = str(randid) + ".fasta"
-    output_clu = str(randid) + ".clu"
+    seqs = [found_seqs, sequence]
+    indata = flatten([[">" + str(s.id), str(s.seq)]
+                      for s in seqs])
+    child = Popen(['clustalo',
+                   '--outfmt', 'clu',
+                   '--wrap=50000',
+                   '--auto', '-i', '-'],
+                  stdout=PIPE,
+                  stderr=STDOUT,
+                  stdin=PIPE)
 
-    seqs = []
-    seqs.append(found_seqs)
-    seqs.append(sequence)
-    SeqIO.write(seqs, input_fasta, "fasta")
-    clustalomega_cline = ClustalOmegaCommandline(infile=input_fasta,
-                                                 outfile=output_clu,
-                                                 outfmt='clu', wrap=50000,
-                                                 verbose=True, auto=True)
-    stdout, stderr = clustalomega_cline()
-    align = AlignIO.read(output_clu, "clustal")
+    stdout = child.communicate(input=str.encode("\n".join(indata)))
+    child.wait()
 
-    # Delete files
-    cleanup(randid)
+    lines = bytes.decode(stdout[0]).split("\n")
+    align = []
+    for line in lines:
+        if re.search("\w", line) and not re.search("CLUSTAL", line):
+            alignment = re.findall(r"[\S']+", line)
+            if len(alignment) == 2:
+                align.append(list(alignment[1]))
+    child.terminate()
 
     insers, dels = 0, 0
     all_features = []
@@ -134,7 +148,7 @@ def find_features(feats, sequ):
     return feats
 
 
-def resolve_feats(feat_list, seq, verbose):
+def resolve_feats(feat_list, seqin, verbose):
     """
     Aligns sequences with clustalw
 
@@ -143,9 +157,8 @@ def resolve_feats(feat_list, seq, verbose):
 
     :return: GFEobject.
     """
-
-    # Look at consensus sequence
-    #   gap_consensus
+    logger = logging.getLogger("Logger." + __name__)
+    seq = SeqRecord(seq=Seq("".join(seqin), SingleLetterAlphabet()))
     seq_covered = len(seq.seq)
     coordinates = dict(map(lambda x: [x, 1],
                        [i for i in range(0, len(seq.seq)+1)]))
@@ -156,7 +169,6 @@ def resolve_feats(feat_list, seq, verbose):
     # TODO: use loggin
     if len(feat_list) > 1:
         if verbose:
-            logger = logging.getLogger("Logger." + __name__)
             logger.error("resolve_feats error")
         for i in range(0, len(feat_list)):
             for j in range(0, len(feat_list)):
@@ -245,10 +257,12 @@ def count_diffs(align, feats, inseq, verbose):
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
     if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
-        logger.info("Alignment coverage high enough to complete annotation")
+        if verbose:
+            logger.info("Alignment coverage high enough to complete annotation")
         return Annotation(complete_annotation=False)
     else:
-        logger.warning("Alignment coverage NOT high enough to complete annotation")
+        if verbose:
+            logger.warning("Alignment coverage NOT high enough to complete annotation")
         return insr, dels
 
 

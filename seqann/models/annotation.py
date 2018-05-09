@@ -110,6 +110,8 @@ class Annotation(Model):
                         self._complete_annotation = False
                         missing_blocks.update({feat: missing[feat]})
 
+                if covered > 0 and refmissing:
+                    self._complete_annotation = False
                 full_annotation = {}
                 for feat in features:
                     f = features[feat]

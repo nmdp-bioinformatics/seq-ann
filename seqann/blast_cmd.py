@@ -40,7 +40,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 
-def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
+def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
     """
     Gets the locus of the sequence by running blastn
 
@@ -86,7 +86,7 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=0.001):
 
 
 def blastn(sequences, locus, nseqs, kir=False,
-           verbose=False, refdata=None, evalue=0.001):
+           verbose=False, refdata=None, evalue=10):
 
     logger = logging.getLogger("Logger." + __name__)
 
@@ -99,8 +99,15 @@ def blastn(sequences, locus, nseqs, kir=False,
     SeqIO.write(sequences, input_fasta, "fasta")
     blastn_cline = NcbiblastnCommandline(query=input_fasta,
                                          db=refdata.blastdb,
-                                         evalue=evalue, outfmt=5,
+                                         evalue=evalue,
+                                         outfmt=5,
+                                         reward=1,
+                                         penalty=-3,
+                                         gapopen=5,
+                                         gapextend=2,
+                                         dust='yes',
                                          out=output_xml)
+
     stdout, stderr = blastn_cline()
     loc = locus
     if not kir:
@@ -113,6 +120,7 @@ def blastn(sequences, locus, nseqs, kir=False,
     # TODO: Use logging
     if len(blast_qresult.hits) == 0:
         logger.error("Failed blast! No hits!")
+        logger.error(stderr)
         return Blast(failed=True)
 
     alleles = []
@@ -129,7 +137,6 @@ def blastn(sequences, locus, nseqs, kir=False,
                    if blast_qresult[i].id.split("*")[0] == locus]
 
     if verbose:
-        logger.info("Blast results: " + ",".join([b.id for b in blast_qresult[0:nseqs]]))
         logger.info("Blast alleles: " + ",".join(alleles))
 
     # TODO: sort alleles by number of features they contain and evalue
@@ -146,6 +153,8 @@ def blastn(sequences, locus, nseqs, kir=False,
                 except:
                     logger.error("Allele doesnt exist in IMGT BioSQL DB!! " + n)
     else:
+        if verbose:
+            logger.info("Getting sequences from HLA.dat file")
         full_sequences = [a for a in refdata.imgtdat
                           if a.description.split(",")[0] in alleles]
         full_sequences.reverse()

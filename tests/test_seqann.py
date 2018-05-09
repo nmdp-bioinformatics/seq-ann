@@ -72,7 +72,7 @@ biosqldb = "bioseqdb"
 if os.getenv("BIOSQLDB"):
     biosqldb = os.getenv("BIOSQLDB")
 
-biosqlport = 3306
+biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = os.getenv("BIOSQLPORT")
 
@@ -411,5 +411,44 @@ class TestBioSeqAnn(unittest.TestCase):
         self.assertTrue(annotation.complete_annotation)
         server.close()
         pass
+
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
+    def test_006_align(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+
+        # TODO *** NOT WORKING WITH NO LOCUS           ***
+        # TODO *** FIX 3290 Alignments                 ***
+        # TODO *** GET ALIGNMENTS WORKING WITH DB SEQS ***
+        seqann = BioSeqAnn(verbose=True, server=server, dbversion='3310', align=True)
+        input_seq = self.data_dir + '/align_tests.fasta'
+        n = 3
+        #for ex in self.expected['align']:
+        ex = self.expected['align'][2]
+            #i = int(ex['index'])
+        locus = ex['locus']
+        allele = ex['name']
+        hla, loc = locus.split("-")
+        #in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
+        #print(refdata.annoated_alignments[loc][allele])
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[n]
+        annotation = seqann.annotate(in_seq, "HLA-A")
+        align = "".join([annotation.aligned[s] for s in annotation.aligned])
+        for i in range(0, len(align)-1):
+            if str(i) in ex['diffs']:
+                self.assertEqual(list(align)[i],
+                                 ex['diffs'][str(i)])
+            else:
+                if list(align)[i] != list(ex['alignment'])[i]:
+                    print("FAILED:",allele, i, list(align)[i], list(ex['alignment'])[i])
+                self.assertEqual(list(align)[i],
+                                 list(ex['alignment'])[i])
+        n += 1
+
+
 
 

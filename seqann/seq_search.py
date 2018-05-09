@@ -136,6 +136,7 @@ class SeqSearch(Model):
         # If the partial annotation is provided
         # then make the found_feats equal to
         # what has already been annotated
+        feats = get_features(seqrec)
         if partial_ann:
             if self.verbose:
                 self.logger.info("SeqSearch using partial annotation | "
@@ -150,7 +151,11 @@ class SeqSearch(Model):
             seq_covered = partial_ann.covered
             mapping = partial_ann.mapping
 
-        feats = get_features(seqrec)
+            # Skip references that only have features
+            # that have already been annoated
+            if len([f for f in feats if f in found_feats]) == len(feats):
+                return partial_ann
+
         for feat_name in feats:
 
             # skip if partial annotation is provided
@@ -246,7 +251,6 @@ class SeqSearch(Model):
                                                      feat_missing,
                                                      ambig_map, mapping,
                                                      found_feats, locus)
-
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
@@ -367,7 +371,7 @@ class SeqSearch(Model):
                     start_i = b[0]-1
                     end_i = b[len(b)-1]+1
                     feat_num = self.refdata.structures[loc][featname]
-                    if feat_num+1 <= self.refdata.structure_max[loc] \
+                    if feat_num+add_num <= self.refdata.structure_max[loc] \
                         and feat_num-1 >= 1 \
                             and end_i <= len(mapping) - 1 \
                             and start_i >= 0 \
