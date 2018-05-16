@@ -58,9 +58,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 class BioSeqAnn(Model):
     '''
-    import seqann
-    seqanno = seqann.BioSeqAnn()
-    annotations = [an.annotate(rec, loc) for rec in list(SeqIO.read(file,'fasta'))]
+    from seqann import BioSeqAnn
+    seqanno = BioSeqAnn()
     '''
     def __init__(self, server=None, dbversion='3310', datfile='',
                  rerun=False, rerun_n=3, verbose=False, verbosity=0,
@@ -80,9 +79,10 @@ class BioSeqAnn(Model):
         self.logger = logging.getLogger("Logger." + __name__)
         self.logname = "ID {:<10} -".format(str(pid))
 
-    def annotate(self, sequence, locus=None, nseqs=10):
+    def annotate(self, sequence, locus=None, nseqs=10, alignseqs=10):
         """
         annotate - method for annotating a Biopython sequence record
+        
         :param sequence: The input sequence record.
         :type sequence: Seq
         :param locus: The gene locus associated with the sequence.
@@ -125,9 +125,9 @@ class BioSeqAnn(Model):
 
             >>> from Bio.Seq import Seq
             >>> from Bio.SeqRecord import SeqRecord
-            >>> import seqann
+            >>> from seqann import BioSeqAnn
             >>> seqrec = SeqRecord(seq=Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet()), id='HLA:HLA00630')
-            >>> seqann = seqann.BioSeqAnn()
+            >>> seqann = BioSeqAnn()
             >>> ann = seqann.annotate(seqrec)
             >>> for f in ann.annotation:
             ...    print(f, ann.method, ann.annotation[f], sep="\t")
@@ -137,7 +137,14 @@ class BioSeqAnn(Model):
             exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
 
         """
-        # TODO: use logging
+
+        # The number of sequences being used for alignment
+        # can't be greater than the number of sequences
+        # to be returned from the blast results
+        if alignseqs > nseqs:
+            alignseqs = nseqs
+
+        # Check it the locus exists
         if not locus:
             self.logger.info(self.logname + " No locus provided! ")
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
@@ -157,13 +164,19 @@ class BioSeqAnn(Model):
                        kir=self.kir, verbose=self.verbose,
                        refdata=self.refdata)
 
+        # If the blastn fails..
         if blast.failed:
             # TODO: return error object
-            # TODO: Add logging
             self.logger.error(self.logname + " blastn failed! " + locus + " " + str(sequence.seq))
             self.logger.error(self.logname + " loci invalid " + locus + " " + str(sequence.seq))
+            
+            # Try and determine the locus and rerun. This is
+            # useful for cases when the sequences is associated
+            # with the wrong locus.
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
             self.logger.info(self.logname + " Locus prediction = " + locus)
+            
+            # Check if the locus could be found
             if not locus:
                 self.logger.error(self.logname + " Locus couldn't be determined not be determined!")
                 return
@@ -172,7 +185,7 @@ class BioSeqAnn(Model):
         # Do seq_search first on all blast sequences
         partial_ann = None
         found = blast.match_seqs
-        for i in range(0, len(found)):
+        for i in range(0, nseqs):
             if self.verbose:
                 self.logger.info(self.logname + " running seq_search with " + found[i].name)
             annotation = self.seqsearch.search_seqs(found[i],
@@ -202,7 +215,7 @@ class BioSeqAnn(Model):
         # Now loop through doing alignment
         #for i in range(0, 2):
         #if not is_classII(locus):
-        for i in range(0, 2):
+        for i in range(0, alignseqs):
             annotation = self.seqsearch.search_seqs(found[i],
                                                     sequence, locus,
                                                     partial_ann=partial_ann)
@@ -229,7 +242,7 @@ class BioSeqAnn(Model):
     def ref_align(self, found_seqs, sequence, locus,
                   annotation=None, partial_ann=None):
         """
-        ref_aling - method for annotating a Biopython sequence record
+        ref_align - method for annotating a Biopython sequence record
         :param found_seqs: The input sequence record.
         :type found_seqs: Seq
         :param sequence: The input sequence record.
@@ -350,7 +363,7 @@ class BioSeqAnn(Model):
 
     def add_alignment(self, ref_seq, annotation):
         """
-        ref_aling - method for annotating a Biopython sequence record
+        add_alignment - method for annotating a Biopython sequence record
         :param found_seqs: The input sequence record.
         :type found_seqs: Seq
         :param sequence: The input sequence record.
@@ -380,7 +393,9 @@ class BioSeqAnn(Model):
                     if self.verbose and self.verbosity > 0:
                         self.logger.info(self.logname + " Gaps at " + feat)
                         self.logger.info(self.logname +
-                            "-".join([",".join([str(s) for s in g]) for g in gaps]))
+                                         "-".join([",".join([str(s)
+                                                             for s in g])
+                                                   for g in gaps]))
                     for i in range(0, len(gaps)):
                         for j in gaps[i]:
                             loc = j
