@@ -22,10 +22,7 @@
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
 
-# TODO: change file name to seq_annotation.py
-#
 import re
-import sys
 
 from Bio.Seq import Seq
 from Bio import pairwise2
@@ -43,7 +40,6 @@ from seqann.seq_search import SeqSearch
 from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
 from seqann.util import randomid
-from seqann.util import get_features
 from seqann.util import get_seqs
 
 from itertools import repeat
@@ -53,7 +49,6 @@ import logging
 isexon = lambda f: True if re.search("exon", f) else False
 isutr = lambda f: True if re.search("UTR", f) else False
 isfive = lambda f: True if re.search("five", f) else False
-
 is_classII = lambda x: True if re.search("HLA-D", x) else False
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
