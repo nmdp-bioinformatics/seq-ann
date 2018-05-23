@@ -77,7 +77,6 @@ if os.getenv("BIOSQLPORT"):
 
 def conn():
     try:
-        # print(biosqlpass, biosqluser, biosqlhost, biosqldb, biosqlport, sep="\t")
         conn = pymysql.connect(host=biosqlhost,
                                port=biosqlport, user=biosqluser,
                                passwd=biosqlpass, db=biosqldb)
@@ -92,7 +91,7 @@ class TestBioSeqAnn(unittest.TestCase):
 
     def setUp(self):
         self.data_dir = os.path.dirname(__file__) + "/resources"
-        self.dblist = [str(i) + str(0) for i in range(315, 329)]
+        self.dblist = [str(i) + str(0) for i in range(315, 331)]
         expected_json = self.data_dir + "/expected.json"
         with open(expected_json) as json_data:
             self.expected = json.load(json_data)
@@ -104,7 +103,8 @@ class TestBioSeqAnn(unittest.TestCase):
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
+                                              db=biosqldb,
+                                              port=biosqlport)
         seqann = BioSeqAnn(server=server)
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
@@ -130,7 +130,8 @@ class TestBioSeqAnn(unittest.TestCase):
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
+                                              db=biosqldb,
+                                              port=biosqlport)
         seqann = BioSeqAnn(server=server)
         #self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/ambig_seqs.fasta'
@@ -175,9 +176,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
+                                              db=biosqldb,
+                                              port=biosqlport)
         seqann = BioSeqAnn(server=server)
-        self.assertEqual(seqann.refdata.dbversion, '3290')
+        #self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/insertion_seqs.fasta'
 
         for ex in self.expected['insertion']:
@@ -217,15 +219,15 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 004 requires MySQL connection")
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 005 requires MySQL connection")
     def test_005_partial(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
+                                              db=biosqldb,
+                                              port=biosqlport)
         seqann = BioSeqAnn(server=server)
-        self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/partial_seqs.fasta'
 
         for ex in self.expected['partial']:
@@ -268,9 +270,9 @@ class TestBioSeqAnn(unittest.TestCase):
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
+                                              db=biosqldb,
+                                              port=biosqlport)
         seqann = BioSeqAnn(server=server)
-        self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/partial_ambig.fasta'
 
         for ex in self.expected['partial_ambig']:
@@ -291,7 +293,6 @@ class TestBioSeqAnn(unittest.TestCase):
             expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(ann.annotation.keys()), 1)
-
             # Make sure only mapped feats exist
             for mf in ex['missing_feats']:
                 self.assertFalse(mf in ann.annotation)
@@ -307,14 +308,15 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 005 requires MySQL connection")
-    def test_005_exact(self):
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 007 requires MySQL connection")
+    def test_007_exact(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
-        seqann = BioSeqAnn(server=server, dbversion='3290')
+                                              db=biosqldb,
+                                              port=biosqlport)
+        seqann = BioSeqAnn(server=server)
         input_seq = self.data_dir + '/exact_seqs.fasta'
 
         for ex in self.expected['exact']:
@@ -343,8 +345,8 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(not conn(), "TestBioSeqAnn 006 is run with no DB")
-    def test_006_exactnoserv(self):
+    @unittest.skipUnless(not conn(), "TestBioSeqAnn 008 is run with no DB")
+    def test_008_exactnoserv(self):
         seqann = BioSeqAnn(dbversion='3290')
         input_seq = self.data_dir + '/exact_seqs.fasta'
 
@@ -374,14 +376,15 @@ class TestBioSeqAnn(unittest.TestCase):
                                      str(annotation.annotation[feat].seq))
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 007 Requires MySQL connection")
-    def test_007_nomatch(self):
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 009 Requires MySQL connection")
+    def test_009_nomatch(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
-        seqann = BioSeqAnn(server=server, dbversion='3290')
+                                              db=biosqldb,
+                                              port=biosqlport)
+        seqann = BioSeqAnn(server=server)
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -392,14 +395,15 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 007 Requires MySQL connection")
-    def test_008_noloc(self):
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 010 Requires MySQL connection")
+    def test_010_noloc(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
-                                              db=biosqldb)
-        seqann = BioSeqAnn(server=server, dbversion='3290')
+                                              db=biosqldb,
+                                              port=biosqlport)
+        seqann = BioSeqAnn(server=server)
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -410,42 +414,6 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
-    def test_006_align(self):
-        server = BioSeqDatabase.open_database(driver="pymysql",
-                                              user=biosqluser,
-                                              passwd=biosqlpass,
-                                              host=biosqlhost,
-                                              db=biosqldb,
-                                              port=biosqlport)
-
-        # TODO *** NOT WORKING WITH NO LOCUS           ***
-        # TODO *** FIX 3290 Alignments                 ***
-        # TODO *** GET ALIGNMENTS WORKING WITH DB SEQS ***
-        seqann = BioSeqAnn(verbose=True, server=server, dbversion='3310', align=True)
-        input_seq = self.data_dir + '/align_tests.fasta'
-        n = 3
-        #for ex in self.expected['align']:
-        ex = self.expected['align'][2]
-            #i = int(ex['index'])
-        locus = ex['locus']
-        allele = ex['name']
-        hla, loc = locus.split("-")
-        #in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
-        #print(refdata.annoated_alignments[loc][allele])
-        in_seq = list(SeqIO.parse(input_seq, "fasta"))[n]
-        annotation = seqann.annotate(in_seq, "HLA-A")
-        align = "".join([annotation.aligned[s] for s in annotation.aligned])
-        for i in range(0, len(align)-1):
-            if str(i) in ex['diffs']:
-                self.assertEqual(list(align)[i],
-                                 ex['diffs'][str(i)])
-            else:
-                if list(align)[i] != list(ex['alignment'])[i]:
-                    print("FAILED:",allele, i, list(align)[i], list(ex['alignment'])[i])
-                self.assertEqual(list(align)[i],
-                                 list(ex['alignment'])[i])
-        n += 1
 
 
 

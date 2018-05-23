@@ -39,15 +39,46 @@ import unittest
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
 
-from seqann.align import align_seqs
-from seqann.util import get_features
+from seqann.sequence_annotation import BioSeqAnn
+
+neo4jpass = 'gfedb'
+if os.getenv("NEO4JPASS"):
+    neo4jpass = os.getenv("NEO4JPASS")
+
+neo4juser = 'neo4j'
+if os.getenv("NEO4JUSER"):
+    neo4juser = os.getenv("NEO4JUSER")
+
+neo4jurl = "http://neo4j.b12x.org:80"
+if os.getenv("NEO4JURL"):
+    neo4jurl = os.getenv("NEO4JURL")
+
+biosqlpass = "my-secret-pw"
+if os.getenv("BIOSQLPASS"):
+    biosqlpass = os.getenv("BIOSQLPASS")
+
+biosqluser = 'root'
+if os.getenv("BIOSQLUSER"):
+    biosqluser = os.getenv("BIOSQLUSER")
+
+biosqlhost = "localhost"
+if os.getenv("BIOSQLHOST"):
+    biosqlhost = os.getenv("BIOSQLHOST")
+
+biosqldb = "bioseqdb"
+if os.getenv("BIOSQLDB"):
+    biosqldb = os.getenv("BIOSQLDB")
+
+biosqlport = 3307
+if os.getenv("BIOSQLPORT"):
+    biosqlport = os.getenv("BIOSQLPORT")
 
 
 def conn():
     try:
-        conn = pymysql.connect(host='localhost',
-                               port=3306, user='root',
-                               passwd='', db='bioseqdb')
+        conn = pymysql.connect(host=biosqlhost,
+                               port=biosqlport, user=biosqluser,
+                               passwd=biosqlpass, db=biosqldb)
         conn.close()
         return True
     except Exception as e:
@@ -64,66 +95,39 @@ class TestAlign(unittest.TestCase):
             self.expected = json.load(json_data)
         pass
 
-    @unittest.skipUnless(conn(), "TestAlign 001 requires MySQL connection")
-    def test_001_exact(self):
-        input_seq = self.data_dir + '/exact_seqs.fasta'
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
+    @unittest.skipUnless(conn(), "TestAlign 001 Requires MySQL connection")
+    def test_001_align(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
 
-        for ex in self.expected['exact']:
+        # TODO *** NOT WORKING WITH NO LOCUS           ***
+        # TODO *** FIX 3290 Alignments                 ***
+        # TODO *** GET ALIGNMENTS WORKING WITH DB SEQS ***
+        seqann = BioSeqAnn(server=server, align=True)
+        input_seq = self.data_dir + '/align_tests.fasta'
+        for ex in self.expected['align']:
             i = int(ex['index'])
+            ex = self.expected['align'][i]
             locus = ex['locus']
             allele = ex['name']
             hla, loc = locus.split("-")
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
-            db = server["3290_" + loc]
-            refseq = db.lookup(name=allele)
-            ann, ins, dels = align_seqs(refseq, in_seq, locus)
-            expected_seqs = get_features(refseq)
-            self.assertGreater(len(expected_seqs.keys()), 1)
-            for feat in expected_seqs:
-                if feat not in ann.annotation:
-                    self.assertEqual(feat, None)
+            annotation = seqann.annotate(in_seq, "HLA-A")
+            align = "".join([annotation.aligned[s] for s in annotation.aligned])
+            for i in range(0, len(align)-1):
+                if str(i) in ex['diffs']:
+                    self.assertEqual(list(align)[i],
+                                     ex['diffs'][str(i)])
                 else:
-                    self.assertEqual(str(expected_seqs[feat]),
-                                     str(ann.annotation[feat].seq))
-        server.close()
-        pass
+                    if list(align)[i] != list(ex['alignment'])[i]:
+                        print("FAILED:", allele, i, list(align)[i], list(ex['alignment'])[i])
+                    self.assertEqual(list(align)[i],
+                                     list(ex['alignment'])[i])
 
-    @unittest.skipUnless(conn(), "TestAlign 002 requires MySQL connection")
-    def test_002_ambig(self):
-        input_seq = self.data_dir + '/ambig_seqs.fasta'
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
-
-        for ex in self.expected['ambig']:
-            i = int(ex['index'])
-            locus = ex['locus']
-            allele = ex['name']
-            hla, loc = locus.split("-")
-            in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
-            db = server["3290_" + loc]
-            refseq = db.lookup(name=allele)
-            ann, ins, dels = align_seqs(refseq, in_seq, locus)
-            n_diffs = 0
-            expected_seqs = get_features(refseq)
-            self.assertGreater(len(expected_seqs.keys()), 1)
-            for feat in expected_seqs:
-                if feat not in ann.annotation:
-                    self.assertEqual(feat, None)
-                else:
-                    if feat in ex['diff']:
-                        n_diffs += 1
-                        self.assertNotEqual(str(expected_seqs[feat]),
-                                            str(ann.annotation[feat].seq))
-                    else:
-                        self.assertEqual(str(expected_seqs[feat]),
-                                         str(ann.annotation[feat].seq))
-            self.assertEqual(n_diffs, len(ex['diff']))
-        server.close()
-        pass
 
 
 

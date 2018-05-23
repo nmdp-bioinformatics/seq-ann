@@ -107,16 +107,17 @@ class TestRefdata(unittest.TestCase):
         self.assertGreater(len(refdata.hla_names), 10)
         self.assertEqual(refdata.structure_max['HLA-A'], 17)
         self.assertFalse(refdata.server_avail)
-        self.assertEqual(refdata.dbversion, '3290')
         self.assertGreater(len(refdata.imgtdat), 0)
         pass
 
     @unittest.skipUnless(conn(), "TestRefdata 002 Requires MySQL connection")
     def test_002_server(self):
-
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
         refdata = ReferenceData(server=server)
         self.assertIsInstance(refdata, ReferenceData)
         self.assertTrue(refdata.server_avail)
@@ -126,10 +127,12 @@ class TestRefdata(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestRefdata 003 Requires MySQL connection")
     def test_003_dblist(self):
-
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
         for db in self.dblist:
             refdata = ReferenceData(server=server, dbversion=db)
             self.assertEqual(refdata.dbversion, db)
@@ -140,10 +143,13 @@ class TestRefdata(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestRefdata 004 requires MySQL connection")
     def test_004_select(self):
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
-        refdata = ReferenceData(server=server, dbversion='3290')
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+        refdata = ReferenceData(server=server)
         input_seq = self.data_dir + '/exact_seqs.fasta'
         self.assertFalse(refdata.imgtdat)
 
@@ -174,11 +180,14 @@ class TestRefdata(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestRefdata 005 requires MySQL connection")
     def test_005_dbtodat(self):
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
-        refdata1 = ReferenceData(server=server, dbversion='3290')
-        refdata2 = ReferenceData(dbversion='3290')
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+        refdata1 = ReferenceData(server=server)
+        refdata2 = ReferenceData()
 
         datseqs = [a for a in refdata2.imgtdat
                    if a.description.split(",")[0] == 'HLA-A*01:01:01:01'][0]
@@ -200,45 +209,33 @@ class TestRefdata(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
     def test_006_align(self):
+        # TODO: Add class II tests
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
                                               host=biosqlhost,
                                               db=biosqldb,
-                                              port=biosqlport
-                                              )
-        refdata = ReferenceData(server=server, dbversion='3310',
-                                alignments=True)
-        #input_seq = self.data_dir + '/align_tests.fasta'
+                                              port=biosqlport)
+        refdata = ReferenceData(server=server, alignments=True)
         for ex in self.expected['align']:
-            #i = int(ex['index'])
             locus = ex['locus']
-            allele = ex['name']
+            allele = ex['name'].split("_")[0]
             hla, loc = locus.split("-")
-            #in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
-            #print(refdata.annoated_alignments[loc][allele])
-
             align = "".join([refdata.annoated_alignments[loc][allele][s]['Seq'] for s in refdata.annoated_alignments[loc][allele].keys()])
-            i = 0
-            print(align)
-            for f in refdata.annoated_alignments[loc][allele].keys():
-                print(f)
-                g = refdata.annoated_alignments[loc][allele][f]['Gaps']
-                
-                l = (len(refdata.annoated_alignments[loc][allele][f]['Seq'])) + i
-                print(refdata.annoated_alignments[loc][allele][f]['Seq'])
-                print(g)
-                gapn = [[j+i for j in k] for k in g]
-                print(gapn)
-                print("Pos: ",str(i), " - ", str(l))
-                i = l
-                print("")
-
+            # i = 0
+            # for f in refdata.annoated_alignments[loc][allele].keys():
+            #     print(f)
+            #     g = refdata.annoated_alignments[loc][allele][f]['Gaps']
+            #     l = (len(refdata.annoated_alignments[loc][allele][f]['Seq'])) + i
+            #     print(refdata.annoated_alignments[loc][allele][f]['Seq'])
+            #     print(g)
+            #     gapn = [[j+i for j in k] for k in g]
+            #     print(gapn)
+            #     print("Pos: ",str(i), " - ", str(l))
+            #     i = l
+            #     print("")
             self.assertEqual(str(align),
                              str(ex['alignment']))
-            #print(refdata.annoated_alignments[loc][allele])
-            #print(list(refdata.annoated_alignments[loc][allele]))
-
 
 
 

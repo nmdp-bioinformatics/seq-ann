@@ -208,9 +208,15 @@ class BioSeqAnn(Model):
 
         # Check it the locus exists
         if not locus:
-            self.logger.info(self.logname + " No locus provided! ")
+            if self.verbose:
+                self.logger.info(self.logname + " No locus provided! ")
+
+            # Guessing locus with blastn
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
-            self.logger.info(self.logname + " Locus prediction = " + locus)
+
+            if self.verbose:
+                self.logger.info(self.logname + " Locus prediction = " + locus)
+
             if not locus:
                 self.logger.error(self.logname + " Locus count not be determined!")
                 return ''
