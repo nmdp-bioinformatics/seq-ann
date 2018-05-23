@@ -48,12 +48,44 @@ from BioSQL import BioSeqDatabase
 from seqann.models.reference_data import ReferenceData
 from seqann.seq_search import SeqSearch
 
+neo4jpass = 'gfedb'
+if os.getenv("NEO4JPASS"):
+    neo4jpass = os.getenv("NEO4JPASS")
+
+neo4juser = 'neo4j'
+if os.getenv("NEO4JUSER"):
+    neo4juser = os.getenv("NEO4JUSER")
+
+neo4jurl = "http://neo4j.b12x.org:80"
+if os.getenv("NEO4JURL"):
+    neo4jurl = os.getenv("NEO4JURL")
+
+biosqlpass = "my-secret-pw"
+if os.getenv("BIOSQLPASS"):
+    biosqlpass = os.getenv("BIOSQLPASS")
+
+biosqluser = 'root'
+if os.getenv("BIOSQLUSER"):
+    biosqluser = os.getenv("BIOSQLUSER")
+
+biosqlhost = "localhost"
+if os.getenv("BIOSQLHOST"):
+    biosqlhost = os.getenv("BIOSQLHOST")
+
+biosqldb = "bioseqdb"
+if os.getenv("BIOSQLDB"):
+    biosqldb = os.getenv("BIOSQLDB")
+
+biosqlport = 3307
+if os.getenv("BIOSQLPORT"):
+    biosqlport = os.getenv("BIOSQLPORT")
+
 
 def conn():
     try:
-        conn = pymysql.connect(host='localhost',
-                               port=3306, user='root',
-                               passwd='', db='bioseqdb')
+        conn = pymysql.connect(host=biosqlhost,
+                               port=biosqlport, user=biosqluser,
+                               passwd=biosqlpass, db=biosqldb)
         conn.close()
         return True
     except Exception as e:
@@ -69,9 +101,12 @@ class TestSeqSearch(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestSeqAnn 001 Requires MySQL connection")
     def test_001_wrefdata(self):
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
         refdata = ReferenceData(server=server, dbversion='3290')
         seqsearch = SeqSearch(refdata=refdata)
         self.assertIsInstance(seqsearch, SeqSearch)
@@ -81,9 +116,12 @@ class TestSeqSearch(unittest.TestCase):
 
     # @unittest.skipUnless(conn(), "TestSeqAnn 002 Requires MySQL connection")
     # def test_002_search(self):
-    #     server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-    #                                           passwd="", host="localhost",
-    #                                           db="bioseqdb")
+    #     server = BioSeqDatabase.open_database(driver="pymysql",
+    #                                           user=biosqluser,
+    #                                           passwd=biosqlpass,
+    #                                           host=biosqlhost,
+    #                                           db=biosqldb,
+    #                                           port=biosqlport)
     #     refdata = ReferenceData(server=server, dbversion='3290')
     #     seqsearch = SeqSearch(refdata=refdata)
 
@@ -98,9 +136,12 @@ class TestSeqSearch(unittest.TestCase):
 
     # @unittest.skipUnless(conn(), "TestSeqAnn 003 Requires MySQL connection")
     # def test_003_fail(self):
-    #     server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-    #                                           passwd="", host="localhost",
-    #                                           db="bioseqdb")
+    #     server = BioSeqDatabase.open_database(driver="pymysql",
+    #                                           user=biosqluser,
+    #                                           passwd=biosqlpass,
+    #                                           host=biosqlhost,
+    #                                           db=biosqldb,
+    #                                           port=biosqlport)
     #     refdata = ReferenceData(server=server, dbversion='3290')
     #     seqsearch = SeqSearch(refdata=refdata)
 

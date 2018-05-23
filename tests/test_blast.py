@@ -43,12 +43,44 @@ from seqann.models.reference_data import ReferenceData
 from seqann.models.blast import Blast
 from seqann.blast_cmd import blastn
 
+neo4jpass = 'gfedb'
+if os.getenv("NEO4JPASS"):
+    neo4jpass = os.getenv("NEO4JPASS")
+
+neo4juser = 'neo4j'
+if os.getenv("NEO4JUSER"):
+    neo4juser = os.getenv("NEO4JUSER")
+
+neo4jurl = "http://neo4j.b12x.org:80"
+if os.getenv("NEO4JURL"):
+    neo4jurl = os.getenv("NEO4JURL")
+
+biosqlpass = "my-secret-pw"
+if os.getenv("BIOSQLPASS"):
+    biosqlpass = os.getenv("BIOSQLPASS")
+
+biosqluser = 'root'
+if os.getenv("BIOSQLUSER"):
+    biosqluser = os.getenv("BIOSQLUSER")
+
+biosqlhost = "localhost"
+if os.getenv("BIOSQLHOST"):
+    biosqlhost = os.getenv("BIOSQLHOST")
+
+biosqldb = "bioseqdb"
+if os.getenv("BIOSQLDB"):
+    biosqldb = os.getenv("BIOSQLDB")
+
+biosqlport = 3307
+if os.getenv("BIOSQLPORT"):
+    biosqlport = os.getenv("BIOSQLPORT")
+
 
 def conn():
     try:
-        conn = pymysql.connect(host='localhost',
-                               port=3306, user='root',
-                               passwd='', db='bioseqdb')
+        conn = pymysql.connect(host=biosqlhost,
+                               port=biosqlport, user=biosqluser,
+                               passwd=biosqlpass, db=biosqldb)
         conn.close()
         return True
     except Exception as e:
@@ -66,9 +98,12 @@ class TestBlast(unittest.TestCase):
     def test_001_blast(self):
         input_seq = self.data_dir + '/ambig_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
         refdata = ReferenceData(server=server)
         self.assertFalse(refdata.imgtdat)
         blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)
@@ -83,9 +118,12 @@ class TestBlast(unittest.TestCase):
     def test_002_fail(self):
         input_seq = self.data_dir + '/failed_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
-        server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                              passwd="", host="localhost",
-                                              db="bioseqdb")
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
         refdata = ReferenceData(server=server)
         self.assertFalse(refdata.imgtdat)
         blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)

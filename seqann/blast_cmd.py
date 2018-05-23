@@ -76,7 +76,7 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
         if kir:
             loci.append(blast_qresult[i].id.split("*")[0])
         else:
-            loci.append("HLA-" + blast_qresult[i].id.split("*")[0])
+            loci.append(blast_qresult[i].id.split("*")[0])
 
     locus = set(loci)
     if len(locus) == 1:
@@ -87,7 +87,14 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
 
 def blastn(sequences, locus, nseqs, kir=False,
            verbose=False, refdata=None, evalue=10):
+    """
+    Gets the locus of the sequence by running blastn
 
+    :param sequences: sequenences to blast
+    :param kir: bool whether the sequences are KIR or not
+
+    :return: GFEobject.
+    """
     logger = logging.getLogger("Logger." + __name__)
 
     if not refdata:

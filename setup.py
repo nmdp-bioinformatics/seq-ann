@@ -33,27 +33,27 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'biopython',
+    'biopython==1.70',
     'PyMySQL',
     'six',
-    'bson',
+    'bson==0.5.5',
     'pytz',
-    'numpy'
+    'numpy==1.13.3'
 ]
 
 test_requirements = [
     'pytz',
-    'biopython',
+    'biopython==1.70',
     'PyMySQL',
     'six',
-    'bson',
+    'bson==0.5.5',
     'unittest',
-    'numpy'
+    'numpy==1.13.3'
 ]
 
 setup(
     name='seqann',
-    version='0.0.15',
+    version='0.0.20',
     description="Sequence Annotation",
     long_description=readme + '\n\n' + history,
     author="Mike Halagan",
