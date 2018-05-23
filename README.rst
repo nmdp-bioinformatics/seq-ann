@@ -114,9 +114,9 @@ Dependencies
 * `Python 3.6`_
 * blastn_
 
-.. _DockerHub: http://google.com
+.. _DockerHub: https://hub.docker.com/r/nmdpbioinformatics/imgt_biosqldb/
 .. _`GitHub page`: http://google.com
-.. _`hla.dat`: http://google.com
+.. _`hla.dat`: https://github.com/ANHIG/IMGTHLA
 .. _`Python 3.6`: https://www.python.org/downloads
 .. _`Clustal Omega`: http://www.clustal.org/omega/
 .. _blastn: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download
