@@ -32,7 +32,8 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import ExactPosition
 from Bio.SeqFeature import FeatureLocation
-
+from BioSQL import BioSeqDatabase
+from seqann.models.annotation import Annotation
 from seqann.models.reference_data import ReferenceData
 from seqann.blast_cmd import blastn
 from seqann.blast_cmd import get_locus
@@ -46,10 +47,58 @@ from itertools import repeat
 
 import logging
 
-isexon = lambda f: True if re.search("exon", f) else False
-isutr = lambda f: True if re.search("UTR", f) else False
-isfive = lambda f: True if re.search("five", f) else False
-is_classII = lambda x: True if re.search("HLA-D", x) else False
+
+def isexon(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("exon", feature) else False
+
+
+def isutr(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("UTR", feature) else False
+
+
+def isfive(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("five", feature) else False
+
+
+def is_classII(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("HLA-D", feature) else False
+
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -58,17 +107,34 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 class BioSeqAnn(Model):
     '''
-    from seqann import BioSeqAnn
-    seqanno = BioSeqAnn()
+        ::
+
+            from seqann import BioSeqAnn
+            seqann = BioSeqAnn()
+
+        :param server: A BioSQL database to use for retriving the sequence features. Using a BioSQL DB will speed up the annotations dramatically.
+        :type server: BioSeqDatabase
+        :param dbversion: The IPD-IMGT/HLA or KIR database release.
+        :type dbversion: str
+        :param datfile: The IPD-IMGT/HLA or KIR dat file to use in place of the server parameter.
+        :type datfile: str
+        :param pid: A process label that can be provided to help track the logging output.
+        :type pid: str
+        :param kir: Flag for indicating the input sequences are from the KIR gene system. 
+        :type kir: bool
+        :param align: Flag for producing the alignments along with the annotations.
+        :type align: bool
+        :param verbose: Flag for running in verbose mode. 
+        :type verbose: bool
+        :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
+        :type verbosity: int
     '''
-    def __init__(self, server=None, dbversion='3310', datfile='',
-                 rerun=False, rerun_n=3, verbose=False, verbosity=0,
-                 pid='NA', kir=False, align=False):
+    def __init__(self, server: BioSeqDatabase=None, dbversion: str='3310',
+                 datfile: str='', verbose: bool=False, verbosity: int=0,
+                 pid: str='NA', kir: bool=False, align: bool=False):
         self.align = align
         self.kir = kir
         self.server = server
-        self.rerun = rerun
-        self.rerun_n = rerun_n
         self.verbose = verbose
         self.verbosity = verbosity
         self.refdata = ReferenceData(server=server,
@@ -79,20 +145,22 @@ class BioSeqAnn(Model):
         self.logger = logging.getLogger("Logger." + __name__)
         self.logname = "ID {:<10} -".format(str(pid))
 
-    def annotate(self, sequence, locus=None, nseqs=10, alignseqs=10):
+    def annotate(self, sequence: Seq=None, locus: str=None,
+                 nseqs: int=10, alignseqs: int=10) -> Annotation:
         """
         annotate - method for annotating a Biopython sequence record
-        
-        :param sequence: The input sequence record.
+
+        :param sequence: The input consensus sequence.
         :type sequence: Seq
         :param locus: The gene locus associated with the sequence.
         :type locus: str
         :param nseqs: The number of blast sequences to use.
         :type nseqs: int
+        :param alignseqs: The number of sequences to use for targeted alignments.
+        :type alignseqs: int
+        :rtype: Annotation
 
         Returns:
-            Annotation: complete annotation is successful.
-
             The annotate function return an ``Annotation`` object that
             contains the sequence features and names associated with them.
 
@@ -138,12 +206,6 @@ class BioSeqAnn(Model):
 
         """
 
-        # The number of sequences being used for alignment
-        # can't be greater than the number of sequences
-        # to be returned from the blast results
-        if alignseqs > nseqs:
-            alignseqs = nseqs
-
         # Check it the locus exists
         if not locus:
             self.logger.info(self.logname + " No locus provided! ")
@@ -175,7 +237,7 @@ class BioSeqAnn(Model):
             # with the wrong locus.
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
             self.logger.info(self.logname + " Locus prediction = " + locus)
-            
+
             # Check if the locus could be found
             if not locus:
                 self.logger.error(self.logname + " Locus couldn't be determined not be determined!")
@@ -185,7 +247,7 @@ class BioSeqAnn(Model):
         # Do seq_search first on all blast sequences
         partial_ann = None
         found = blast.match_seqs
-        for i in range(0, nseqs):
+        for i in range(0, len(found)-1):
             if self.verbose:
                 self.logger.info(self.logname + " running seq_search with " + found[i].name)
             annotation = self.seqsearch.search_seqs(found[i],
@@ -196,7 +258,7 @@ class BioSeqAnn(Model):
                 # TODO: change clean to cleanup
                 if self.verbose:
                     self.logger.info(self.logname + " Finished annotation with " + found[i].name)
-                
+
                 # Add alignment is specified
                 if self.align:
                     if self.verbose:
@@ -211,6 +273,12 @@ class BioSeqAnn(Model):
                     self.logger.info(self.logname + " Using partial annotation * run " + str(i) + " *")
                     self.logger.info(self.logname + " Features found = " + ",".join(list(annotation.features.keys())))
                     self.logger.info(self.logname + " Sequence unmapped = " + str(annotation.covered))
+
+        # The number of sequences being used for alignment
+        # can't be greater than the number of sequences
+        # to be returned from the blast results
+        if alignseqs > len(found):
+            alignseqs = len(found)-1
 
         # Now loop through doing alignment
         #for i in range(0, 2):
@@ -239,10 +307,12 @@ class BioSeqAnn(Model):
         self.logger.error(self.logname + " No annotation produced!")
         return ''
 
-    def ref_align(self, found_seqs, sequence, locus,
-                  annotation=None, partial_ann=None):
+    def ref_align(self, found_seqs, sequence: Seq=None,
+                  locus: str=None, annotation: Annotation=None,
+                  partial_ann: Annotation=None) -> Annotation:
         """
-        ref_align - method for annotating a Biopython sequence record
+        ref_align - Method for doing targeted alignments on partial annotations
+
         :param found_seqs: The input sequence record.
         :type found_seqs: Seq
         :param sequence: The input sequence record.
@@ -253,6 +323,8 @@ class BioSeqAnn(Model):
         :type annotation: Annotation
         :param partial_ann: The partial annotation after looping through all of the blast sequences.
         :type partial_ann: Annotation
+        :rtype: Annotation
+
         """
         if annotation:
             # Extract the missing blocks and
@@ -361,19 +433,16 @@ class BioSeqAnn(Model):
             # align a set of sequences
             return
 
-    def add_alignment(self, ref_seq, annotation):
+    def add_alignment(self, ref_seq, annotation) -> Annotation:
         """
-        add_alignment - method for annotating a Biopython sequence record
-        :param found_seqs: The input sequence record.
-        :type found_seqs: Seq
-        :param sequence: The input sequence record.
-        :type sequence: Seq
-        :param locus: The gene locus associated with the sequence.
-        :type locus: str
-        :param annotation: The incomplete annotation from a previous iteration.
+        add_alignment - method for adding the alignment to an annotation
+
+        :param ref_seq: List of reference sequences
+        :type ref_seq: List
+        :param annotation: The complete annotation
         :type annotation: Annotation
-        :param partial_ann: The partial annotation after looping through all of the blast sequences.
-        :type partial_ann: Annotation
+
+        :rtype: Annotation
         """
         seq_features = get_seqs(ref_seq)
         annoated_align = {}

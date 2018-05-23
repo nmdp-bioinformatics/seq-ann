@@ -80,7 +80,6 @@ if os.getenv("BIOSQLPORT"):
 
 def conn():
     try:
-        # print(biosqlpass, biosqluser, biosqlhost, biosqldb, biosqlport, sep="\t")
         conn = pymysql.connect(host=biosqlhost,
                                port=biosqlport, user=biosqluser,
                                passwd=biosqlpass, db=biosqldb)

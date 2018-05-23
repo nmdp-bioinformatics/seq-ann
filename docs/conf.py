@@ -145,6 +145,8 @@ html_theme = 'sphinx_rtd_theme'
 # "default.css".
 html_static_path = ['_static']
 
+autodoc_member_order = 'bysource'
+
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
 #html_last_updated_fmt = '%b %d, %Y'

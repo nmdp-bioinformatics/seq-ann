@@ -42,8 +42,6 @@ from seqann.models.annotation import Annotation
 from seqann.sequence_annotation import BioSeqAnn
 from seqann.models.reference_data import ReferenceData
 
-
-
 neo4jpass = 'gfedb'
 if os.getenv("NEO4JPASS"):
     neo4jpass = os.getenv("NEO4JPASS")

@@ -6,7 +6,6 @@ Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All R
 
    readme
    installation
-   history
 
 .. toctree::
    :maxdepth: 2
@@ -14,7 +13,9 @@ Copyright (c) 2017 Be The Match operated by National Marrow Donor Program. All R
 
    seqann
    contributing
-   usage
+   history
+   authors
+
 
 
 Indices and tables
