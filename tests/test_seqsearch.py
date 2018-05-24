@@ -76,9 +76,9 @@ biosqldb = "bioseqdb"
 if os.getenv("BIOSQLDB"):
     biosqldb = os.getenv("BIOSQLDB")
 
-biosqlport = 3307
+biosqlport = 3306
 if os.getenv("BIOSQLPORT"):
-    biosqlport = os.getenv("BIOSQLPORT")
+    biosqlport = int(os.getenv("BIOSQLPORT"))
 
 
 def conn():

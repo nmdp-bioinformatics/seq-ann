@@ -70,9 +70,9 @@ biosqldb = "bioseqdb"
 if os.getenv("BIOSQLDB"):
     biosqldb = os.getenv("BIOSQLDB")
 
-biosqlport = 3307
+biosqlport = 3306
 if os.getenv("BIOSQLPORT"):
-    biosqlport = os.getenv("BIOSQLPORT")
+    biosqlport = int(os.getenv("BIOSQLPORT"))
 
 
 def conn():
@@ -345,7 +345,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(not conn(), "TestBioSeqAnn 008 is run with no DB")
+    #@unittest.skipUnless(not conn(), "TestBioSeqAnn 008 is run with no DB")
     def test_008_exactnoserv(self):
         seqann = BioSeqAnn(dbversion='3290')
         input_seq = self.data_dir + '/exact_seqs.fasta'
