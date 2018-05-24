@@ -18,7 +18,7 @@ SeqAnn
      :alt: Updates
 
 
-Sequence Annotation
+Python package for annotating the gene features
 
 
 * Free software: LGPL 3.0

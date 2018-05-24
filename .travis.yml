@@ -1,19 +1,41 @@
 # Config file for automatic testing at travis-ci.org
 # This file will be regenerated if you run travis_pypi_setup.py
+sudo: required
 
 language: python
 python: 3.6
 
 env:
   - TOXENV=py36
-  - TOXENV=py35
-  - TOXENV=pypy
+
+
+services:
+  - docker
+
+before_install:
+  - sudo apt-get install ncbi-blast+ clustalo build-essential git curl
+  - git clone https://github.com/nmdp-bioinformatics/imgt_biosqldb
+  - cd imgt_biosqldb
+  - docker build --build-arg RELEASES="3310" -t imgt_biosqldb:3310 . 
+  - cd ..
+
+
+before_script:
+  - sleep 10
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -U tox
+install: 
+  - pip install -r requirements.txt
+  - pip install -U tox
+  - pip install python-coveralls coveralls
+  - docker run -d --name imgt_biosqldb -p 3307:3306 -e MYSQL_ROOT_PASSWORD=my-secret-pw imgt_biosqldb:3310
+  - sleep 30
 
 # command to run tests, e.g. python setup.py test
-script: tox -e ${TOXENV}
+script: 
+  - tox -e ${TOXENV}
+  - coverage run --source=pyhml -m unittest -v
+  - coverage report -m
 
 # After you create the Github repo and add it to Travis, run the
 # travis_pypi_setup.py script to finish PyPI deployment setup
@@ -26,4 +48,4 @@ deploy:
   on:
     tags: true
     repo: mhalagan-nmdp/SeqAnn
-    condition: $TOXENV == py27
+    condition: $TOXENV == py36
