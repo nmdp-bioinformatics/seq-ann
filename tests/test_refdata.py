@@ -73,7 +73,7 @@ biosqldb = "bioseqdb"
 if os.getenv("BIOSQLDB"):
     biosqldb = os.getenv("BIOSQLDB")
 
-biosqlport = 3306
+biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
