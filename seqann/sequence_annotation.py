@@ -256,16 +256,19 @@ class BioSeqAnn(Model):
         for i in range(0, len(found)-1):
             if self.verbose:
                 self.logger.info(self.logname + " running seq_search with " + found[i].name)
+            
+            # * Running sequence search *
+            # This does a simple string search for the
+            # reference features within the provided sequence
             annotation = self.seqsearch.search_seqs(found[i],
                                                     sequence, locus,
                                                     partial_ann=partial_ann)
             if annotation.complete_annotation:
-                # TODO: Add options to clean
                 # TODO: change clean to cleanup
                 if self.verbose:
                     self.logger.info(self.logname + " Finished annotation with " + found[i].name)
 
-                # Add alignment is specified
+                # Add alignment flag is specified
                 if self.align:
                     if self.verbose:
                         self.logger.info(self.logname + " Adding alignment")

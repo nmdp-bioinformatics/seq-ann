@@ -345,37 +345,6 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    #@unittest.skipUnless(not conn(), "TestBioSeqAnn 008 is run with no DB")
-    def test_008_exactnoserv(self):
-        seqann = BioSeqAnn(dbversion='3290')
-        input_seq = self.data_dir + '/exact_seqs.fasta'
-
-        for ex in self.expected['exact']:
-            i = int(ex['index'])
-            locus = ex['locus']
-            allele = ex['name']
-            hla, loc = locus.split("-")
-            in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
-            annotation = seqann.annotate(in_seq, locus)
-            self.assertEqual(annotation.method, "nt_search")
-            self.assertIsInstance(annotation, Annotation)
-            self.assertTrue(annotation.complete_annotation)
-            self.assertGreater(len(annotation.annotation.keys()), 1)
-
-            expected = [a for a in seqann.refdata.imgtdat
-                        if a.description.split(",")[0] == allele][0]
-
-            expected_seqs = get_features(expected)
-            self.assertGreater(len(expected_seqs.keys()), 1)
-            self.assertGreater(len(annotation.annotation.keys()), 1)
-            for feat in expected_seqs:
-                if feat not in annotation.annotation:
-                    self.assertEqual(feat, None)
-                else:
-                    self.assertEqual(str(expected_seqs[feat]),
-                                     str(annotation.annotation[feat].seq))
-        pass
-
     @unittest.skipUnless(conn(), "TestBioSeqAnn 009 Requires MySQL connection")
     def test_009_nomatch(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
