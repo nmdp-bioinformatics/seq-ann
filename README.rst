@@ -17,11 +17,11 @@ SeqAnn
 .. image:: https://img.shields.io/pypi/v/seqann.svg
         :target: https://pypi.python.org/pypi/seqann
 
-.. image:: https://coveralls.io/repos/github/nmdp-bioinformatics/seqann/badge.svg?branch=master
-        :target: https://coveralls.io/github/nmdp-bioinformatics/seqann?branch=master
+.. image:: https://coveralls.io/repos/github/nmdp-bioinformatics/SeqAnn/badge.svg?branch=master
+        :target: https://coveralls.io/github/nmdp-bioinformatics/SeqAnn?branch=master
 
 
-Python package for annotating the gene features
+Python package for annotating gene features
 
 
 * Free software: LGPL 3.0

@@ -8,7 +8,6 @@ python: 3.6
 env:
   - TOXENV=py36
 
-
 services:
   - docker
 
@@ -18,7 +17,6 @@ before_install:
   - cd imgt_biosqldb
   - docker build --build-arg RELEASES="3310" -t imgt_biosqldb:3310 . 
   - cd ..
-
 
 before_script:
   - sleep 10
@@ -37,15 +35,7 @@ script:
   - coverage run --source=seqann -m unittest -v
   - coverage report -m
 
-# After you create the Github repo and add it to Travis, run the
-# travis_pypi_setup.py script to finish PyPI deployment setup
-deploy:
-  provider: pypi
-  distributions: sdist bdist_wheel
-  user: mhalagan-nmdp
-  password:
-    secure: PLEASE_REPLACE_ME
-  on:
-    tags: true
-    repo: mhalagan-nmdp/SeqAnn
-    condition: $TOXENV == py36
+after_success:
+  - coveralls
+
+
