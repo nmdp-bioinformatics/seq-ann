@@ -3,9 +3,6 @@ SeqAnn
 ===============================
 
 
-.. image:: https://img.shields.io/pypi/v/seqann.svg
-        :target: https://pypi.python.org/pypi/seqann
-
 .. image:: https://img.shields.io/travis/nmdp-bioinformatics/seqann.svg
         :target: https://travis-ci.org/nmdp-bioinformatics/seqann
 
@@ -13,9 +10,15 @@ SeqAnn
         :target: https://seqann.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/nmdp-bioinformatics/gfe/shield.svg
-     :target: https://pyup.io/repos/github/nmdp-bioinformatics/seqann/
+.. image:: https://pyup.io/repos/github/nmdp-bioinformatics/SeqAnn/shield.svg
+     :target: https://pyup.io/repos/github/nmdp-bioinformatics/SeqAnn/
      :alt: Updates
+
+.. image:: https://img.shields.io/pypi/v/seqann.svg
+        :target: https://pypi.python.org/pypi/seqann
+
+.. image:: https://coveralls.io/repos/github/nmdp-bioinformatics/seqann/badge.svg?branch=master
+        :target: https://coveralls.io/github/nmdp-bioinformatics/seqann?branch=master
 
 
 Python package for annotating the gene features
@@ -28,14 +31,17 @@ Python package for annotating the gene features
 Overview
 ---------
 
-The ``BioSeqAnn`` class in the ``seqann`` package allows 
-users to easily annotate the gene features in a consensus sequence.
-No parameters are required when creating a ``BioSeqAnn`` object, but annotations can be
-created significantly faster when using a ``BioSeqDatabase``. 
-The lastest `hla.dat`_ file is downloaded and parsed when a ``BioSeqDatabase`` is not provided.
+The ``seqann`` package allows 
+users to easily annotate the gene features. Annotations can be created by passing consensus sequences to the ``annotate`` method in the
+``BioSeqAnn`` class. No parameters are required when initalizing a ``BioSeqAnn`` class. However, annotations can be
+created significantly faster when using a BioSQL database. When a BioSQL database is not provided the lastest `hla.dat`_ file is downloaded and parsed.
 A BioSQL database containing all of IPD-IMGT/HLA is available on DockerHub_ and can be
-run on any machine that has docker installed. Below are the list of parameters that
-can be use to initalize a ``BioSeqAnn`` object.
+run on any machine that has docker installed. 
+
+Parameters
+----------
+
+Below are the list of parameters and the default values used when initalizing a ``BioSeqAnn`` class.
 
 .. table::
     :widths: 10 10 10 50
@@ -58,54 +64,70 @@ can be use to initalize a ``BioSeqAnn`` object.
     | verbosity   | ``int``           | None    | Numerical value to indicate how verbose the output will be in verbose mode.   |
     +-------------+-------------------+---------+-------------------------------------------------------------------------------+
 
+
+Usage
+---------
+
+To annotated a sequence initialize a new ``BioSeqAnn`` object and then pass the sequence to the
+annotate method. The sequence must be a Biopython ``Seq``. The locus of the sequence is not required but it will improve the accuracy of the annotation.
+
+
+.. code-block:: python3
+
+    from seqann import BioSeqAnn
+    seqann = BioSeqAnn()
+    ann = seqann.annotate(sequence, "HLA-A")
+
+
+The annotation of sequence can be done with or without providing a ``BioSeqDatabase``. To use a BioSQL database 
+initialize a ``BioSeqDatabase`` with the parameters that match the database you have running. If you are 
+running the imgt_biosqldb from DockerHub_ then the following parameters we be the same. 
+
+.. code-block:: python3
+
+    from seqann import BioSeqAnn
+    from BioSQL import BioSeqDatabase
+    server = BioSeqDatabase.open_database(driver="pymysql", user="root",
+                                          passwd="my-secret-pw", host="localhost",
+                                          db="bioseqdb")
+    seqann = BioSeqAnn(server=server)
+    ann = seqann.annotate(sequence, "HLA-A")
+
+
+Annotations
+------------
+
+.. code-block:: json
+
+    {
+         'complete_annotation': True,
+         'annotation': {'exon_1': SeqRecord(seq=Seq('AGAGACTCTCCCG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[]),
+                        'exon_2': SeqRecord(seq=Seq('AGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACCAACGGGACGGAGC...GAG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[]),
+                        'exon_3': SeqRecord(seq=Seq('TGGAGCCCACAGTGACCATCTCCCCATCCAGGACAGAGGCCCTCAACCACCACA...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='<unknown name>', description='HLA:HLA00630', dbxrefs=[])},
+         'features': {'exon_1': SeqFeature(FeatureLocation(ExactPosition(0), ExactPosition(13), strand=1), type='exon_1'),
+                      'exon_2': SeqFeature(FeatureLocation(ExactPosition(13), ExactPosition(283), strand=1), type='exon_2')
+                      'exon_3': SeqFeature(FeatureLocation(ExactPosition(283), ExactPosition(503), strand=1), type='exon_3')},
+         'method': 'nt_search and clustalo',
+         'seq': SeqRecord(seq=Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[])
+    }
+
+
+Once a sequence has been successfully annotated the gene features and their corresponding sequences are available. If a full
+annotation is not able to be produced then nothing will be returned.
+
+.. code-block:: python3
+
+    ann = seqann.annotate(sequence, "HLA-A")
+    for feat in ann.annotation:
+        print(feat, ann.annotation[feat], sep="\t")
+
+
 Install
 ------------
 
 .. code-block:: shell
     
     pip install seqann
-
-
-Usage
----------
-
-With default parameters:
-
-.. code-block:: python3
-
-    from seqann import BioSeqAnn
-    from Bio import SeqIO
-
-    # ** If you don't have a copy of the hla.dat
-    # ** file it will download it
-    seqann = BioSeqAnn()
-    for seq in SeqIO.parse(input_seq, "fasta"):
-        # Annotate sequence
-        ann = seqann.annotate(seq, "HLA-A")
-        # Loop through features in annotation
-        for feat in ann.annotation:
-            print(feat, ann.annotation[feat], sep="\t")
-
-
-
-With BioSQL DB connection:
-
-.. code-block:: python3
-
-    from Bio import SeqIO
-    from seqann import BioSeqAnn
-    from BioSQL import BioSeqDatabase
-
-    server = BioSeqDatabase.open_database(driver="pymysql", user="root",
-                                          passwd="", host="localhost",
-                                          db="bioseqdb")
-    seqann = BioSeqAnn(server=server)
-    for seq in SeqIO.parse(input_seq, "fasta"):
-        # Annotate sequence
-        ann = seqann.annotate(seq, "HLA-A")
-        # Loop through features in annotation
-        for feat in ann.annotation:
-            print(feat, ann.annotation[feat], sep="\t")
 
 
 Dependencies
