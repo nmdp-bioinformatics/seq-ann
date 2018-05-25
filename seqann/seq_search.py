@@ -40,14 +40,14 @@ from seqann.util import get_features
 
 import logging
 
-is_classII = lambda x: True if re.search("HLA-D", x) else False
+from seqann.util import is_classII
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
 
 
-# TODO: Add to util.py
+# TODO: Add documentation
 def getblocks(coords):
     block = []
     blocks = []
@@ -74,7 +74,8 @@ class SeqSearch(Model):
     '''
     classdocs
     '''
-    def __init__(self, refdata: ReferenceData=None, verbose: bool=False):
+    def __init__(self, refdata: ReferenceData=None,
+                 verbose: bool=False, verbosity: int=0):
         """
         ReferenceData
         :param refdata: The reference data of this SeqSearch.
@@ -82,18 +83,19 @@ class SeqSearch(Model):
         """
         self.data_types = {
             'refdata': ReferenceData,
-            'verbose': bool
+            'verbose': bool,
+            'verbosity': int
         }
 
         self.attribute_map = {
             'refdata': 'refdata',
-            'verbose': 'verbose'
+            'verbose': 'verbose',
+            'verbosity': 'verbosity'
         }
-        if not refdata:
-            refdata = ReferenceData()
 
         self._refdata = refdata
         self._verbose = verbose
+        self._verbosity = verbosity
         self.logger = logging.getLogger("Logger." + __name__)
 
     @classmethod
@@ -139,7 +141,7 @@ class SeqSearch(Model):
         feats = get_features(seqrec)
         if partial_ann:
             if self.verbose:
-                self.logger.info("SeqSearch using partial annotation | "
+                self.logger.info("Using partial annotation | "
                                  + locus + " "
                                  + str(len(partial_ann.features)))
 
@@ -151,17 +153,31 @@ class SeqSearch(Model):
             seq_covered = partial_ann.covered
             mapping = partial_ann.mapping
 
+            if self.verbose:
+                self.logger.info("Partial sequence coverage = "
+                                 + str(seq_covered))
+                self.logger.info("Partial sequence metho = "
+                                 + method)
+
             # Skip references that only have features
             # that have already been annoated
             if len([f for f in feats if f in found_feats]) == len(feats):
+                if self.verbose:
+                    self.logger.info("Skipping incomplete refseq")
                 return partial_ann
 
         for feat_name in feats:
+
+            if self.verbose and self.verbosity > 0:
+                self.logger.info("Running seqsearch for " + feat_name)
 
             # skip if partial annotation is provided
             # and the feat name is not one of the
             # missing features
             if partial_ann and feat_name not in partial_ann.refmissing:
+                if self.verbose:
+                    self.logger.info("Skipping " + feat_name
+                                     + " - Already annotated")
                 continue
 
             # Search for the reference feature sequence in the
@@ -170,6 +186,10 @@ class SeqSearch(Model):
             # is not found, then record that feature as missing.
             seq_search = nt_search(str(in_seq.seq), str(feats[feat_name]))
             if len(seq_search) == 2:
+
+                if self.verbose and self.verbosity > 1:
+                    self.logger.info("Found exact match for " + feat_name)
+
                 seq_covered -= len(str(feats[feat_name]))
                 end = int(len(str(feats[feat_name])) + seq_search[1])
 
@@ -183,6 +203,10 @@ class SeqSearch(Model):
                                             ExactPosition(start),
                                             ExactPosition(end), strand=1),
                                         type=feat_name)})
+
+                if self.verbose and self.verbosity > 1:
+                    self.logger.info("Coordinates | Start = " + str(start) + " - End = " + str(end))
+
                 si = seq_search[1]+1 if seq_search[1] != 0 and \
                     feat_name != 'five_prime_UTR' else 0
                 for i in range(si, end+1):
@@ -195,15 +219,27 @@ class SeqSearch(Model):
                                               + self.refdata.dbversion)
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
+                if self.verbose and self.verbosity > 1:
+                    self.logger.info("Found " + str(len(seq_search))
+                                     + " matches for " + feat_name)
                 feat_missing.update({feat_name: feats[feat_name]})
                 ambig_map.update({feat_name: seq_search[1:len(seq_search)]})
             else:
+                if self.verbose and self.verbosity > 1:
+                    self.logger.info("No match for " + feat_name)
                 feat_missing.update({feat_name: feats[feat_name]})
 
         blocks = getblocks(coordinates)
         exact_matches = list(found_feats.keys())
+
+        # If it's a class II sequence and
+        # exon_2 is an exact match
         if 'exon_2' in exact_matches and len(blocks) == 2 \
                 and is_classII(locus):
+
+            if self.verbose and self.verbosity > 0:
+                self.logger.info("Running search for class II sequence")
+
             r = True
             for b in blocks:
                 x = b[len(b)-1]
@@ -236,6 +272,10 @@ class SeqSearch(Model):
                                                     strand=1),
                                                 type=featname)})
                     seq_covered -= len(b)
+
+                if self.verbose and self.verbosity > 0:
+                    self.logger.info("Successfully annotated class II sequence")
+
                 return Annotation(features=found_feats,
                                   covered=seq_covered,
                                   seq=in_seq,
@@ -255,6 +295,45 @@ class SeqSearch(Model):
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
 
+            if self.verbose and self.verbosity > 0:
+                self.logger.info("* Annotation not complete *")
+
+            # Print out what blocks haven't been annotated
+            if self.verbose and self.verbosity > 2:
+                self.logger.info("Blocks not annotated:")
+                for b in mb:
+                    self.logger.info(",".join([str(i) for i in b]))
+
+            # Print out what features were missing by the ref
+            if self.verbose and self.verbosity > 2:
+                self.logger.info("Refseq was missing these features:")
+                for f in refmissing:
+                    self.logger.info(f)
+
+            # Print out what features were ambig matches
+            if self.verbose and self.verbosity > 2 and len(ambig_map.keys()) > 1:
+                self.logger.info("Features with ambig matches:")
+                for f in ambig_map:
+                    self.logger.info(f)
+
+            # Print out what features were exact matches
+            if self.verbose and self.verbosity > 2 and len(exact_matches.keys()) > 1:
+                self.logger.info("Features with exact matches:")
+                for f in exact_matches:
+                    self.logger.info(f)
+
+            # Print out what features have been annotated
+            if self.verbose and self.verbosity > 2 and len(annotated_feats.keys()) > 1:
+                self.logger.info("Features annotated:")
+                for f in annotated_feats:
+                    self.logger.info(f)
+
+            # Print out what features are missing
+            if self.verbose and self.verbosity > 2 and len(feat_missing.keys()) > 1:
+                self.logger.info("Features missing:")
+                for f in feat_missing:
+                    self.logger.info(f)
+
             annotation = Annotation(features=annotated_feats,
                                     covered=seq_covered,
                                     seq=in_seq,
@@ -266,6 +345,33 @@ class SeqSearch(Model):
                                     mapping=mapping,
                                     exact_match=exact_matches)
         else:
+            if self.verbose and self.verbosity > 0:
+                self.logger.info("* No missing blocks *")
+
+            # Print out what features were ambig matches
+            if self.verbose and self.verbosity > 2 and len(ambig_map.keys()) > 1:
+                self.logger.info("Features with ambig matches:")
+                for f in ambig_map:
+                    self.logger.info(f)
+
+            # Print out what features were exact matches
+            if self.verbose and self.verbosity > 2 and len(exact_matches.keys()) > 1:
+                self.logger.info("Features with exact matches:")
+                for f in exact_matches:
+                    self.logger.info(f)
+
+            # Print out what features have been annotated
+            if self.verbose and self.verbosity > 2 and len(annotated_feats.keys()) > 1:
+                self.logger.info("Features annotated:")
+                for f in annotated_feats:
+                    self.logger.info(f)
+
+            # Print out what features are missing
+            if self.verbose and self.verbosity > 2 and len(feat_missing.keys()) > 1:
+                self.logger.info("Features missing:")
+                for f in feat_missing:
+                    self.logger.info(f)
+
             annotation = Annotation(features=annotated_feats,
                                     covered=seq_covered,
                                     seq=in_seq,
@@ -447,8 +553,6 @@ class SeqSearch(Model):
                                           mapping, found_feats,
                                           loc, rerun=True)
         else:
-            # print("_resolve_unmapped")
-            # print(missing_blocks)
             return found_feats, missing_blocks
 
     @property
@@ -490,3 +594,23 @@ class SeqSearch(Model):
         :type verbose: ReferenceData
         """
         self._verbose = verbose
+
+    @property
+    def verbosity(self) -> int:
+        """
+        Gets the verbosity of this SeqSearch.
+
+        :return: The verbosity of this SeqSearch.
+        :rtype: ReferenceData
+        """
+        return self._verbosity
+
+    @verbosity.setter
+    def verbosity(self, verbosity: int):
+        """
+        Sets the verbosity of this SeqSearch.
+
+        :param verbosity: The verbosity of this SeqSearch.
+        :type verbosity: ReferenceData
+        """
+        self._verbosity = verbosity

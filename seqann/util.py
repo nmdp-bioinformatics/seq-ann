@@ -21,6 +21,7 @@
 #    > http://www.fsf.org/licensing/licenses/lgpl.html
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
+import re
 import os
 import string
 import random as r
@@ -29,6 +30,72 @@ from datetime import datetime, date
 from six import integer_types, iteritems
 from Bio.SeqFeature import SeqFeature
 
+# TODO: Add documentation
+
+
+def is_kir(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("KIR", feature) else False
+
+
+def isexon(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("exon", feature) else False
+
+
+def isutr(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("UTR", feature) else False
+
+
+def isfive(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("five", feature) else False
+
+
+def is_classII(feature: str=None) -> bool:
+    """
+    :param sequence: The input sequence record.
+    :type sequence: Seq
+    :param locus: The gene locus associated with the sequence.
+    :type locus: str
+    :param nseqs: The number of blast sequences to use.
+    :type nseqs: int
+    :rtype: bool
+    """
+    return True if re.search("HLA-D", feature) else False
 
 def get_seqfeat(seqrecord):
 

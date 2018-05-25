@@ -57,7 +57,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 
-def align_seqs(found_seqs, sequence, locus, verbose=False):
+def align_seqs(found_seqs, sequence, locus, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -66,6 +66,7 @@ def align_seqs(found_seqs, sequence, locus, verbose=False):
 
     :return: GFEobject.
     """
+    logger = logging.getLogger("Logger." + __name__)
     seqs = [found_seqs, sequence]
     indata = flatten([[">" + str(s.id), str(s.seq)]
                       for s in seqs])
@@ -89,11 +90,15 @@ def align_seqs(found_seqs, sequence, locus, verbose=False):
                 align.append(list(alignment[1]))
     child.terminate()
 
+    # Print out what blocks haven't been annotated
+    if verbose and len(align) > 0:
+        logger.info("* ClustalOmega alignment succeeded *")
+
     insers, dels = 0, 0
     all_features = []
     if len(align)-2 == 0:
         infeats = get_seqfeat(seqs[0])
-        diffs = count_diffs(align, infeats, sequence, verbose)
+        diffs = count_diffs(align, infeats, sequence, verbose, verbosity)
         if isinstance(diffs, Annotation):
             return diffs, 0, 0
         else:
@@ -106,7 +111,11 @@ def align_seqs(found_seqs, sequence, locus, verbose=False):
             f = find_features(infeats, align[i])
             all_features.append(f)
 
-    annotation = resolve_feats(all_features, align[len(align)-1], verbose)
+    if verbose:
+        logger.info("Number of features found = " + str(len(all_features)))
+
+    annotation = resolve_feats(all_features, align[len(align)-1],
+                               verbose, verbosity)
     return annotation, insers, dels
 
 
@@ -148,14 +157,14 @@ def find_features(feats, sequ):
     return feats
 
 
-def resolve_feats(feat_list, seqin, verbose):
+def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
     """
-    Aligns sequences with clustalw
+    Resolves features from alignments
 
-    :param locus: string containing HLA locus.
-    :param sequence: string containing sequence data.
+    :param feat_list: string containing HLA locus.
+    :param seqin: string containing sequence data.
 
-    :return: GFEobject.
+    :return: Annotation.
     """
     logger = logging.getLogger("Logger." + __name__)
     seq = SeqRecord(seq=Seq("".join(seqin), SingleLetterAlphabet()))
@@ -166,14 +175,9 @@ def resolve_feats(feat_list, seqin, verbose):
     mapping = dict(map(lambda x: [x, 1],
                        [i for i in range(0, len(seq.seq)+1)]))
 
-    # TODO: use loggin
     if len(feat_list) > 1:
         if verbose:
             logger.error("resolve_feats error")
-        for i in range(0, len(feat_list)):
-            for j in range(0, len(feat_list)):
-                if i != j:
-                    print(j, i)
     else:
         full_annotation = {}
         features = feat_list[0]
@@ -192,20 +196,31 @@ def resolve_feats(feat_list, seqin, verbose):
                     mapping[i] = feat
 
         blocks = getblocks(coordinates)
+
+        # Print out what blocks haven't been annotated
+        if verbose and verbosity > 2:
+            logger.info("Blocks not mapped:")
+            for b in blocks:
+                logger.info(",".join([str(i) for i in b]))
+
+        # Print out what features are missing
+        if verbose and verbosity > 0 and len(full_annotation.keys()) > 1:
+            logger.info("Features resolved:")
+            for f in full_annotation:
+                logger.info(f)
+
         annotation = Annotation(annotation=full_annotation,
                                 method="clustalo",
                                 blocks=blocks)
         return annotation
 
 
-def count_diffs(align, feats, inseq, verbose):
+def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
     :param locus: string containing HLA locus.
     :param sequence: string containing sequence data.
-
-    :return: GFEobject.
     """
 
     nfeats = len(feats.keys())
@@ -245,8 +260,7 @@ def count_diffs(align, feats, inseq, verbose):
 
     logger = logging.getLogger("Logger." + __name__)
 
-    # TODO: use logging
-    if verbose:
+    if verbose and verbosity > 1:
         logger.info("Features algined = " + ",".join(list(feats.keys())))
         logger.info('{:<22}{:<6d}'.format("Number of feats: ", nfeats))
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper))
@@ -258,11 +272,11 @@ def count_diffs(align, feats, inseq, verbose):
     indel = iper + delper
     if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
         if verbose:
-            logger.info("Alignment coverage high enough to complete annotation")
+            logger.info("Alignment coverage NOT high enough to return annotation")
         return Annotation(complete_annotation=False)
     else:
         if verbose:
-            logger.warning("Alignment coverage NOT high enough to complete annotation")
+            logger.warning("Alignment coverage high enough to complete annotation")
         return insr, dels
 
 
