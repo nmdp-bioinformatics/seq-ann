@@ -2,5 +2,5 @@ biopython==1.70
 bson==0.5.5
 numpy==1.13.3
 PyMySQL==0.7.11
-pytz==2017.3
+pytz==2018.4
 six==1.11.0
