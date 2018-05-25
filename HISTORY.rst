@@ -2,6 +2,11 @@
 History
 =======
 
+0.0.21 (2018-05-25)
+~~~~~~~~~~~~~~~~~~~
+
+* Fixed how the ref_align step was being done.
+* The alignments are now done using the previous partial alignment instead of redoing the sequence search step.
 
 0.0.20 (2018-05-17)
 ~~~~~~~~~~~~~~~~~~~

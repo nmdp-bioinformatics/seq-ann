@@ -21,18 +21,16 @@
 #    > http://www.fsf.org/licensing/licenses/lgpl.html
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
-
-import re
-
 from Bio.Seq import Seq
 from Bio import pairwise2
 from Bio.Alphabet import IUPAC
 from BioSQL.BioSeq import DBSeq
+from BioSQL import BioSeqDatabase
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import ExactPosition
 from Bio.SeqFeature import FeatureLocation
-from BioSQL import BioSeqDatabase
+
 from seqann.models.annotation import Annotation
 from seqann.models.reference_data import ReferenceData
 from seqann.blast_cmd import blastn
@@ -42,63 +40,13 @@ from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
 from seqann.util import randomid
 from seqann.util import get_seqs
+from seqann.util import isexon
+from seqann.util import isutr
 
 from itertools import repeat
+from typing import Dict
 
 import logging
-
-
-def isexon(feature: str=None) -> bool:
-    """
-    :param sequence: The input sequence record.
-    :type sequence: Seq
-    :param locus: The gene locus associated with the sequence.
-    :type locus: str
-    :param nseqs: The number of blast sequences to use.
-    :type nseqs: int
-    :rtype: bool
-    """
-    return True if re.search("exon", feature) else False
-
-
-def isutr(feature: str=None) -> bool:
-    """
-    :param sequence: The input sequence record.
-    :type sequence: Seq
-    :param locus: The gene locus associated with the sequence.
-    :type locus: str
-    :param nseqs: The number of blast sequences to use.
-    :type nseqs: int
-    :rtype: bool
-    """
-    return True if re.search("UTR", feature) else False
-
-
-def isfive(feature: str=None) -> bool:
-    """
-    :param sequence: The input sequence record.
-    :type sequence: Seq
-    :param locus: The gene locus associated with the sequence.
-    :type locus: str
-    :param nseqs: The number of blast sequences to use.
-    :type nseqs: int
-    :rtype: bool
-    """
-    return True if re.search("five", feature) else False
-
-
-def is_classII(feature: str=None) -> bool:
-    """
-    :param sequence: The input sequence record.
-    :type sequence: Seq
-    :param locus: The gene locus associated with the sequence.
-    :type locus: str
-    :param nseqs: The number of blast sequences to use.
-    :type nseqs: int
-    :rtype: bool
-    """
-    return True if re.search("HLA-D", feature) else False
-
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -128,20 +76,80 @@ class BioSeqAnn(Model):
         :type verbose: bool
         :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
         :type verbosity: int
+        :param debug: Dictionary containing names of steps that you want to debug.
+        :type debug: Dict
     '''
     def __init__(self, server: BioSeqDatabase=None, dbversion: str='3310',
                  datfile: str='', verbose: bool=False, verbosity: int=0,
-                 pid: str='NA', kir: bool=False, align: bool=False):
+                 pid: str='NA', kir: bool=False, align: bool=False,
+                 debug: Dict=None):
+
         self.align = align
         self.kir = kir
         self.server = server
         self.verbose = verbose
         self.verbosity = verbosity
+        self.debug = debug
+
+        refdata_verbose = verbose
+        refdata_verbosity = verbosity
+        seqsearch_verbose = verbose
+        seqsearch_verbosity = verbosity
+
+        # Run with the most possible amount
+        # of logging for the provided steps
+        if self.debug:
+            if 'seq_search' in self.debug:
+                seqsearch_verbose = True
+                seqsearch_verbosity = debug['seq_search']
+            else:
+                seqsearch_verbose = False
+                seqsearch_verbosity = 0
+
+            if 'refdata' in self.debug:
+                refdata_verbose = True
+                refdata_verbosity = debug['refdata']
+            else:
+                refdata_verbose = False
+                refdata_verbosity = 0
+
+            if 'seqann' in self.debug:
+                self.verbose = True
+                self.verbosity = debug['seqann']
+            else:
+                self.verbose = False
+                self.verbosity = 0
+
+            if 'align' in self.debug:
+                self.align_verbose = True
+                self.align_verbosity = debug['align']
+            else:
+                self.align_verbose = False
+                self.align_verbosity = 0
+
+            if 'all' in self.debug:
+                self.verbose = True
+                self.verbosity = debug['all']
+                seqsearch_verbose = True
+                seqsearch_verbosity = debug['all']
+                refdata_verbose = True
+                refdata_verbosity = debug['all']
+                self.align_verbose = True
+                self.align_verbosity = debug['all']
+
+        # Initalize reference data
         self.refdata = ReferenceData(server=server,
                                      dbversion=dbversion,
                                      alignments=align,
+                                     verbose=refdata_verbose,
+                                     verbosity=refdata_verbosity,
                                      kir=kir)
-        self.seqsearch = SeqSearch(refdata=self.refdata, verbose=self.verbose)
+
+        # Initalize SeqSearch for matching features
+        self.seqsearch = SeqSearch(refdata=self.refdata,
+                                   verbose=seqsearch_verbose,
+                                   verbosity=seqsearch_verbosity)
+
         self.logger = logging.getLogger("Logger." + __name__)
         self.logname = "ID {:<10} -".format(str(pid))
 
@@ -167,29 +175,19 @@ class BioSeqAnn(Model):
             Example output::
 
                 {
+                     'complete_annotation': True,
                      'annotation': {'exon_1': SeqRecord(seq=Seq('AGAGACTCTCCCG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[]),
                                     'exon_2': SeqRecord(seq=Seq('AGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACCAACGGGACGGAGC...GAG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[]),
                                     'exon_3': SeqRecord(seq=Seq('TGGAGCCCACAGTGACCATCTCCCCATCCAGGACAGAGGCCCTCAACCACCACA...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='<unknown name>', description='HLA:HLA00630', dbxrefs=[])},
-                     'complete_annotation': True,
                      'features': {'exon_1': SeqFeature(FeatureLocation(ExactPosition(0), ExactPosition(13), strand=1), type='exon_1'),
-                                  'exon_2': SeqFeature(FeatureLocation(ExactPosition(13), ExactPosition(283), strand=1), type='exon_2')},
+                                  'exon_2': SeqFeature(FeatureLocation(ExactPosition(13), ExactPosition(283), strand=1), type='exon_2')
+                                  'exon_3': SeqFeature(FeatureLocation(ExactPosition(283), ExactPosition(503), strand=1), type='exon_3')},
                      'method': 'nt_search and clustalo',
-                     'refmissing': ['five_prime_UTR',
-                                    'intron_1',
-                                    'intron_2',
-                                    'exon_3',
-                                    'intron_3',
-                                    'exon_4',
-                                    'intron_4',
-                                    'exon_5',
-                                    'intron_5',
-                                    'exon_6',
-                                    'three_prime_UTR'],
                      'seq': SeqRecord(seq=Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[])
                 }
 
 
-        Examples:
+        Example usage:
 
             >>> from Bio.Seq import Seq
             >>> from Bio.SeqRecord import SeqRecord
@@ -214,11 +212,12 @@ class BioSeqAnn(Model):
             # Guessing locus with blastn
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
 
-            if self.verbose:
+            if locus and self.verbose:
                 self.logger.info(self.logname + " Locus prediction = " + locus)
 
             if not locus:
-                self.logger.error(self.logname + " Locus count not be determined!")
+                self.logger.error(self.logname + " Locus could not be determined!")
+                # TODO: Raise exception
                 return ''
 
         # Exact match found
@@ -228,25 +227,28 @@ class BioSeqAnn(Model):
                 self.logger.info(self.logname + " exact match found")
             return matched_annotation
 
+        # Run blast to get ref sequences
         blast = blastn(sequence, locus, nseqs,
                        kir=self.kir, verbose=self.verbose,
                        refdata=self.refdata)
 
         # If the blastn fails..
         if blast.failed:
-            # TODO: return error object
             self.logger.error(self.logname + " blastn failed! " + locus + " " + str(sequence.seq))
             self.logger.error(self.logname + " loci invalid " + locus + " " + str(sequence.seq))
-            
+
             # Try and determine the locus and rerun. This is
             # useful for cases when the sequences is associated
             # with the wrong locus.
             locus = get_locus(sequence, kir=self.kir, refdata=self.refdata)
-            self.logger.info(self.logname + " Locus prediction = " + locus)
+
+            if locus and self.verbose:
+                self.logger.info(self.logname + " Locus prediction = " + locus)
 
             # Check if the locus could be found
             if not locus:
-                self.logger.error(self.logname + " Locus couldn't be determined not be determined!")
+                self.logger.error(self.logname + " Locus could not be determined!")
+                # TODO: Raise exception
                 return
             return self.annotate(sequence, locus)
 
@@ -256,7 +258,7 @@ class BioSeqAnn(Model):
         for i in range(0, len(found)-1):
             if self.verbose:
                 self.logger.info(self.logname + " running seq_search with " + found[i].name)
-            
+
             # * Running sequence search *
             # This does a simple string search for the
             # reference features within the provided sequence
@@ -290,14 +292,10 @@ class BioSeqAnn(Model):
             alignseqs = len(found)-1
 
         # Now loop through doing alignment
-        #for i in range(0, 2):
-        #if not is_classII(locus):
+        # TODO: Add parameter for limiting this step
         for i in range(0, alignseqs):
-            annotation = self.seqsearch.search_seqs(found[i],
-                                                    sequence, locus,
-                                                    partial_ann=partial_ann)
             aligned_ann = self.ref_align(found[i], sequence, locus,
-                                         annotation=annotation)
+                                         annotation=partial_ann)
             if aligned_ann.complete_annotation:
                 if self.align:
                     if self.verbose:
@@ -313,6 +311,7 @@ class BioSeqAnn(Model):
         # TODO: make guess with full alignment
         # return self.ref_align(found, sequence, locus,
         #                       partial_ann=partial_ann)
+        # TODO: raise exception
         self.logger.error(self.logname + " No annotation produced!")
         return ''
 
@@ -362,7 +361,9 @@ class BioSeqAnn(Model):
                                                            b)
                 for combseqr in combosrecs:
                     mbtmp = []
-                    an, ins, dels = align_seqs(combseqr, feat, locus, verbose=self.verbose)
+                    an, ins, dels = align_seqs(combseqr, feat, locus,
+                                               verbose=self.align_verbose,
+                                               verbosity=self.align_verbosity)
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
                         for f in an.annotation:
@@ -397,7 +398,9 @@ class BioSeqAnn(Model):
                         return annotation
 
                 if len(exons.seq) >= 4:
-                    exonan, ins, dels = align_seqs(exons, feat, locus, verbose=self.verbose)
+                    exonan, ins, dels = align_seqs(exons, feat, locus,
+                                                   verbose=self.align_verbose,
+                                                   verbosity=self.align_verbosity)
                     mapped_exons = list(exonan.annotation.keys())
                     if len(mapped_exons) >= 1:
                         if self.verbose:
@@ -413,7 +416,9 @@ class BioSeqAnn(Model):
 
                 # Run full sequence
                 if len(fullrec.seq) >= 4:
-                    fullref = align_seqs(fullrec, feat, locus, verbose=self.verbose)
+                    fullref = align_seqs(fullrec, feat, locus,
+                                         verbose=self.align_verbose,
+                                         verbosity=self.align_verbosity)
                     if hasattr(fullref, 'annotation'):
                         mapped_full = list(fullref.annotation.keys())
                         if len(mapped_full) >= 1:
@@ -483,15 +488,6 @@ class BioSeqAnn(Model):
                 else:
                     in_seq = str(annotation.annotation[feat].seq)
                     ref_seq = self.refdata.annoated_alignments[locus][allele][feat]['Seq']
-                    # TODO: add logging
-                    # if in_seq == ref_len:
-                    #     alignment = pairwise2.align.globalxx(self.refdata.annoated_alignments[locus][allele][feat]['Seq'], in_seq)
-                    #     if self.verbose and self.verbosity > 0:
-                    #         self.logger.info(self.logname + " Align1 -> in_seq == ref_len " + feat)
-                    #         self.logger.info(self.logname + " " + str(len(in_seq)) + "==" + str(ref_len))
-                    #         self.logger.info(alignment)
-                    #     annoated_align.update({feat: alignment[0][0]})
-                    # else:
                     alignment = pairwise2.align.globalxx(in_seq, ref_seq)
                     if self.verbose and self.verbosity > 0:
                         self.logger.info(self.logname + " Align2 -> in_seq != ref_len " + feat)
@@ -698,35 +694,6 @@ class BioSeqAnn(Model):
                     qualifiers=quals)
             start = end
             return seq_feat, start
-
-
-class SeqAnnException(Exception):
-
-    def __init__(self, status=None, reason=None, http_resp=None):
-        if http_resp:
-            self.status = http_resp.status
-            self.reason = http_resp.reason
-            self.body = http_resp.data
-            self.headers = http_resp.getheaders()
-        else:
-            self.status = status
-            self.reason = reason
-            self.body = None
-            self.headers = None
-
-    def __str__(self):
-        """
-        Custom error messages for exception
-        """
-        error_message = "({0})\n"\
-                        "Reason: {1}\n".format(self.status, self.reason)
-        if self.headers:
-            error_message += "HTTP response headers: {0}\n".format(self.headers)
-
-        if self.body:
-            error_message += "HTTP response body: {0}\n".format(self.body)
-
-        return error_message
 
 
 

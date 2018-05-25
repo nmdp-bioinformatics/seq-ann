@@ -3,8 +3,8 @@ SeqAnn
 ===============================
 
 
-.. image:: https://img.shields.io/travis/nmdp-bioinformatics/seqann.svg
-        :target: https://travis-ci.org/nmdp-bioinformatics/seqann
+.. image:: https://img.shields.io/travis/nmdp-bioinformatics/SeqAnn.svg
+        :target: https://travis-ci.org/nmdp-bioinformatics/SeqAnn
 
 .. image:: https://readthedocs.org/projects/seqann/badge/?version=latest
         :target: https://seqann.readthedocs.io/en/latest/?badge=latest

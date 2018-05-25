@@ -22,33 +22,28 @@
 #
 from __future__ import absolute_import
 
-import re
 import os
+import sys
 import csv
 import glob
+import pickle
+import logging
 import pymysql
 import collections
 import urllib.request
 from typing import List, Dict
-from datetime import date, datetime
 
 from seqann.util import get_structures
 from seqann.util import get_structorder
 
 from Bio import SeqIO
-from Bio.Alphabet import IUPAC
 from BioSQL import BioSeqDatabase
 from Bio.SeqRecord import SeqRecord
 
+from seqann.util import get_features
 from seqann.util import deserialize_model
 from seqann.models.base_model_ import Model
 from seqann.models.annotation import Annotation
-from seqann.util import get_features
-import sys
-import pickle
-
-is_kir = lambda x: True if re.search("KIR", x) else False
-
 
 biosqlpass = "my-secret-pw"
 if os.getenv("BIOSQLPASS"):
@@ -80,7 +75,7 @@ class ReferenceData(Model):
     classdocs
     '''
     def __init__(self, server: BioSeqDatabase=None, datafile: str=None,
-                 dbversion: str='3310', verbose: bool=False,
+                 dbversion: str='3310', verbose: bool=False, verbosity: int=0,
                  kir: bool=False, alignments: bool=False):
         """
         ReferenceData - a model defined in Swagger
@@ -104,6 +99,7 @@ class ReferenceData(Model):
             'blastdb': str,
             'server_avail': bool,
             'verbose': bool,
+            'verbosity': int,
             'alignments': bool,
             'imgtdat': List[SeqRecord]
         }
@@ -123,21 +119,34 @@ class ReferenceData(Model):
             'kir': 'kir',
             'imgtdat': 'imgtdat',
             'alignments': 'alignments',
-            'verbose': 'verbose'
+            'verbose': 'verbose',
+            'verbosity': 'verbosity'
         }
-        self._alignments = alignments
         self._kir = kir
         self._verbose = verbose
+        self._verbosity = verbosity
         self._dbversion = dbversion
         self._server = server
         self._datafile = datafile
+        self._alignments = alignments
         self._server_avail = True if server else False
+
+        self.logger = logging.getLogger("Logger." + __name__)
 
         hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/' + dbversion + '/hla.dat'
         kir_url = 'ftp://ftp.ebi.ac.uk/pub/databases/ipd/kir/KIR.dat'
         hla_loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
                     'HLA-DPB1', 'HLA-DQA1', 'HLA-DPA1', 'HLA-DRB3',
                     'HLA-DRB4', 'HLA-DRB5']
+
+        if self.verbose and verbosity > 0:
+            self.logger.info("IPD-IMGT/HLA release = " + dbversion)
+            self.logger.info("BIOSQLUSER = " + biosqluser)
+            self.logger.info("BIOSQLHOST = " + biosqlhost)
+            self.logger.info("BIOSQLDB = " + biosqldb)
+            self.logger.info("BIOSQLPORT = " + biosqlport)
+            self.logger.info("HLA URL = " + hla_url)
+            self.logger.info("KIR URL = " + kir_url)
 
         # TODO: Download! Don't have in package!
         hla_names = []
@@ -151,16 +160,24 @@ class ReferenceData(Model):
             allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
                                    + dbversion + '.txt'
 
-        # TODO: add try
-        with open(allele_list, 'r') as f:
-            for line in f:
-                line = line.rstrip()
-                accession, name = line.split(" ")
-                if not kir:
-                    hla_names.append("HLA-" + name)
-                else:
-                    hla_names.append(name)
-            f.close()
+        # Open allele list file
+        try:
+            with open(allele_list, 'r') as f:
+                for line in f:
+                    line = line.rstrip()
+                    accession, name = line.split(" ")
+                    if not kir:
+                        hla_names.append("HLA-" + name)
+                    else:
+                        hla_names.append(name)
+                f.close()
+            if self.verbose and verbosity > 0:
+                self.logger.info("Loaded " + str(len(hla_names)) + " allele names")
+        except OSError as err:
+            self.logger.error("OS error: {0}".format(err))
+        except:
+            self.logger.error("Unexpected error:", sys.exc_info()[0])
+            raise
 
         feature_lengths = tree()
         columns = ['mean', 'std', 'min', 'max']
@@ -171,21 +188,29 @@ class ReferenceData(Model):
         else:
             featurelength_file = data_dir + "/../data/feature_lengths.csv"
 
-        # TODO: add try
-        with open(featurelength_file, newline='') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                #feat_loc = str(row['locus']) + "_" + str(row['feature'])
-                ldata = [row[c] for c in columns]
-                feature_lengths[row['locus']][row['feature']] = ldata
-
-        self._feature_lengths = feature_lengths
-        self._hla_names = hla_names
+        # Open feature file
+        # TODO: use pandas
+        try:
+            with open(featurelength_file, newline='') as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    ldata = [row[c] for c in columns]
+                    feature_lengths[row['locus']][row['feature']] = ldata
+                csvfile.close()
+        except OSError as err:
+            self.logger.error("OS error: {0}".format(err))
+        except:
+            self.logger.error("Unexpected error:", sys.exc_info()[0])
+            raise
 
         self._blastdb = blastdb
         self._hla_loci = hla_loci
+        self._hla_names = hla_names
+        self._feature_lengths = feature_lengths
+
         self._structures = get_structures()
         self._struct_order = get_structorder()
+
         self._structure_max = {'KIR2DP1': 20, 'KIR2DL5A': 20, 'KIR2DS4': 20,
                                'HLA-DPB1': 11, 'KIR2DS2': 20, 'KIR3DP1': 20,
                                'HLA-DRB4': 13, 'KIR2DL1': 20, 'KIR2DS5': 20,
@@ -195,6 +220,7 @@ class ReferenceData(Model):
                                'KIR3DS1': 20, 'KIR2DL5B': 20, 'HLA-DRB1': 13,
                                'KIR3DL3': 20, 'KIR2DS1': 20, 'HLA-C': 17}
 
+        # Starting location of sequence for IPD-IMGT/HLA alignments
         self.location = {"HLA-A": -300, "HLA-B": -284, "HLA-C": -283,
                          "HLA-DRB1": -599, "HLA-DRB3": -327, "HLA-DRB4": -313,
                          "HLA-DQB1": -525, "HLA-DPB1": -366, "HLA-DPA1": -523,
@@ -203,32 +229,35 @@ class ReferenceData(Model):
         self.align_coordinates = {}
         self.annoated_alignments = {}
         if alignments:
-            # TODO: Use logging
             pickle_dir = data_dir + '/../data/alignments/' + dbversion
             pickle_files = glob.glob(pickle_dir + '/*.pickle')
             for pickle_file in pickle_files:
                 locus = pickle_file.split("/")[len(pickle_file.split("/"))-1].split(".")[0].split("_")[0]
+                if self.verbose:
+                    self.logger.info("Loading " + pickle_file)
                 with open(pickle_file, 'rb') as handle:
                     self.annoated_alignments.update({locus:
                                                      pickle.load(handle)})
-                #print("Finished loading " + locus)
                 allele = list(self.annoated_alignments[locus].keys())[0]
                 if not locus in self.align_coordinates and "HLA-" + locus in self.struct_order:
                     start = 0
                     feat_order = list(self.struct_order["HLA-" + locus].keys())
                     feat_order.sort()
                     self.align_coordinates.update({locus: {}})
+                    if self.verbose and self.verbosity > 2:
+                            self.logger.info("* Alignment coordinates *")
                     for i in feat_order:
                         feat = self.struct_order["HLA-" + locus][i]
                         seq = self.annoated_alignments[locus][allele][feat]['Seq']
                         end = start + len(seq)
-                        # WHERE IS THIS USED??
+                        if self.verbose and self.verbosity > 2:
+                            self.logger.info(feat + " start = " + str(start) + " | end = " + str(end))
                         for j in range(start, end):
                             self.align_coordinates[locus].update({j: feat})
                         start = end
 
-        # TODO: ADD DB VERSION!
-        # TODO: Be able to load KIR and HLA
+        # If no server is provided
+        # download the dat file
         if not self._server_avail:
             datfile = ''
 
@@ -238,13 +267,18 @@ class ReferenceData(Model):
                 datfile = data_dir + '/../data/' + dbversion + '.hla.dat'
 
             if not os.path.isfile(datfile) and not kir:
+                if self.verbose:
+                    self.logger.info("Downloding KIR data file - " + datfile)
                 download_dat(hla_url, datfile)
             elif not os.path.isfile(datfile) and kir:
+                if self.verbose:
+                    self.logger.info("Downloding HLA data file - " + datfile)
                 download_dat(kir_url, datfile)
 
-            # TODO: add try
+            # Load HLA dat file
             hladata = list(SeqIO.parse(datfile, "imgt"))
-            #print("serverless load")
+            if self.verbose:
+                self.logger.info("Finished loading dat file")
             self._imgtdat = hladata
         else:
             self._imgtdat = []
@@ -300,6 +334,26 @@ class ReferenceData(Model):
         :type verbose: bool
         """
         self._verbose = verbose
+
+    @property
+    def verbosity(self) -> int:
+        """
+        Gets the server of this ReferenceData.
+
+        :return: The server of this ReferenceData.
+        :rtype: BioSeqDatabase
+        """
+        return self._verbosity
+
+    @verbosity.setter
+    def verbosity(self, verbosity: int):
+        """
+        Sets the verbosity of this bool.
+
+        :param verbosity: The server of this ReferenceData.
+        :type verbosity: bool
+        """
+        self._verbosity = verbosity
 
     @property
     def alignments(self) -> bool:
@@ -494,6 +548,8 @@ class ReferenceData(Model):
             conn.close()
 
             if typ:
+                if self.verbose:
+                    self.logger.info("Exact typing found in BioSQL database")
                 return self.seqannotation(seq, typ, loc)
             else:
                 return
@@ -510,9 +566,7 @@ class ReferenceData(Model):
                 "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
                 "LIMIT " + n
 
-            # TODO: ONLY MAKE ONE CONNECTION
             # TODO: add try statement
-            # TODO: take password from environment variable
             conn = pymysql.connect(host=biosqlhost, port=biosqlport,
                                    user=biosqluser, passwd=biosqlpass,
                                    db=biosqldb)
@@ -527,6 +581,8 @@ class ReferenceData(Model):
             conn.close()
 
             if typing:
+                if self.verbose:
+                    self.logger.info("Exact typing found in BioSQL database")
                 return typing
             else:
                 return
@@ -542,8 +598,13 @@ class ReferenceData(Model):
         :return: The Annotation from the found sequence
         :rtype: Annotation
         """
-        # TODO: Add try statement
-        db = self.server[self.dbversion + "_" + locus]
+        try:
+            db = self.server[self.dbversion + "_" + locus]
+        except:
+            self.logger.error("The database " + self.dbversion + "_"
+                              + locus + " does not exist!")
+            return ''
+
         seqrecord = db.lookup(name=allele)
         return seqrecord
 
