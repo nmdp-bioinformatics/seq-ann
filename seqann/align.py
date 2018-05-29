@@ -276,7 +276,7 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         return Annotation(complete_annotation=False)
     else:
         if verbose:
-            logger.warning("Alignment coverage high enough to complete annotation")
+            logger.info("Alignment coverage high enough to complete annotation")
         return insr, dels
 
 

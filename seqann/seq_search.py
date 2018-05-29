@@ -300,39 +300,30 @@ class SeqSearch(Model):
 
             # Print out what blocks haven't been annotated
             if self.verbose and self.verbosity > 2:
+                self.logger.info("Number of blocks not annotated = " + str(len(mb)))
                 self.logger.info("Blocks not annotated:")
                 for b in mb:
                     self.logger.info(",".join([str(i) for i in b]))
 
             # Print out what features were missing by the ref
             if self.verbose and self.verbosity > 2:
-                self.logger.info("Refseq was missing these features:")
-                for f in refmissing:
-                    self.logger.info(f)
+                self.logger.info("Refseq was missing these features = " + ",".join(list(refmissing)))
 
             # Print out what features were ambig matches
-            if self.verbose and self.verbosity > 2 and len(ambig_map.keys()) > 1:
-                self.logger.info("Features with ambig matches:")
-                for f in ambig_map:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(ambig_map) > 1:
+                self.logger.info("Features with ambig matches = " + ",".join(list(ambig_map)))
 
             # Print out what features were exact matches
-            if self.verbose and self.verbosity > 2 and len(exact_matches.keys()) > 1:
-                self.logger.info("Features with exact matches:")
-                for f in exact_matches:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(exact_matches) > 1:
+                self.logger.info("Features exact matches = " + ",".join(list(exact_matches)))
 
             # Print out what features have been annotated
-            if self.verbose and self.verbosity > 2 and len(annotated_feats.keys()) > 1:
-                self.logger.info("Features annotated:")
-                for f in annotated_feats:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(annotated_feats) > 1:
+                self.logger.info("Features annotated = " + ",".join(list(annotated_feats)))
 
             # Print out what features are missing
-            if self.verbose and self.verbosity > 2 and len(feat_missing.keys()) > 1:
-                self.logger.info("Features missing:")
-                for f in feat_missing:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(feat_missing) > 1:
+                self.logger.info("Features missing = " + ",".join(list(feat_missing)))
 
             annotation = Annotation(features=annotated_feats,
                                     covered=seq_covered,
@@ -349,28 +340,20 @@ class SeqSearch(Model):
                 self.logger.info("* No missing blocks *")
 
             # Print out what features were ambig matches
-            if self.verbose and self.verbosity > 2 and len(ambig_map.keys()) > 1:
-                self.logger.info("Features with ambig matches:")
-                for f in ambig_map:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(ambig_map) > 1:
+                self.logger.info("Features with ambig matches = " + ",".join(list(ambig_map)))
 
             # Print out what features were exact matches
-            if self.verbose and self.verbosity > 2 and len(exact_matches.keys()) > 1:
-                self.logger.info("Features with exact matches:")
-                for f in exact_matches:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(exact_matches) > 1:
+                self.logger.info("Features exact matches = " + ",".join(list(exact_matches)))
 
             # Print out what features have been annotated
-            if self.verbose and self.verbosity > 2 and len(annotated_feats.keys()) > 1:
-                self.logger.info("Features annotated:")
-                for f in annotated_feats:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(annotated_feats) > 1:
+                self.logger.info("Features annotated = " + ",".join(list(annotated_feats)))
 
             # Print out what features are missing
-            if self.verbose and self.verbosity > 2 and len(feat_missing.keys()) > 1:
-                self.logger.info("Features missing:")
-                for f in feat_missing:
-                    self.logger.info(f)
+            if self.verbose and self.verbosity > 2 and len(feat_missing) > 1:
+                self.logger.info("Features missing = " + ",".join(list(feat_missing)))
 
             annotation = Annotation(features=annotated_feats,
                                     covered=seq_covered,

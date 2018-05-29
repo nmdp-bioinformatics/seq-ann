@@ -53,7 +53,7 @@ test_requirements = [
 
 setup(
     name='seqann',
-    version='0.0.20',
+    version='0.0.22',
     description="Sequence Annotation",
     long_description=readme + '\n\n' + history,
     author="Mike Halagan",
