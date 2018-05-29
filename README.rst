@@ -21,6 +21,7 @@ SeqAnn
         :target: https://coveralls.io/github/nmdp-bioinformatics/SeqAnn?branch=master
 
 
+
 Python package for annotating gene features
 
 
@@ -41,7 +42,7 @@ run on any machine that has docker installed.
 Parameters
 ----------
 
-Below are the list of parameters and the default values used when initalizing a ``BioSeqAnn`` class.
+Below are the list of parameters and the default values used when initalizing a ``BioSeqAnn`` object.
 
 .. table::
     :widths: 10 10 10 50
@@ -112,8 +113,8 @@ Annotations
             }
 
 
-Once a sequence has been successfully annotated the gene features and their corresponding sequences are available. If a full
-annotation is not able to be produced then nothing will be returned.
+Once a sequence has been annotated the gene features and their corresponding sequences are available in the returned ``Annotation`` object. If a full
+annotation is not able to be produced then nothing will be returned. Below is an example showing how the features can be accessed and printed out.
 
 .. code-block:: python3
 

@@ -118,7 +118,7 @@ class TestRefdata(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        refdata = ReferenceData(server=server)
+        refdata = ReferenceData(server=server, debug={"refdata": 5})
         self.assertIsInstance(refdata, ReferenceData)
         self.assertTrue(refdata.server_avail)
         self.assertFalse(refdata.imgtdat)
@@ -134,7 +134,7 @@ class TestRefdata(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         for db in self.dblist:
-            refdata = ReferenceData(server=server, dbversion=db)
+            refdata = ReferenceData(server=server, dbversion=db, debug={"refdata": 5})
             self.assertEqual(refdata.dbversion, db)
             self.assertTrue(refdata.server_avail)
             self.assertFalse(refdata.imgtdat)
@@ -149,7 +149,7 @@ class TestRefdata(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        refdata = ReferenceData(server=server)
+        refdata = ReferenceData(server=server,debug={"refdata": 5})
         input_seq = self.data_dir + '/exact_seqs.fasta'
         self.assertFalse(refdata.imgtdat)
 
@@ -186,7 +186,7 @@ class TestRefdata(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        refdata1 = ReferenceData(server=server)
+        refdata1 = ReferenceData(server=server, debug={"refdata": 5})
         refdata2 = ReferenceData()
 
         datseqs = [a for a in refdata2.imgtdat
@@ -216,7 +216,7 @@ class TestRefdata(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        refdata = ReferenceData(server=server, alignments=True)
+        refdata = ReferenceData(server=server, alignments=True, debug={"refdata": 5})
         for ex in self.expected['align']:
             locus = ex['locus']
             allele = ex['name'].split("_")[0]
