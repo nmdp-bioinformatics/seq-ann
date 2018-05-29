@@ -52,10 +52,6 @@ import logging
 
 flatten = lambda l: [item for sublist in l for item in sublist]
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
-
 
 def align_seqs(found_seqs, sequence, locus, verbose=False, verbosity=0):
     """

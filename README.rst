@@ -21,19 +21,19 @@ SeqAnn
         :target: https://coveralls.io/github/nmdp-bioinformatics/SeqAnn?branch=master
 
 
-
 Python package for annotating gene features
 
 
 * Free software: LGPL 3.0
 * Documentation: https://seqann.readthedocs.io.
+* `Jupyter Notebook`_
 
 
 Overview
 ---------
 
 The ``seqann`` package allows 
-users to easily annotate the gene features. Annotations can be created by passing consensus sequences to the ``annotate`` method in the
+users to annotate gene features in consensus sequences. Annotations can be created by passing consensus sequences to the ``annotate`` method in the
 ``BioSeqAnn`` class. No parameters are required when initalizing a ``BioSeqAnn`` class. However, annotations can be
 created significantly faster when using a BioSQL database. When a BioSQL database is not provided the lastest `hla.dat`_ file is downloaded and parsed.
 A BioSQL database containing all of IPD-IMGT/HLA is available on DockerHub_ and can be
@@ -64,13 +64,14 @@ Below are the list of parameters and the default values used when initalizing a 
     +-------------+-------------------+---------+-------------------------------------------------------------------------------+
     | verbosity   | ``int``           | None    | Numerical value to indicate how verbose the output will be in verbose mode.   |
     +-------------+-------------------+---------+-------------------------------------------------------------------------------+
-
+    | debug       | ``Dict``          | None    | A dictionary containing a process names as the key and verbosity as the value |
+    +-------------+-------------------+---------+-------------------------------------------------------------------------------+
 
 Usage
 ---------
 
 To annotated a sequence initialize a new ``BioSeqAnn`` object and then pass the sequence to the
-annotate method. The sequence must be a Biopython ``Seq``. The locus of the sequence is not required but it will improve the accuracy of the annotation.
+``annotate`` method. The sequence must be a Biopython ``Seq``. The locus of the sequence is not required but it will improve the accuracy of the annotation.
 
 
 .. code-block:: python3
@@ -144,4 +145,4 @@ Dependencies
 .. _`Clustal Omega`: http://www.clustal.org/omega/
 .. _blastn: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-
+.. _`Jupyter Notebook`: https://github.com/nmdp-bioinformatics/SeqAnn/blob/master/notebook/Examples.ipynb

@@ -41,8 +41,9 @@ Tests for `seqann.seqsearch` module.
 """
 
 import os
-import unittest
+import logging
 import pymysql
+import unittest
 
 from BioSQL import BioSeqDatabase
 from seqann.models.reference_data import ReferenceData
@@ -80,6 +81,10 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
+logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
+
 
 def conn():
     try:
@@ -107,7 +112,7 @@ class TestSeqSearch(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        refdata = ReferenceData(server=server, dbversion='3290')
+        refdata = ReferenceData(server=server)
         seqsearch = SeqSearch(refdata=refdata)
         self.assertIsInstance(seqsearch, SeqSearch)
         self.assertTrue(seqsearch.refdata.server_avail)

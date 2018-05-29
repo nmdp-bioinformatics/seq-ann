@@ -48,10 +48,6 @@ from typing import Dict
 
 import logging
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
-
 
 class BioSeqAnn(Model):
     '''
