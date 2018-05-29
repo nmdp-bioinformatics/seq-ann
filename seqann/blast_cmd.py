@@ -35,10 +35,6 @@ import re
 
 has_hla = lambda x: True if re.search("HLA", x) else False
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
-
 
 def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
     """

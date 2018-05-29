@@ -97,6 +97,7 @@ def is_classII(feature: str=None) -> bool:
     """
     return True if re.search("HLA-D", feature) else False
 
+
 def get_seqfeat(seqrecord):
 
     n = 3 if len(seqrecord.features) >= 3 else len(seqrecord.features)
@@ -321,7 +322,6 @@ def _deserialize_dict(data, boxed_type):
     """
     return {k: _deserialize(v, boxed_type)
             for k, v in iteritems(data)}
-
 
 
 def get_structures():

@@ -42,10 +42,6 @@ import logging
 
 from seqann.util import is_classII
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
-
 
 # TODO: Add documentation
 def getblocks(coords):

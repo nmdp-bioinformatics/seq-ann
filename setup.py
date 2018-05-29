@@ -55,7 +55,7 @@ setup(
     name='seqann',
     version='0.0.22',
     description="Sequence Annotation",
-    long_description=readme + '\n\n' + history,
+    long_description=readme,
     author="Mike Halagan",
     author_email='mhalagan@nmdp.org',
     url='https://github.com/nmdp-bioinformatics/seqann',

@@ -31,6 +31,7 @@ Tests for `seqann` module.
 """
 import os
 import json
+import logging
 import pymysql
 import unittest
 
@@ -74,6 +75,10 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
+logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
+
 
 def conn():
     try:
@@ -105,7 +110,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="001_seqann")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertIsInstance(seqann.refdata, ReferenceData)
@@ -115,7 +120,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_002_noserver(self):
-        seqann = BioSeqAnn()
+        seqann = BioSeqAnn(verbose=True, verbosity=5, pid="002_noserver")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertGreater(len(seqann.refdata.hla_names), 10)
@@ -132,7 +137,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="003_ambig")
         #self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
@@ -178,10 +183,8 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
-        #self.assertEqual(seqann.refdata.dbversion, '3290')
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="004_insertion")
         input_seq = self.data_dir + '/insertion_seqs.fasta'
-
         for ex in self.expected['insertion']:
             i = int(ex['index'])
             locus = ex['locus']
@@ -227,7 +230,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="005_partial")
         input_seq = self.data_dir + '/partial_seqs.fasta'
 
         for ex in self.expected['partial']:
@@ -272,7 +275,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="006_partialambig")
         input_seq = self.data_dir + '/partial_ambig.fasta'
 
         for ex in self.expected['partial_ambig']:
@@ -316,7 +319,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="007_exact")
         input_seq = self.data_dir + '/exact_seqs.fasta'
 
         for ex in self.expected['exact']:
@@ -353,7 +356,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="009_nomatch")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -372,7 +375,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="010_noloc")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -383,7 +386,85 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 011 Requires MySQL connection")
+    def test_011_fail(self):
+        input_seq = self.data_dir + '/failed_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="011_fail")
+        self.assertFalse(seqann.refdata.imgtdat)
+        annotation = seqann.annotate(in_seq)
+        self.assertFalse(annotation)
+        server.close()
+        pass
 
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 012 Requires MySQL connection")
+    def test_012_debug(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+        seqann = BioSeqAnn(server=server,
+                           debug={"seqann": 5, "align": 1,
+                                  "seq_search": 3,
+                                  "refdata": 2})
+        self.assertTrue(seqann.debug)
+        self.assertEqual(seqann.verbosity, 5)
+        self.assertEqual(seqann.align_verbosity, 1)
+        self.assertEqual(seqann.seqsearch.verbosity, 3)
+        self.assertEqual(seqann.refdata.verbosity, 2)
+
+        seqann = BioSeqAnn(server=server,
+                           debug={"seqann": 2,
+                                  "seq_search": 5})
+        self.assertTrue(seqann.debug)
+        self.assertEqual(seqann.verbosity, 2)
+        self.assertEqual(seqann.align_verbosity, 0)
+        self.assertEqual(seqann.seqsearch.verbosity, 5)
+        self.assertEqual(seqann.refdata.verbosity, 0)
+
+        seqann = BioSeqAnn(server=server,
+                           verbose=True,
+                           verbosity=3)
+        self.assertFalse(seqann.debug)
+        self.assertEqual(seqann.verbosity, 3)
+        self.assertEqual(seqann.align_verbosity, 3)
+        self.assertEqual(seqann.seqsearch.verbosity, 3)
+        self.assertEqual(seqann.refdata.verbosity, 3)
+        server.close()
+        pass
+
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 012 Requires MySQL connection")
+    def test_013_logging(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+
+        with self.assertLogs(level='INFO') as cm:
+            seqann = BioSeqAnn(server=server,
+                               verbose=True, verbosity=5)
+            input_seq = self.data_dir + '/failed_seqs.fasta'
+            in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+            annotation = seqann.annotate(in_seq)
+            self.assertFalse(annotation)
+
+        self.assertGreater(len(cm.output), 1)
+        error = list(cm.output)[len(cm.output)-1].split(":")[0]
+        error_msg = list(cm.output)[len(cm.output)-1].split("-")[1]
+        self.assertEqual(error, "ERROR")
+        self.assertEqual(error_msg, " Locus could not be determined!")
+        server.close()
+        pass
 
 
 
