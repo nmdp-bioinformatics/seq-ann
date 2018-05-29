@@ -107,7 +107,7 @@ class TestAlign(unittest.TestCase):
         # TODO *** NOT WORKING WITH NO LOCUS           ***
         # TODO *** FIX 3290 Alignments                 ***
         # TODO *** GET ALIGNMENTS WORKING WITH DB SEQS ***
-        seqann = BioSeqAnn(server=server, align=True)
+        seqann = BioSeqAnn(server=server, align=True, debug={"align": 5})
         input_seq = self.data_dir + '/align_tests.fasta'
         for ex in self.expected['align']:
             i = int(ex['index'])

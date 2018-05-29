@@ -132,7 +132,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         #self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
@@ -178,7 +178,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         #self.assertEqual(seqann.refdata.dbversion, '3290')
         input_seq = self.data_dir + '/insertion_seqs.fasta'
 
@@ -227,7 +227,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         input_seq = self.data_dir + '/partial_seqs.fasta'
 
         for ex in self.expected['partial']:
@@ -272,7 +272,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         input_seq = self.data_dir + '/partial_ambig.fasta'
 
         for ex in self.expected['partial_ambig']:
@@ -316,7 +316,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         input_seq = self.data_dir + '/exact_seqs.fasta'
 
         for ex in self.expected['exact']:
@@ -353,7 +353,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -372,7 +372,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5)
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]

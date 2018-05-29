@@ -260,7 +260,7 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
 
     logger = logging.getLogger("Logger." + __name__)
 
-    if verbose and verbosity > 1:
+    if verbose and verbosity > 0:
         logger.info("Features algined = " + ",".join(list(feats.keys())))
         logger.info('{:<22}{:<6d}'.format("Number of feats: ", nfeats))
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of gaps: ", gaps, gper))
