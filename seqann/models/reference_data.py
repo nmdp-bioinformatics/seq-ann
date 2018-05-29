@@ -140,11 +140,11 @@ class ReferenceData(Model):
                     'HLA-DRB4', 'HLA-DRB5']
 
         if self.verbose and verbosity > 0:
-            self.logger.info("IPD-IMGT/HLA release = " + dbversion)
+            self.logger.info("IPD-IMGT/HLA release = " + str(dbversion))
             self.logger.info("BIOSQLUSER = " + biosqluser)
             self.logger.info("BIOSQLHOST = " + biosqlhost)
             self.logger.info("BIOSQLDB = " + biosqldb)
-            self.logger.info("BIOSQLPORT = " + biosqlport)
+            self.logger.info("BIOSQLPORT = " + str(biosqlport))
             self.logger.info("HLA URL = " + hla_url)
             self.logger.info("KIR URL = " + kir_url)
 

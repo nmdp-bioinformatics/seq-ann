@@ -272,7 +272,7 @@ class BioSeqAnn(Model):
                     self.logger.info(self.logname + " Features annotated = " + ",".join(list(annotation.annotation.keys())))
                     if self.verbosity > 2:
                         for f in annotation.features:
-                            self.logger.info(self.logname + f + " = " + str(annotation.annotation[f]))
+                            self.logger.info(self.logname + " " + f + " = " + str(annotation.annotation[f].seq))
                 annotation.clean()
                 return annotation
             else:
@@ -309,7 +309,7 @@ class BioSeqAnn(Model):
                     self.logger.info(self.logname + " Features annotated = " + ",".join(list(annotation.annotation.keys())))
                     if self.verbosity > 2:
                         for f in annotation.features:
-                            self.logger.info(self.logname + f + " = " + str(annotation.annotation[f]))
+                            self.logger.info(self.logname + " " + f + " = " + str(annotation.annotation[f].seq))
                 annotation.clean()
                 return aligned_ann
             else:
@@ -389,7 +389,7 @@ class BioSeqAnn(Model):
 
                                 if self.verbose and self.verbosity > 2:
                                     sl = str(len(an.annotation[f]))
-                                    self.logger.info(self.logname + locus
+                                    self.logger.info(self.logname + " " + locus
                                                      + " " + f
                                                      + " len = " + sl
                                                      + " | max = "
@@ -398,23 +398,23 @@ class BioSeqAnn(Model):
                                                      + str(min_length))
 
                                     if len(an.annotation[f]) <= max_length:
-                                        self.logger.info(self.logname + locus
+                                        self.logger.info(self.logname + " " + locus
                                                          + " " + f
                                                          + " " + sl + " <= "
                                                          + str(max_length))
                                     else:
-                                        self.logger.info(self.logname + locus
+                                        self.logger.info(self.logname + " " + locus
                                                          + " " + f
                                                          + " " + sl + " ! <= !"
                                                          + str(max_length))
 
                                     if len(an.annotation[f]) >= min_length:
-                                        self.logger.info(self.logname + locus
+                                        self.logger.info(self.logname + " " + locus
                                                          + " " + f
                                                          + " " + sl + " >= "
                                                          + str(min_length))
                                     else:
-                                        self.logger.info(self.logname + locus
+                                        self.logger.info(self.logname + " " + locus
                                                          + " " + f
                                                          + " " + sl + " ! >= !"
                                                          + str(min_length))
