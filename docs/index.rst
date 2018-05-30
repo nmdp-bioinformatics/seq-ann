@@ -14,6 +14,7 @@ Copyright (c) 2018 Be The Match operated by National Marrow Donor Program. All R
 
    seqann
    contributing
+   debug
    history
    authors
 

@@ -27,6 +27,7 @@ combos_test.py
 venv/
 misc/
 sphixvenv/
+venvjupyter/
 
 log/
 *.out

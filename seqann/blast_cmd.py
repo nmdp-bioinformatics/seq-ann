@@ -43,10 +43,8 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
     :param sequences: sequenences to blast
     :param kir: bool whether the sequences are KIR or not
 
-    :return: GFEobject.
+    :return: str.
     """
-    # TODO: DO ALL ON COMMAND LINE
-    #       and use pipes so no files are created
     if not refdata:
         refdata = ReferenceData()
 
@@ -56,9 +54,17 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
     SeqIO.write(sequences, input_fasta, "fasta")
     blastn_cline = NcbiblastnCommandline(query=input_fasta,
                                          db=refdata.blastdb,
-                                         evalue=evalue, outfmt=5,
+                                         evalue=evalue,
+                                         outfmt=5,
+                                         reward=1,
+                                         penalty=-3,
+                                         gapopen=5,
+                                         gapextend=2,
+                                         dust='yes',
                                          out=output_xml)
+
     stdout, stderr = blastn_cline()
+
     blast_qresult = SearchIO.read(output_xml, 'blast-xml')
 
     #   Delete files
@@ -89,7 +95,7 @@ def blastn(sequences, locus, nseqs, kir=False,
     :param sequences: sequenences to blast
     :param kir: bool whether the sequences are KIR or not
 
-    :return: GFEobject.
+    :return: Blast.
     """
     logger = logging.getLogger("Logger." + __name__)
 
