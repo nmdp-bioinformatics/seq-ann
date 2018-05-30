@@ -40,9 +40,10 @@ import unittest
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
 
-from seqann.models.reference_data import ReferenceData
-from seqann.models.blast import Blast
 from seqann.blast_cmd import blastn
+from seqann.models.blast import Blast
+from seqann.blast_cmd import get_locus
+from seqann.models.reference_data import ReferenceData
 
 neo4jpass = 'gfedb'
 if os.getenv("NEO4JPASS"):
@@ -138,7 +139,26 @@ class TestBlast(unittest.TestCase):
         server.close()
         pass
 
-    def test_003_noref(self):
+    @unittest.skipUnless(conn(), "TestBlast 003 MySQL connection")
+    def test_003_noloc(self):
+        input_seq = self.data_dir + '/ambig_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+        refdata = ReferenceData(server=server)
+        self.assertFalse(refdata.imgtdat)
+        locus = get_locus(in_seq, refdata=refdata)
+        self.assertIsInstance(locus, str)
+        self.assertTrue(locus)
+        self.assertEqual(locus, "HLA-A")
+        server.close()
+        pass
+
+    def test_004_noref(self):
         input_seq = self.data_dir + '/ambig_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
         blast_o = blastn(in_seq, 'HLA-A', 3)
