@@ -1,4 +1,29 @@
 {
+    "gfe":[
+        {
+            "locus":"HLA-A",
+            "annotation":{
+                "five_prime_UTR":"CAGGAGCAGAGGGGTCAGGGCGAAGTCCCAGGGCCCCAGGCGTGGCTCTCAGGGTCTCAGGCCCCGAAGGCGGTGTATGGATTGGGGAGTCCCAGCCTTGGGGATTCCCCAACTCCGCAGTTTCTTTTCTCCCTCTCCCAACCTACGTAGGGTCCTTCATCCTGGATACTCACGACGCGGACCCAGTTCTCACTCCCATTGGGTGTCGGGTTTCCAGAGAAGCCAATCAGTGTCGTCGCGGTCGCTGTTCTAAAGTCCGCACGCACCCACCGGGACTCAGATTCTCCCCAGACGCCGAGG",
+                "exon_1":"ATGGCCGTCATGGCGCCCCGAACCCTCCTCCTGCTACTCTCGGGGGCCCTGGCCCTGACCCAGACCTGGGCGG",
+                "exon_2":"GCTCCCACTCCATGAGGTATTTCTTCACATCCGTGTCCCGGCCCGGCCGCGGGGAGCCCCGCTTCATCGCCGTGGGCTACGTGGACGACACGCAGTTCGTGCGGTTCGACAGCGACGCCGCGAGCCAGAAGATGGAGCCGCGGGCGCCGTGGATAGAGCAGGAGGGGCCGGAGTATTGGGACCAGGAGACACGGAATATGAAGGCCCACTCACAGACTGACCGAGCGAACCTGGGGACCCTGCGCGGCTACTACAACCAGAGCGAGGACG",
+                "intron_2":"GTGAGTGACCCCGGCCCGGGGCGCAGGTCACGACCCCTCATCCCCCACGGACGGGCCAGGTCGCCCACAGTCTCCGGGTCCGAGATCCACCCCGAAGCCGCGGGACTCCGAGACCCTTGTCCCGGGAGAGGCCCAGGCGCCTTTACCCGGTTTCATTTTCAGTTTAGGCCAAAAATCCCCCCGGGTTGGTCGGGGCGGGGCGGGGCTCGGGGGACTGGGCTGACCGCGGGGTCGGGGCCAG",
+                "exon_3":"GTTCTCACACCATCCAGATAATGTATGGCTGCGACGTGGGGCCGGACGGGCGCTTCCTCCGCGGGTACCGGCAGGACGCCTACGACGGCAAGGATTACATCGCCCTGAACGAGGACCTGCGCTCTTGGACCGCGGCGGACATGGCAGCTCAGATCACCAAGCGCAAGTGGGAGGCGGTCCATGCGGCGGAGCAGCGGAGAGTCTACCTGGAGGGCCGGTGCGTGGACGGGCTCCGCAGATACCTGGAGAACGGGAAGGAGACGCTGCAGCGCACGG",
+                "exon_4":"ACCCCCCCAAGACACATATGACCCACCACCCCATCTCTGACCATGAGGCCACCCTGAGGTGCTGGGCCCTGGGCTTCTACCCTGCGGAGATCACACTGACCTGGCAGCGGGATGGGGAGGACCAGACCCAGGACACGGAGCTCGTGGAGACCAGGCCTGCAGGGGATGGAACCTTCCAGAAGTGGGCGGCTGTGGTGGTGCCTTCTGGAGAGGAGCAGAGATACACCTGCCATGTGCAGCATGAGGGTCTGCCCAAGCCCCTCACCCTGAGATGGG",
+                "intron_4":"GTAAGGAGGGAGATGGGGGTGTCATGTCTCTTAGGGAAAGCAGGAGCCTCTCTGGAGACCTTTAGCAGGGTCAGGGCCCCTCACCTTCCCCTCTTTTCCCAG",
+                "exon_5":"AGCTGTCTTCCCAGCCCACCATCCCCATCGTGGGCATCATTGCTGGCCTGGTTCTCCTTGGAGCTGTGATCACTGGAGCTGTGGTCGCTGCCGTGATGTGGAGGAGGAAGAGCTCAG",
+                "intron_5":"GTGGAGAAGGGGTGAAGGGTGGGGTCTGAGATTTCTTGTCTCACTGAGGGTTCCAAGCCCCAGCTAGAAATGTGCCCTGTCTCATTACTGGGAAGCACCTTCCACAATCATGGGCCGACCCAGCCTGGGCCCTGTGTGCCAGCACTTACTCTTTTGTAAAGCACCTGTTAAAATGAAGGACAGATTTATCACCTTGATTACGGCGGTGATGGGACCTGATCCCAGCAGTCACAAGTCACAGGGGAAGGTCCCTGAGGACAGACCTCAGGAGGGCTATTGGTCCAGGACCCACACCTGCTTTCTTCATGTTTCCTGATCCCGCCCTGGGTCTGCAGTCACACATTTCTGGAAACTTCTCTGGGGTCCAAGACTAGGAGGTTCCTCTAGGACCTTAAGGCCCTGGCTCCTTTCTGGTATCTCACAGGACATTTTCTTCCCACAG",
+                "intron_6":"GTAAGTATGAAGGAGGCTGATGCCTGAGGTCCTTGGGATATTGTGTTTGGGAGCCCATGGGGGAGCTCACCCACCCCACAATTCCTCCTCTAGCCACATCTTCTGTGGGATCTGACCAGGTTCTGTTTTTGTTCTACCCCAG",
+                "exon_7":"GCAGTGACAGTGCCCAGGGCTCTGATGTGTCTCTCACAGCTTGTAAAG",
+                "intron_7":"GTGAGAGCTTGGAGGGCCTGATGTGTGTTGGGTGTTGGGTGGAACAGTGGACACAGCTGTGCTATGGGGTTTCTTTGCGTTGGATGTATTGAGCATGCGATGGGCTGTTTAAGGTGTGACCCCTCACTGTGATGGATATGAATTTGTTCATGAATATTTTTTTCTATAG",
+                "three_prime_UTR":"GACAGCTGCCTTGTGTGGGACTGAGAGGCAAGAGTTGTTCCTGCCCTTCCCTTTGTGACTTGAAGAACCCTGACTTTGTTTCTGCAAAGGCACCTGCATGTGTCTGTGTTCGTGTAGGCATAATGTGAGGAGGTGGGGAGAGCACCCCACCCCCATGTCCACCATGACCCTCTTCCCACGCTGACCTGTGCTCCCTCTCCAATCATCTTTCCTGTTCCAGAGAGGTGGGGCTGAGGTGTCTCCATCTCTGTCTCAACTTCATGGTGCACTGAGCTGTAACTTCTTCCTTCCCTATTAAAA",
+                "exon_8":"TGTGA",
+                "intron_1":"GTGAGTGCGGGGTCGGGAGGGAAACCGCCTCTGCGGGGCCCAGCAAGGGGCCCTCCTGGCGGGGGCGCAGGACCGGGGGAGCCGCGCCGGGAGGAGGGTCGGGCAGGTCTCAGCCACTGCTCGCCCCCAG",
+                "intron_3":"GTACCAGGGGCCACGGGGCGCCTCCCTGATCGCCTATAGATCTCCCGGGCTGGCCTCCCACAAGGAGGGGAGACAATTGGGACCAACACTAGAATATCACCCTCCCTCTGGTCCTGAGGGAGAGGAATCCTCCTGGGTTTCCAGATCCTGTACCAGAGAGTGACTCTGAGGTTCCGCCCTGCTCTCTGACACAATTAAGGGATAAAATCTCTGAAGGAGTGACGGGAAGACGATCCCTCGAATACTGATGAGTGGTTCCCTTTGACACCGGCAGCAGCCTTGGGCCCGTGACTTTTCCTCTCAGGCCTTGTTCTCTGCTTCACACTCAATGTGTGTGGGGGTCTGAGTCCAGCACTTCTGAGTCTCTCAGCCTCCACTCAGGTCAGGACCAGAAGTCGCTGTTCCCTTCTCAGGGAATAGAAGATTATCCCAGGTGCCTGTGTCCAGGCTGGTGTCTGGGTTCTGTGCTCTCTTCCCCATCCCGGGTGTCCTGTCCATTCTCAAGATGGCCACATTTGTGCTGGTGGAGTGTCCCATGACAGATGCAAAATGCCTGAATTTTCTGACTCTTCCCGTCAG",
+                "exon_6":"ATAGAAAAGGAGGGAGTTAGGGTCAGGCTGCAA"
+            },
+            "gfe":"HLA-Aw2-1-463-1-1-1-1523-1-1-1-1-136-1-1-1-1-4"
+        }
+    ],
     "align": [
         {
             "locus": "HLA-A",
@@ -28,6 +53,7 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw0-1-0-1-0-1-0-1-0-1-0-1-0-1-0-1-0",
             "feats":["exon_1", "exon_2", "exon_3", "exon_5", "exon_6", "exon_7", "exon_4", "exon_8"],
             "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
             "index": "0"
@@ -35,6 +61,7 @@
         {
             "locus": "HLA-DQB1",
             "name": "HLA-DQB1*02:01:01",
+            "gfe":"HLA-DQB1w0-1-0-1-0-1-0-1-0-0-0-1-0",
             "feats":["exon_1", "exon_2", "exon_3", "exon_6"],
             "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
             "index": "1"
@@ -44,6 +71,7 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw0-1-0-2627-0-1-0-1-0-1-0-1-0-1-0-1-0",
             "feats":["exon_1", "exon_2", "exon_3", "exon_5", "exon_6", "exon_7", "exon_4", "exon_8"],
             "diff": ["exon_2"],
             "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
@@ -53,6 +81,7 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw0-278-0-2627-0-1-0-1-0-1-0-1-0-1-0-1-0",
             "feats":["exon_1", "exon_2", "exon_3", "exon_5", "exon_6", "exon_7", "exon_4", "exon_8"],
             "diff": ["exon_1", "exon_2"],
             "missing_feats": ["five_prime_UTR","intron_1","intron_2","intron_3","intron_4","intron_5","intron_6"],
@@ -64,6 +93,7 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw2-1-464-1-1-1-1-1-1-1-1-1-1-1-1-1-4",
             "diff": [ "intron_1"],
             "lengths":{
                     "intron_1":3
@@ -73,6 +103,7 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw2-1-1-1-862-1-1-1-318-1-1-1-1-1-1-1-4",
             "diff": [ "intron_4", "intron_2"],
             "lengths":{
                     "intron_4":6,
@@ -83,6 +114,7 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw1165-1-1-1-1-1-1-1-1-1-1-1-1-1-1-1-4",
             "diff": [ "five_prime_UTR"],
             "lengths":{
                     "five_prime_UTR":6
@@ -95,97 +127,114 @@
         {
             "locus": "HLA-A",
             "name": "HLA-A*01:01:01:01",
+            "gfe":"HLA-Aw2-1-1-1-1-1-1-1-1-1-1-1-1-1-1-1-4",
             "index": "0"
         },
         {
             "locus": "HLA-A",
             "name": "HLA-A*24:23",
+            "gfe":"HLA-Aw333-6-5-30-15-106-9-16-1-7-9-2-6-1-9-1-52",
             "index": "1"
         },
         {
             "locus": "HLA-B",
             "name": "HLA-B*07:02:01:01",
+            "gfe":"HLA-Bw627-1-1-1-1-1-1-1-1-1-1-1-1-1-91",
             "index": "2"
         },
         {
             "locus": "HLA-C",
             "name": "HLA-C*01:02:01:01",
+            "gfe":"HLA-Cw396-1-1-1-1-1-1-1-1-1-1-1-1-1-1-1-59",
             "index": "3"
         },
         {
             "locus": "HLA-DRB1",
             "name": "HLA-DRB1*01:01:01",
+            "gfe":"HLA-DRB1w1-1-6-15-9-12-16-1-1-1-1-1-1",
             "index": "4"
         },
         {
             "locus": "HLA-DQB1",
             "name": "HLA-DQB1*02:01:01",
+            "gfe":"HLA-DQB1w1-1-1-1-1-1-1-1-1-1-1-1-1",
             "index": "5"
         }        
     ],
     "ambig": [
         {
             "locus": "HLA-A",
+            "gfe":"HLA-Aw2-1-1-2626-1-1-1-1-1-1-1-1-1-1-1-1-4",
             "name": "HLA-A*01:01:01:01",
             "diff": ["exon_2"],
             "index": "0"
         },
         {
             "locus": "HLA-A",
+            "gfe":"HLA-Aw333-6-5-30-15-106-9-16-1-7-9-96-6-1-9-1-52",
             "name": "HLA-A*24:23",
             "diff": ["exon_6"],
             "index": "1"
         },
         {
             "locus": "HLA-A",
+            "gfe":"HLA-Aw1164-1-1-1-1-1-1-1-1-1-1-1-396-1-1-1-4",
             "name": "HLA-A*01:01:01:01",
             "diff": ["five_prime_UTR", "intron_6"],
             "index": "2"
         },
         {
             "locus": "HLA-B",
+            "gfe":"HLA-Bw1402-1-1-1-1-1-1-1-1-1-1-1-1-1-91",
             "name": "HLA-B*07:02:01:01",
             "diff": ["five_prime_UTR"],
             "index": "3"
         },
         {
             "locus": "HLA-B",
+            "gfe":"HLA-Bw627-1-1-1-1-1-1-1-1-1-1-77-1-1-91",
             "name": "HLA-B*07:02:01:01",
             "diff": ["exon_6"],
             "index": "4"
         },
         {
             "locus": "HLA-C",
+            "gfe":"HLA-Cw841-1-1-1-1-1-1-1-1-1-1-1-1-1-1-1-59",
             "name": "HLA-C*01:02:01:01",
             "diff": ["five_prime_UTR"],
             "index": "5"
         },
         {
             "locus": "HLA-C",
+            "gfe":"HLA-Cw396-1-358-1-1-1-1-1-1-1-1-1-1-1-1-1-59",
             "name": "HLA-C*01:02:01:01",
             "diff": ["intron_1"],
             "index": "6"
         },
         {
             "locus": "HLA-A",
+            "gfe":"HLA-Aw2-1-463-1-1-1-1523-1-1-1-1-136-1-1-1-1-4",
             "name": "HLA-A*01:01:01:01",
             "diff": ["intron_1","intron_3","exon_6"],
             "index": "7"
         },
         {
             "locus": "HLA-DRB1",
+            "gfe":"HLA-DRB1w42-1-6-15-9-12-16-1-1-1-1-1-1",
             "name": "HLA-DRB1*01:01:01",
             "diff": ["five_prime_UTR"],
             "index": "8"
         },
         {
             "locus": "HLA-DRB1",
+            "gfe":"HLA-DRB1w1-1-6-15-1144-12-16-1-1-1-1-1-1",
             "name": "HLA-DRB1*01:01:01",
             "diff": ["intron_2"],
             "index": "9"
         },
         {
             "locus": "HLA-DQB1",
+            "gfe":"HLA-DQB1w1-12-1-1-1-1-1-1-1-1-1-1-1",
             "name": "HLA-DQB1*02:01:01",
             "diff": ["exon_1"],
             "index": "10"

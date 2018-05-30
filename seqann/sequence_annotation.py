@@ -42,9 +42,11 @@ from seqann.util import randomid
 from seqann.util import get_seqs
 from seqann.util import isexon
 from seqann.util import isutr
+from seqann.gfe import GFE
 
 from itertools import repeat
 from typing import Dict
+from typing import List
 
 import logging
 
@@ -64,6 +66,12 @@ class BioSeqAnn(Model):
         :type datfile: str
         :param pid: A process label that can be provided to help track the logging output.
         :type pid: str
+        :param load_features: Flag for downloading all gene features and accessions from the feature service.
+        :type load_features: bool
+        :param store_features: Flag for caching all features and their corresponding accessions.
+        :type store_features: bool
+        :param cached_features: Dictionary containing all the features from the feature service.
+        :type cached_features: Dict
         :param kir: Flag for indicating the input sequences are from the KIR gene system. 
         :type kir: bool
         :param align: Flag for producing the alignments along with the annotations.
@@ -78,20 +86,24 @@ class BioSeqAnn(Model):
     def __init__(self, server: BioSeqDatabase=None, dbversion: str='3310',
                  datfile: str='', verbose: bool=False, verbosity: int=0,
                  pid: str='NA', kir: bool=False, align: bool=False,
+                 load_features: bool=False, store_features: bool=False,
+                 cached_features: Dict=None,
                  debug: Dict=None):
 
-        self.align = align
         self.kir = kir
+        self.align = align
+        self.debug = debug
         self.server = server
         self.verbose = verbose
         self.verbosity = verbosity
-        self.debug = debug
         self.align_verbose = verbose
         self.align_verbosity = verbosity
 
+        gfe_verbose = verbose
+        gfe_verbosity = verbosity
         refdata_verbose = verbose
-        refdata_verbosity = verbosity
         seqsearch_verbose = verbose
+        refdata_verbosity = verbosity
         seqsearch_verbosity = verbosity
 
         # Run with the most possible amount
@@ -125,6 +137,23 @@ class BioSeqAnn(Model):
                 self.align_verbose = False
                 self.align_verbosity = 0
 
+            if 'gfe' in self.debug:
+                gfe_verbose = True
+                gfe_verbosity = debug['gfe']
+            else:
+                gfe_verbose = False
+                gfe_verbosity = 0
+
+        self.logger = logging.getLogger("Logger." + __name__)
+        self.logname = "ID {:<10} -".format(str(pid))
+
+        # Initalize GFE
+        self.gfe = GFE(pid=pid, verbose=gfe_verbose,
+                       verbosity=gfe_verbosity,
+                       load_features=load_features,
+                       store_features=store_features,
+                       cached_features=cached_features)
+
         # Initalize reference data
         self.refdata = ReferenceData(server=server,
                                      dbversion=dbversion,
@@ -138,11 +167,9 @@ class BioSeqAnn(Model):
                                    verbose=seqsearch_verbose,
                                    verbosity=seqsearch_verbosity)
 
-        self.logger = logging.getLogger("Logger." + __name__)
-        self.logname = "ID {:<10} -".format(str(pid))
-
     def annotate(self, sequence: Seq=None, locus: str=None,
-                 nseqs: int=10, alignseqs: int=10) -> Annotation:
+                 nseqs: int=10, alignseqs: int=10,
+                 skip: List=[]) -> Annotation:
         """
         annotate - method for annotating a BioPython sequence
 
@@ -154,6 +181,8 @@ class BioSeqAnn(Model):
         :type nseqs: int
         :param alignseqs: The number of sequences to use for targeted alignments.
         :type alignseqs: int
+        :param skip: A list of alleles to skip for using as a reference. This is used for validation and testing.
+        :type skip: List
         :rtype: Annotation
 
         Returns:
@@ -171,6 +200,7 @@ class BioSeqAnn(Model):
                                   'exon_2': SeqFeature(FeatureLocation(ExactPosition(13), ExactPosition(283), strand=1), type='exon_2')
                                   'exon_3': SeqFeature(FeatureLocation(ExactPosition(283), ExactPosition(503), strand=1), type='exon_3')},
                      'method': 'nt_search and clustalo',
+                     'gfe': 'HLA-Aw2-1-1-1-1-1-1-1-1-1-1-1-1-1-1-1-4',
                      'seq': SeqRecord(seq=Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet()), id='HLA:HLA00630', name='HLA:HLA00630', description='HLA:HLA00630 DQB1*03:04:01 597 bp', dbxrefs=[])
                 }
 
@@ -214,6 +244,11 @@ class BioSeqAnn(Model):
             # TODO: return name of allele
             if self.verbose:
                 self.logger.info(self.logname + " exact match found")
+
+            # Create GFE
+            feats, gfe = self.gfe.get_gfe(matched_annotation, locus)
+            matched_annotation.gfe = gfe
+            matched_annotation.exact = True
             return matched_annotation
 
         # Run blast to get ref sequences
@@ -233,7 +268,7 @@ class BioSeqAnn(Model):
             if locus and self.verbose:
                 self.logger.info(self.logname + " Locus prediction = " + locus)
 
-            # Check if the locus could be found
+            # Check if the locus could not be found
             if not locus:
                 self.logger.error(self.logname + " Locus could not be determined!")
                 # TODO: Raise exception
@@ -244,8 +279,14 @@ class BioSeqAnn(Model):
         partial_ann = None
         found = blast.match_seqs
         for i in range(0, len(found)-1):
+
+            # Skip a reference
+            # * For validation *
+            if found[i].name in skip:
+                continue
+
             if self.verbose:
-                self.logger.info(self.logname + " running seq_search with " + found[i].name)
+                self.logger.info(self.logname + " Running seq_search with " + found[i].name)
 
             # * Running sequence search *
             # This does a simple string search for the
@@ -269,6 +310,10 @@ class BioSeqAnn(Model):
                     if self.verbosity > 2:
                         for f in annotation.features:
                             self.logger.info(self.logname + " " + f + " = " + str(annotation.annotation[f].seq))
+
+                # Create GFE
+                feats, gfe = self.gfe.get_gfe(annotation, locus)
+                annotation.gfe = gfe
                 annotation.clean()
                 return annotation
             else:
@@ -287,6 +332,12 @@ class BioSeqAnn(Model):
         # Now loop through doing alignment
         # TODO: Add parameter for limiting this step
         for i in range(0, alignseqs):
+
+            # Skip a reference
+            # * For validation *
+            if found[i].name in skip:
+                continue
+
             if self.verbose:
                 self.logger.info(self.logname + " running ref_align with " + found[i].name)
 
@@ -306,6 +357,10 @@ class BioSeqAnn(Model):
                     if self.verbosity > 2:
                         for f in annotation.features:
                             self.logger.info(self.logname + " " + f + " = " + str(annotation.annotation[f].seq))
+                
+                # Create GFE
+                feats, gfe = self.gfe.get_gfe(annotation, locus)
+                annotation.gfe = gfe
                 annotation.clean()
                 return aligned_ann
             else:

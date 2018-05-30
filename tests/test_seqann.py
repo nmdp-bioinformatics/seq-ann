@@ -110,7 +110,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="001_seqann")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="001_seqann")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertIsInstance(seqann.refdata, ReferenceData)
@@ -120,7 +120,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_002_noserver(self):
-        seqann = BioSeqAnn(verbose=True, verbosity=5, pid="002_noserver")
+        seqann = BioSeqAnn(verbose=False, verbosity=5, pid="002_noserver")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertGreater(len(seqann.refdata.hla_names), 10)
@@ -137,8 +137,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="003_ambig")
-        #self.assertEqual(seqann.refdata.dbversion, '3290')
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="003_ambig")
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
         for ex in self.expected['ambig']:
@@ -155,7 +154,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertTrue(ann.complete_annotation)
             self.assertGreater(len(ann.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
-
+            self.assertEqual(ann.gfe, ex['gfe'])
             n_diffs = 0
             expected = db.lookup(name=allele)
             expected_seqs = get_features(expected)
@@ -183,7 +182,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="004_insertion")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="004_insertion")
         input_seq = self.data_dir + '/insertion_seqs.fasta'
         for ex in self.expected['insertion']:
             i = int(ex['index'])
@@ -200,6 +199,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(ann.annotation.keys()), 1)
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
+            self.assertEqual(ann.gfe, ex['gfe'])
 
             n_diffs = 0
             expected_seqs = get_features(expected)
@@ -230,7 +230,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="005_partial")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="005_partial")
         input_seq = self.data_dir + '/partial_seqs.fasta'
 
         for ex in self.expected['partial']:
@@ -251,6 +251,7 @@ class TestBioSeqAnn(unittest.TestCase):
             expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(ann.annotation.keys()), 1)
+            self.assertEqual(ann.gfe, ex['gfe'])
 
             # Make sure only mapped feats exist
             for mf in ex['missing_feats']:
@@ -275,7 +276,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="006_partialambig")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="006_partialambig")
         input_seq = self.data_dir + '/partial_ambig.fasta'
 
         for ex in self.expected['partial_ambig']:
@@ -296,6 +297,8 @@ class TestBioSeqAnn(unittest.TestCase):
             expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(ann.annotation.keys()), 1)
+            self.assertEqual(ann.gfe, ex['gfe'])
+
             # Make sure only mapped feats exist
             for mf in ex['missing_feats']:
                 self.assertFalse(mf in ann.annotation)
@@ -319,7 +322,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="007_exact")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="007_exact")
         input_seq = self.data_dir + '/exact_seqs.fasta'
 
         for ex in self.expected['exact']:
@@ -329,6 +332,7 @@ class TestBioSeqAnn(unittest.TestCase):
             hla, loc = locus.split("-")
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
             annotation = seqann.annotate(in_seq, locus)
+            self.assertTrue(annotation.exact)
             self.assertIsNone(annotation.features)
             self.assertEqual(annotation.method, "match")
             self.assertIsInstance(annotation, Annotation)
@@ -337,6 +341,7 @@ class TestBioSeqAnn(unittest.TestCase):
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
             expected_seqs = get_features(expected)
+            self.assertEqual(annotation.gfe, ex['gfe'])
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(annotation.annotation.keys()), 1)
             for feat in expected_seqs:
@@ -356,7 +361,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="009_nomatch")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="009_nomatch")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -375,7 +380,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="010_noloc")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="010_noloc")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -396,7 +401,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="011_fail")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="011_fail")
         self.assertFalse(seqann.refdata.imgtdat)
         annotation = seqann.annotate(in_seq)
         self.assertFalse(annotation)
@@ -427,6 +432,15 @@ class TestBioSeqAnn(unittest.TestCase):
         self.assertTrue(seqann.debug)
         self.assertEqual(seqann.verbosity, 2)
         self.assertEqual(seqann.align_verbosity, 0)
+        self.assertEqual(seqann.seqsearch.verbosity, 5)
+        self.assertEqual(seqann.refdata.verbosity, 0)
+
+        seqann = BioSeqAnn(server=server,
+                           debug={"gfe": 2,
+                                  "seq_search": 5})
+        self.assertTrue(seqann.debug)
+        self.assertTrue(seqann.gfe.verbose)
+        self.assertEqual(seqann.gfe.verbosity, 2)
         self.assertEqual(seqann.seqsearch.verbosity, 5)
         self.assertEqual(seqann.refdata.verbosity, 0)
 

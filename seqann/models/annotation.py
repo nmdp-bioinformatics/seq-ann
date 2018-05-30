@@ -40,7 +40,9 @@ class Annotation(Model):
                  method: str=None, mapping: Dict=None,
                  refmissing: List[str]=None,
                  exact_match: List[str]=None,
-                 complete_annotation: bool=False):
+                 exact: bool=False,
+                 complete_annotation: bool=False,
+                 gfe: str=None):
         """
         Annotation
 
@@ -59,7 +61,9 @@ class Annotation(Model):
             'complete_annotation': bool,
             'blocks': List[List[int]],
             'method': str,
+            'gfe': str,
             'mapping': Dict,
+            'exact': bool,
             'aligned': Dict,
             'refmissing': List[str],
             'exact_match': List[str]
@@ -67,6 +71,8 @@ class Annotation(Model):
 
         self.attribute_map = {
             'seq': 'seq',
+            'gfe': 'gfe',
+            'exact': 'exact',
             'aligned': 'aligned',
             'features': 'features',
             'covered': 'covered',
@@ -93,6 +99,8 @@ class Annotation(Model):
         self._ambig = ambig
         self._complete_annotation = complete_annotation
         self._annotation = annotation
+        self._gfe = gfe
+        self._exact = exact
 
         missing_blocks = {}
         if not annotation:
@@ -157,6 +165,26 @@ class Annotation(Model):
         :type complete_annotation: bool
         """
         self._complete_annotation = complete_annotation
+
+    @property
+    def exact(self) -> bool:
+        """
+        Gets the exact of this Annotation.
+
+        :return: The exact of this Annotation.
+        :rtype: bool
+        """
+        return self._exact
+
+    @exact.setter
+    def exact(self, exact: bool):
+        """
+        Sets the exact of this Annotation.
+
+        :param exact: The exact of this Annotation.
+        :type exact: bool
+        """
+        self._exact = exact
 
     @property
     def features(self) -> Dict:
@@ -377,6 +405,26 @@ class Annotation(Model):
         :type blocks: List[List[int]]
         """
         self._blocks = blocks
+
+    @property
+    def gfe(self) ->str:
+        """
+        Gets the coverage of this Annotation.
+
+        :return: The gfe of this Annotation.
+        :rtype: Dict
+        """
+        return self._gfe
+
+    @gfe.setter
+    def gfe(self, gfe: str):
+        """
+        Sets the gfe of this Annotation.
+
+        :param gfe: The gfe of this Annotation.
+        :type gfe: Dict
+        """
+        self._gfe = gfe
 
     @property
     def aligned(self) ->Dict:

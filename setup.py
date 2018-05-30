@@ -53,7 +53,7 @@ test_requirements = [
 
 setup(
     name='seqann',
-    version='0.0.22',
+    version='0.0.23',
     description="Sequence Annotation",
     long_description=readme,
     author="Mike Halagan",
@@ -62,6 +62,9 @@ setup(
     packages=[
         'seqann',
         'seqann.models'
+        'seqann.feature_client',
+        'seqann.feature_client.apis',
+        'seqann.feature_client.models'
     ],
     package_dir={'seqann':
                  'seqann'},
