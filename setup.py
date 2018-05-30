@@ -34,18 +34,19 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'biopython==1.70',
-    'PyMySQL',
-    'six',
+    'PyMySQL==0.7.11',
+    'six==1.11.0',
     'bson==0.5.5',
-    'pytz',
-    'numpy==1.13.3'
+    'pytz==2017.3',
+    'numpy==1.13.3',
+    'requests==2.18.4'
 ]
 
 test_requirements = [
-    'pytz',
+    'pytz==2017.3',
     'biopython==1.70',
-    'PyMySQL',
-    'six',
+    'PyMySQL==0.7.11',
+    'six==1.11.0',
     'bson==0.5.5',
     'unittest',
     'numpy==1.13.3'
