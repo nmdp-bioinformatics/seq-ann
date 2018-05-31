@@ -171,7 +171,6 @@ class ApiClient(object):
         else:
             return (deserialized_data, response_data.status, response_data.getheaders())
         
-
     def to_path_value(self, obj):
         """
         Takes value and turn it into a string suitable for inclusion in

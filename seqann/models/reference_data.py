@@ -212,6 +212,7 @@ class ReferenceData(Model):
         self._struct_order = get_structorder()
 
         self._structure_max = {'KIR2DP1': 20, 'KIR2DL5A': 20, 'KIR2DS4': 20,
+                               'HLA-DPA1': 9,
                                'HLA-DPB1': 11, 'KIR2DS2': 20, 'KIR3DP1': 20,
                                'HLA-DRB4': 13, 'KIR2DL1': 20, 'KIR2DS5': 20,
                                'HLA-DRB3': 13, 'KIR2DS3': 20, 'KIR3DL1': 20,

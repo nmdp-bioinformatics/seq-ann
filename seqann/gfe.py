@@ -27,20 +27,18 @@ import glob
 import sys
 import re
 import logging
-from pprint import pprint
+
 from BioSQL.BioSeq import DBSeq
+
 from seqann.util import get_structures
 from seqann.util import get_structorder
+from seqann.util import isutr
 
 from seqann.feature_client.apis.features_api import FeaturesApi
 from seqann.feature_client.api_client import ApiClient
 from seqann.feature_client.rest import ApiException
 from seqann.feature_client.models.feature import Feature
-from seqann.feature_client.models.sequence import Sequence
 from seqann.feature_client.models.feature_request import FeatureRequest
-
-is_kir = lambda x: True if re.search("KIR", x) else False
-isutr = lambda f: True if re.search("UTR", f) else False
 
 
 class GFE(object):
@@ -276,34 +274,6 @@ class GFE(object):
 
         return features, gfe
 
-    def get_sequence(self, gfe):
-        """
-        creates GFE from HLA sequence and locus
-
-        :param locus: string containing HLA locus.
-        :param sequence: string containing sequence data.
-
-        :return: GFEobject.
-        """
-        feats = []
-        seqs = []
-        loc, accessions = gfe.split("w")
-        features = self._breakup_gfe(gfe)
-        for f in features:
-            if int(features[f]) != 0:
-                if isutr(f):
-                    feat = self._seq(loc, f, 1,  features[f])
-                    seqs.append(feat.sequence)
-                    feats.append(feat)
-                else:
-                    feat = self._seq(loc, f.split("-")[0], f.split("-")[1],
-                                     features[f])
-                    seqs.append(feat.sequence)
-                    feats.append(feat)
-        seq = "".join(seqs)
-        sequence_o = Sequence(sequence=seq, structure=feats)
-        return sequence_o
-
     def _seq(self, locus, term, rank, accession):
         """
         creates GFE from HLA sequence and locus
@@ -362,4 +332,3 @@ class GFE(object):
 
         gfea = '-'.join(gfe_list)
         return locus + "w" + gfea
-

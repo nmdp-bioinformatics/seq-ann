@@ -49,6 +49,10 @@ from typing import Dict
 from typing import List
 
 import logging
+import warnings
+
+from Bio import BiopythonExperimentalWarning
+warnings.simplefilter("ignore", BiopythonExperimentalWarning)
 
 
 class BioSeqAnn(Model):
@@ -76,7 +80,7 @@ class BioSeqAnn(Model):
         :type kir: bool
         :param align: Flag for producing the alignments along with the annotations.
         :type align: bool
-        :param verbose: Flag for running in verbose mode. 
+        :param verbose: Flag for running in verbose mode.
         :type verbose: bool
         :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
         :type verbosity: int
@@ -234,7 +238,8 @@ class BioSeqAnn(Model):
                 self.logger.info(self.logname + " Locus prediction = " + locus)
 
             if not locus:
-                self.logger.error(self.logname + " Locus could not be determined!")
+                self.logger.error(self.logname
+                                  + " Locus could not be determined!")
                 # TODO: Raise exception
                 return ''
 
@@ -258,7 +263,8 @@ class BioSeqAnn(Model):
 
         # If the blastn fails..
         if blast.failed:
-            self.logger.error(self.logname + " blastn failed! " + locus + " " + str(sequence.seq))
+            self.logger.error(self.logname + " blastn failed! "
+                              + locus + " " + str(sequence.seq))
 
             # Try and determine the locus and rerun. This is
             # useful for cases when the sequences is associated
@@ -270,7 +276,8 @@ class BioSeqAnn(Model):
 
             # Check if the locus could not be found
             if not locus:
-                self.logger.error(self.logname + " Locus could not be determined!")
+                self.logger.error(self.logname
+                                  + " Locus could not be determined!")
                 # TODO: Raise exception
                 return
             return self.annotate(sequence, locus)
@@ -286,7 +293,9 @@ class BioSeqAnn(Model):
                 continue
 
             if self.verbose:
-                self.logger.info(self.logname + " Running seq_search with " + found[i].name)
+                self.logger.info(self.logname
+                                 + " Running seq_search with "
+                                 + found[i].name)
 
             # * Running sequence search *
             # This does a simple string search for the
@@ -297,7 +306,9 @@ class BioSeqAnn(Model):
             if annotation.complete_annotation:
                 # TODO: change clean to cleanup
                 if self.verbose:
-                    self.logger.info(self.logname + " Finished annotation using " + found[i].name)
+                    self.logger.info(self.logname
+                                     + " Finished annotation using "
+                                     + found[i].name)
 
                 # Add alignment flag is specified
                 if self.align:
@@ -306,10 +317,16 @@ class BioSeqAnn(Model):
                     annotation = self.add_alignment(found[i], annotation)
 
                 if self.verbose and self.verbosity > 0:
-                    self.logger.info(self.logname + " Features annotated = " + ",".join(list(annotation.annotation.keys())))
+                    self.logger.info(self.logname
+                                     + " Features annotated = "
+                                     + ",".join(list(annotation
+                                                     .annotation.keys())))
                     if self.verbosity > 2:
                         for f in annotation.features:
-                            self.logger.info(self.logname + " " + f + " = " + str(annotation.annotation[f].seq))
+                            self.logger.info(self.logname
+                                             + " " + f + " = "
+                                             + str(annotation
+                                                   .annotation[f].seq))
 
                 # Create GFE
                 feats, gfe = self.gfe.get_gfe(annotation, locus)
@@ -319,9 +336,16 @@ class BioSeqAnn(Model):
             else:
                 partial_ann = annotation
                 if self.verbose:
-                    self.logger.info(self.logname + " Using partial annotation * run " + str(i) + " *")
-                    self.logger.info(self.logname + " Features found = " + ",".join(list(annotation.features.keys())))
-                    self.logger.info(self.logname + " Sequence unmapped = " + str(annotation.covered))
+                    self.logger.info(self.logname
+                                     + " Using partial annotation * run "
+                                     + str(i) + " *")
+                    self.logger.info(self.logname
+                                     + " Features found = "
+                                     + ",".join(list(annotation
+                                                     .features.keys())))
+                    self.logger.info(self.logname
+                                     + " Sequence unmapped = "
+                                     + str(annotation.covered))
 
         # The number of sequences being used for alignment
         # can't be greater than the number of sequences
@@ -339,7 +363,9 @@ class BioSeqAnn(Model):
                 continue
 
             if self.verbose:
-                self.logger.info(self.logname + " running ref_align with " + found[i].name)
+                self.logger.info(self.logname
+                                 + " running ref_align with "
+                                 + found[i].name)
 
             aligned_ann = self.ref_align(found[i], sequence, locus,
                                          annotation=partial_ann)
@@ -350,14 +376,22 @@ class BioSeqAnn(Model):
                     annotation = self.add_alignment(found[i], annotation)
 
                 if self.verbose:
-                    self.logger.info(self.logname + " Finished ref_align annotation using " + found[i].name)
+                    self.logger.info(self.logname
+                                     + " Finished ref_align annotation using "
+                                     + found[i].name)
 
                 if self.verbose and self.verbosity > 0:
-                    self.logger.info(self.logname + " Features annotated = " + ",".join(list(annotation.annotation.keys())))
+                    self.logger.info(self.logname
+                                     + " Features annotated = "
+                                     + ",".join(list(annotation
+                                                     .annotation.keys())))
                     if self.verbosity > 2:
                         for f in annotation.features:
-                            self.logger.info(self.logname + " " + f + " = " + str(annotation.annotation[f].seq))
-                
+                            self.logger.info(self.logname
+                                             + " " + f + " = "
+                                             + str(annotation
+                                                   .annotation[f].seq))
+
                 # Create GFE
                 feats, gfe = self.gfe.get_gfe(annotation, locus)
                 annotation.gfe = gfe
@@ -365,8 +399,14 @@ class BioSeqAnn(Model):
                 return aligned_ann
             else:
                 if self.verbose:
-                    self.logger.info(self.logname + " Using partial annotation for alignment * run " + str(i) + " *")
-                    self.logger.info(self.logname + " Features found = " + ",".join(list(annotation.features.keys())))
+                    self.logger.info(self.logname
+                                     + " Using partial annotation "
+                                     + "for alignment * run "
+                                     + str(i) + " *")
+                    self.logger.info(self.logname
+                                     + " Features found = "
+                                     + ",".join(list(annotation
+                                                     .features.keys())))
 
                 partial_ann = aligned_ann
 
@@ -449,23 +489,27 @@ class BioSeqAnn(Model):
                                                      + str(min_length))
 
                                     if len(an.annotation[f]) <= max_length:
-                                        self.logger.info(self.logname + " " + locus
+                                        self.logger.info(self.logname
+                                                         + " " + locus
                                                          + " " + f
                                                          + " " + sl + " <= "
                                                          + str(max_length))
                                     else:
-                                        self.logger.info(self.logname + " " + locus
+                                        self.logger.info(self.logname
+                                                         + " " + locus
                                                          + " " + f
                                                          + " " + sl + " ! <= !"
                                                          + str(max_length))
 
                                     if len(an.annotation[f]) >= min_length:
-                                        self.logger.info(self.logname + " " + locus
+                                        self.logger.info(self.logname
+                                                         + " " + locus
                                                          + " " + f
                                                          + " " + sl + " >= "
                                                          + str(min_length))
                                     else:
-                                        self.logger.info(self.logname + " " + locus
+                                        self.logger.info(self.logname + " "
+                                                         + locus
                                                          + " " + f
                                                          + " " + sl + " ! >= !"
                                                          + str(min_length))
@@ -473,7 +517,9 @@ class BioSeqAnn(Model):
                                 if(len(an.annotation[f]) <= max_length and
                                         len(an.annotation[f]) >= min_length):
                                     if self.verbose and self.verbosity > 0:
-                                        self.logger.info(self.logname + " Annotated " + f + " with clustalo")
+                                        self.logger.info(self.logname
+                                                         + " Annotated " + f
+                                                         + " with clustalo")
                                     annotation.annotation.update({f:
                                                                   an.annotation[f]
                                                                   })
@@ -481,7 +527,8 @@ class BioSeqAnn(Model):
                                         mbtmp += an.blocks
                                     else:
                                         if self.verbose and self.verbosity > 0:
-                                            self.logger.info(self.logname + " All blocks mapped")
+                                            self.logger.info(self.logname
+                                                             + " All blocks mapped")
                                         if b in missing_blocks:
                                             del missing_blocks[missing_blocks.index(b)]
                                 else:
@@ -492,7 +539,9 @@ class BioSeqAnn(Model):
                     annotation.check_annotation()
                     if annotation.complete_annotation:
                         if self.verbose:
-                            self.logger.info(self.logname + " Completed annotation with targeted ref_align")
+                            self.logger.info(self.logname
+                                             + " Completed annotation"
+                                             + " with targeted ref_align")
                         return annotation
 
                 if len(exons.seq) >= 4:
@@ -502,10 +551,15 @@ class BioSeqAnn(Model):
                     mapped_exons = list(exonan.annotation.keys())
                     if len(mapped_exons) >= 1:
                         if self.verbose:
-                            self.logger.info(self.logname + " Annotated exons with clustalo")
+                            self.logger.info(self.logname
+                                             + " Annotated exons with align")
                         for f in exonan.annotation:
                             if self.verbose and self.verbosity > 0:
-                                self.logger.info(self.logname + " Annotated " + f + " len = " + str(len(exonan.annotation[f])))
+                                self.logger.info(self.logname
+                                                 + " Annotated "
+                                                 + f + " len = "
+                                                 + str(len(exonan
+                                                           .annotation[f])))
                             annotation.annotation.update({f: exonan.annotation[f]})
                         del missing_blocks[missing_blocks.index(b)]
 
@@ -543,16 +597,17 @@ class BioSeqAnn(Model):
                                 self.logger.info(self.logname + " Annotated all features with clustalo")
                             return annotation
             if self.verbose:
-                self.logger.info(self.logname + " Failed to annotate all features")
+                self.logger.info(self.logname
+                                 + " Failed to annotate all features")
             return annotation
         elif partial_ann:
-            self.logger.error(self.logname + " Partial alignment! SHOULDNT BE HERE!!")
+            self.logger.error(self.logname + " Partial alignment! ")
             # Do full sequence alignments
             # any only extract out the part
             # that couldn't be explained from above
             return
         else:
-            self.logger.error(self.logname + " Full alignment! SHOULDNT BE HERE!!")
+            self.logger.error(self.logname + " full alginment")
             # Option for user that just want to
             # align a set of sequences
             return

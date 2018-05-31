@@ -2,11 +2,17 @@
 History
 =======
 
+0.0.24 (2018-05-31)
+~~~~~~~~~~~~~~~~~~~
+
+* Fixed issue with DPA1 not being in max structure dictionary
+* Removed BioPython warnings
+
 0.0.23 (2018-05-25)
 ~~~~~~~~~~~~~~~~~~~
 
 * Added GFE creation
-* Added "exact" variable to ``Annotation`` class
+* Added **exact** variable to ``Annotation`` class
 
 0.0.22 (2018-05-25)
 ~~~~~~~~~~~~~~~~~~~

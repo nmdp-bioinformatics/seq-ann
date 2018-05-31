@@ -110,7 +110,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="001_seqann")
+        seqann = BioSeqAnn(server=server, pid="001_seqann")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertIsInstance(seqann.refdata, ReferenceData)
@@ -182,7 +182,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="004_insertion")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="004_insertion")
         input_seq = self.data_dir + '/insertion_seqs.fasta'
         for ex in self.expected['insertion']:
             i = int(ex['index'])
@@ -401,7 +401,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="011_fail")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="011_fail")
         self.assertFalse(seqann.refdata.imgtdat)
         annotation = seqann.annotate(in_seq)
         self.assertFalse(annotation)
@@ -466,7 +466,7 @@ class TestBioSeqAnn(unittest.TestCase):
 
         with self.assertLogs(level='INFO') as cm:
             seqann = BioSeqAnn(server=server,
-                               verbose=True, verbosity=5)
+                               verbose=False, verbosity=0)
             input_seq = self.data_dir + '/failed_seqs.fasta'
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
             annotation = seqann.annotate(in_seq)
