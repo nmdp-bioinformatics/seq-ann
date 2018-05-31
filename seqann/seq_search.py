@@ -25,7 +25,6 @@
 from __future__ import absolute_import
 
 import re
-import sys
 
 from Bio.SeqUtils import nt_search
 from Bio.SeqFeature import SeqFeature
@@ -39,8 +38,12 @@ from seqann.util import deserialize_model
 from seqann.util import get_features
 
 import logging
+import warnings
 
 from seqann.util import is_classII
+
+from Bio import BiopythonExperimentalWarning
+warnings.simplefilter("ignore", BiopythonExperimentalWarning)
 
 
 # TODO: Add documentation

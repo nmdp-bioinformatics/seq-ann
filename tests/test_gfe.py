@@ -32,12 +32,11 @@ Tests for `seqann` module.
 import os
 import json
 import logging
-import pymysql
 import unittest
+import warnings
 
 from Bio import SeqIO
 from Bio.Seq import Seq
-from BioSQL import BioSeqDatabase
 from Bio.SeqRecord import SeqRecord
 
 from seqann.gfe import GFE
@@ -48,6 +47,14 @@ from seqann.models.annotation import Annotation
 logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
+
+
+def ignore_warnings(test_func):
+    def do_test(self, *args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            test_func(self, *args, **kwargs)
+    return do_test
 
 
 class TestGfe(unittest.TestCase):
@@ -61,11 +68,12 @@ class TestGfe(unittest.TestCase):
             json_data.close()
         pass
 
-    def test_001_gfe(self):
+    def test_001_class(self):
         gfe = GFE()
         self.assertIsInstance(gfe, GFE)
         pass
 
+    @ignore_warnings
     def test_002_gfe(self):
         gfe = GFE()
         for ex in self.expected['gfe']:
@@ -81,3 +89,7 @@ class TestGfe(unittest.TestCase):
             self.assertEqual(gfe, exp)
         pass
 
+    def test_003_store(self):
+        gfe = GFE(store_features=True)
+        self.assertTrue(gfe.store_features)
+        pass

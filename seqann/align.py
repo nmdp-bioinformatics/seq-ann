@@ -110,9 +110,12 @@ def align_seqs(found_seqs, sequence, locus, verbose=False, verbosity=0):
     if verbose:
         logger.info("Number of features found = " + str(len(all_features)))
 
-    annotation = resolve_feats(all_features, align[len(align)-1],
-                               verbose, verbosity)
-    return annotation, insers, dels
+    if len(all_features) > 0:
+        annotation = resolve_feats(all_features, align[len(align)-1],
+                                   verbose, verbosity)
+        return annotation, insers, dels
+    else:
+        return Annotation(complete_annotation=False), 0, 0
 
 
 def find_features(feats, sequ):
@@ -174,6 +177,7 @@ def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
     if len(feat_list) > 1:
         if verbose:
             logger.error("resolve_feats error")
+        return Annotation(complete_annotation=False)
     else:
         full_annotation = {}
         features = feat_list[0]
@@ -205,10 +209,9 @@ def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
             for f in full_annotation:
                 logger.info(f)
 
-        annotation = Annotation(annotation=full_annotation,
-                                method="clustalo",
-                                blocks=blocks)
-        return annotation
+        return Annotation(annotation=full_annotation,
+                          method="clustalo",
+                          blocks=blocks)
 
 
 def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
