@@ -501,4 +501,38 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 014 Requires MySQL connection")
+    def test_015_skip(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+
+        seqann = BioSeqAnn(server=server)
+        refdata = ReferenceData()
+
+        test_list = ['HLA-A*01:07', 'HLA-A*01:01:59']
+        for seqrec in refdata.imgtdat:
+            seqname = seqrec.description.split(",")[0]
+            if seqname not in test_list:
+                continue
+
+            locus = seqrec.description.split("*")[0]
+            ann1 = seqann.annotate(seqrec, locus=locus)
+            ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
+            self.assertTrue(ann1.exact)
+            self.assertEqual(len(ann2.annotation), len(ann1.annotation))
+            self.assertEqual(ann1.gfe, ann2.gfe)
+
+            for f in ann1.annotation:
+                self.assertTrue(f in ann2.annotation)
+                seq1 = str(ann1.annotation[f])
+                seq2 = str(ann2.annotation[f].seq)
+                self.assertEqual(seq1, seq2)
+
+        server.close()
+        pass
+
 

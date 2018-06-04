@@ -226,7 +226,6 @@ class BioSeqAnn(Model):
             exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
 
         """
-
         # If sequence contains any characters
         # other than ATCG then the GFE notation
         # can not be created
@@ -257,7 +256,7 @@ class BioSeqAnn(Model):
 
         # Exact match found
         matched_annotation = self.refdata.search_refdata(sequence, locus)
-        if matched_annotation:
+        if matched_annotation and not skip:
 
             matched_annotation.exact = True
 
@@ -352,7 +351,7 @@ class BioSeqAnn(Model):
                 return annotation
             else:
                 partial_ann = annotation
-                if self.verbose and self.verbosity > 0:
+                if self.verbose and self.verbosity > 1:
                     self.logger.info(self.logname
                                      + " Using partial annotation * run "
                                      + str(i) + " *")
@@ -369,6 +368,15 @@ class BioSeqAnn(Model):
         # to be returned from the blast results
         if alignseqs > len(found):
             alignseqs = len(found)-1
+
+        # for f in partial_ann.annotation.keys():
+        #     print(f, partial_ann.annotation[f], str(len(partial_ann.annotation[f].seq)))
+        # print("---")
+        # for f in partial_ann.features:
+        #     print(f, partial_ann.features[f])
+        # print("---")
+
+        print(partial_ann.missing.keys())
 
         # Now loop through doing alignment
         # TODO: Add parameter for limiting this step
