@@ -21,6 +21,12 @@
 #    > http://www.fsf.org/licensing/licenses/lgpl.html
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
+import logging
+import warnings
+
+from Bio import BiopythonExperimentalWarning
+warnings.simplefilter("ignore", BiopythonExperimentalWarning)
+
 from Bio.Seq import Seq
 from Bio import pairwise2
 from Bio.Alphabet import IUPAC
@@ -48,13 +54,6 @@ from seqann.gfe import GFE
 from itertools import repeat
 from typing import Dict
 from typing import List
-
-import logging
-import warnings
-
-
-from Bio import BiopythonExperimentalWarning
-warnings.simplefilter("ignore", BiopythonExperimentalWarning)
 
 
 class BioSeqAnn(Model):

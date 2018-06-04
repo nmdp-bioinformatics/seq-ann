@@ -25,6 +25,11 @@
 from __future__ import absolute_import
 
 import re
+import logging
+import warnings
+
+from Bio import BiopythonExperimentalWarning
+warnings.simplefilter("ignore", BiopythonExperimentalWarning)
 
 from Bio.SeqUtils import nt_search
 from Bio.SeqFeature import SeqFeature
@@ -37,13 +42,7 @@ from seqann.models.base_model_ import Model
 from seqann.util import deserialize_model
 from seqann.util import get_features
 
-import logging
-import warnings
-
 from seqann.util import is_classII
-
-from Bio import BiopythonExperimentalWarning
-warnings.simplefilter("ignore", BiopythonExperimentalWarning)
 
 
 # TODO: Add documentation
@@ -167,7 +166,7 @@ class SeqSearch(Model):
 
         for feat_name in feats:
 
-            if self.verbose and self.verbosity > 0:
+            if self.verbose and self.verbosity > 2:
                 self.logger.info("Running seqsearch for " + feat_name)
 
             # skip if partial annotation is provided
@@ -186,7 +185,7 @@ class SeqSearch(Model):
             seq_search = nt_search(str(in_seq.seq), str(feats[feat_name]))
             if len(seq_search) == 2:
 
-                if self.verbose and self.verbosity > 1:
+                if self.verbose and self.verbosity > 2:
                     self.logger.info("Found exact match for " + feat_name)
 
                 seq_covered -= len(str(feats[feat_name]))
@@ -203,7 +202,7 @@ class SeqSearch(Model):
                                             ExactPosition(end), strand=1),
                                         type=feat_name)})
 
-                if self.verbose and self.verbosity > 1:
+                if self.verbose and self.verbosity > 3:
                     self.logger.info("Coordinates | Start = " + str(start) + " - End = " + str(end))
 
                 si = seq_search[1]+1 if seq_search[1] != 0 and \
@@ -218,13 +217,13 @@ class SeqSearch(Model):
                                               + self.refdata.dbversion)
                     mapping[i] = feat_name
             elif(len(seq_search) > 2):
-                if self.verbose and self.verbosity > 1:
+                if self.verbose and self.verbosity > 2:
                     self.logger.info("Found " + str(len(seq_search))
                                      + " matches for " + feat_name)
                 feat_missing.update({feat_name: feats[feat_name]})
                 ambig_map.update({feat_name: seq_search[1:len(seq_search)]})
             else:
-                if self.verbose and self.verbosity > 1:
+                if self.verbose and self.verbosity > 2:
                     self.logger.info("No match for " + feat_name)
                 feat_missing.update({feat_name: feats[feat_name]})
 
@@ -236,7 +235,7 @@ class SeqSearch(Model):
         if 'exon_2' in exact_matches and len(blocks) == 2 \
                 and is_classII(locus):
 
-            if self.verbose and self.verbosity > 0:
+            if self.verbose and self.verbosity > 1:
                 self.logger.info("Running search for class II sequence")
 
             r = True
@@ -272,7 +271,7 @@ class SeqSearch(Model):
                                                 type=featname)})
                     seq_covered -= len(b)
 
-                if self.verbose and self.verbosity > 0:
+                if self.verbose and self.verbosity > 1:
                     self.logger.info("Successfully annotated class II sequence")
 
                 return Annotation(features=found_feats,
