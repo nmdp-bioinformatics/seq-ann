@@ -54,12 +54,12 @@ test_requirements = [
 
 setup(
     name='seqann',
-    version='0.0.24',
+    version='0.0.25',
     description="Sequence Annotation",
     long_description=readme,
     author="Mike Halagan",
     author_email='mhalagan@nmdp.org',
-    url='https://github.com/nmdp-bioinformatics/seqann',
+    url='https://github.com/nmdp-bioinformatics/SeqAnn',
     packages=[
         'seqann',
         'seqann.models',

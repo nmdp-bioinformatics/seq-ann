@@ -31,7 +31,6 @@ Tests for `seqann` module.
 """
 import os
 import json
-import logging
 import pymysql
 import unittest
 
