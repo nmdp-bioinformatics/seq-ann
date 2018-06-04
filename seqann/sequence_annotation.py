@@ -215,11 +215,11 @@ class BioSeqAnn(Model):
             >>> from Bio.Seq import Seq
             >>> from Bio.SeqRecord import SeqRecord
             >>> from seqann import BioSeqAnn
-            >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet())
+            >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
             >>> seqann = BioSeqAnn()
             >>> ann = seqann.annotate(sequence)
             >>> for f in ann.annotation:
-            ...    print(f, ann.method, ann.annotation[f], sep="\t")
+            ...    print(f, ann.method, str(ann.annotation[f].seq), sep="\t")
             exon_2  nt_search and clustalo  AGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACCAACGGGACGGAGCGCGTGCGTTATGTGACCAGATACATCTATAACCGAGAGGAGTACGCACGCTTCGACAGCGACGTGGAGGTGTACCGGGCGGTGACGCCGCTGGGGCCGCCTGCCGCCGAGTACTGGAACAGCCAGAAGGAAGTCCTGGAGAGGACCCGGGCGGAGTTGGACACGGTGTGCAGACACAACTACCAGTTGGAGCTCCGCACGACCTTGCAGCGGCGAG
             exon_3  nt_search and clustalo  TGGAGCCCACAGTGACCATCTCCCCATCCAGGACAGAGGCCCTCAACCACCACAACCTGCTGGTCTGCTCAGTGACAGATTTCTATCCAGCCCAGATCAAAGTCCGGTGGTTTCGGAATGACCAGGAGGAGACAACCGGCGTTGTGTCCACCCCCCTTATTAGGAACGGTGACTGGACCTTCCAGATCCTGGTGATGCTGGAAATGACTCCCCAGCATGGAGACGTCTACACCTGCCACGTGGAGCACCCCAGCCTCCAGAACCCCATCACCGTGGAGTGGC
             exon_1  nt_search and clustalo  AGAGACTCTCCCG
@@ -231,6 +231,12 @@ class BioSeqAnn(Model):
         # other than ATCG then the GFE notation
         # can not be created
         create_gfe = checkseq(sequence.seq)
+
+        if self.verbose and not create_gfe:
+            self.logger.warning(self.logname + " Sequence alphabet "
+                                + "contains non DNA")
+            self.logger.warning(self.logname
+                                + " No GFE string will be generated")
 
         # Check it the locus exists
         if not locus:
@@ -346,7 +352,7 @@ class BioSeqAnn(Model):
                 return annotation
             else:
                 partial_ann = annotation
-                if self.verbose:
+                if self.verbose and self.verbosity > 0:
                     self.logger.info(self.logname
                                      + " Using partial annotation * run "
                                      + str(i) + " *")
@@ -410,7 +416,7 @@ class BioSeqAnn(Model):
                 annotation.clean()
                 return aligned_ann
             else:
-                if self.verbose:
+                if self.verbose and self.verbosity > 0:
                     self.logger.info(self.logname
                                      + " Using partial annotation "
                                      + "for alignment * run "

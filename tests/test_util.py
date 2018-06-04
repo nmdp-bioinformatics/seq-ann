@@ -37,6 +37,7 @@ from Bio.Seq import Seq
 from seqann.util import isutr
 from seqann.util import is_kir
 from seqann.util import checkseq
+from seqann.util import randomid
 from seqann.util import is_classII
 
 
@@ -69,4 +70,10 @@ class TestUtil(unittest.TestCase):
         self.assertFalse(checkseq(Seq('AAACTGATCGGGGGAAACCCTTTNN')))
         self.assertFalse(checkseq(Seq('NNNNAAACTGATCGGGGGAAACCCTTTNNNN')))
         self.assertFalse(checkseq(Seq('AAACTGATCGGGGGAAACCCTTTZ')))
+        pass
+
+    def test_005_randomid(self):
+        self.assertEqual(len(randomid()), 12)
+        self.assertEqual(len(randomid(N=6)), 6)
+        self.assertEqual(len(randomid(N=13)), 13)
         pass
