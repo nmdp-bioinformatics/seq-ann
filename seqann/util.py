@@ -33,6 +33,18 @@ from Bio.SeqFeature import SeqFeature
 # TODO: Add documentation
 
 
+def checkseq(sequence: str=None,  code="ATGC") -> bool:
+    """
+    :param sequence: The input sequence.
+    :type sequence: Seq
+    :rtype: bool
+    """
+    for base in sequence:
+        if base not in code:
+            return False
+    return True
+
+
 def is_kir(feature: str=None) -> bool:
     """
     :param sequence: The input sequence record.

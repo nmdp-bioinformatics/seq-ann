@@ -40,6 +40,7 @@ from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
 from seqann.util import randomid
 from seqann.util import get_seqs
+from seqann.util import checkseq
 from seqann.util import isexon
 from seqann.util import isutr
 from seqann.gfe import GFE
@@ -50,6 +51,7 @@ from typing import List
 
 import logging
 import warnings
+
 
 from Bio import BiopythonExperimentalWarning
 warnings.simplefilter("ignore", BiopythonExperimentalWarning)
@@ -226,6 +228,11 @@ class BioSeqAnn(Model):
 
         """
 
+        # If sequence contains any characters
+        # other than ATCG then the GFE notation
+        # can not be created
+        create_gfe = checkseq(sequence.seq)
+
         # Check it the locus exists
         if not locus:
             if self.verbose:
@@ -246,14 +253,18 @@ class BioSeqAnn(Model):
         # Exact match found
         matched_annotation = self.refdata.search_refdata(sequence, locus)
         if matched_annotation:
+
+            matched_annotation.exact = True
+
             # TODO: return name of allele
             if self.verbose:
                 self.logger.info(self.logname + " exact match found")
 
             # Create GFE
-            feats, gfe = self.gfe.get_gfe(matched_annotation, locus)
-            matched_annotation.gfe = gfe
-            matched_annotation.exact = True
+            if create_gfe:
+                feats, gfe = self.gfe.get_gfe(matched_annotation, locus)
+                matched_annotation.gfe = gfe
+
             return matched_annotation
 
         # Run blast to get ref sequences
@@ -329,8 +340,9 @@ class BioSeqAnn(Model):
                                                    .annotation[f].seq))
 
                 # Create GFE
-                feats, gfe = self.gfe.get_gfe(annotation, locus)
-                annotation.gfe = gfe
+                if create_gfe:
+                    feats, gfe = self.gfe.get_gfe(annotation, locus)
+                    annotation.gfe = gfe
                 annotation.clean()
                 return annotation
             else:
@@ -393,8 +405,9 @@ class BioSeqAnn(Model):
                                                    .annotation[f].seq))
 
                 # Create GFE
-                feats, gfe = self.gfe.get_gfe(annotation, locus)
-                annotation.gfe = gfe
+                if create_gfe:
+                    feats, gfe = self.gfe.get_gfe(annotation, locus)
+                    annotation.gfe = gfe
                 annotation.clean()
                 return aligned_ann
             else:
