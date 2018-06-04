@@ -21,6 +21,12 @@
 #    > http://www.fsf.org/licensing/licenses/lgpl.html
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
+import logging
+import warnings
+
+from Bio import BiopythonExperimentalWarning
+warnings.simplefilter("ignore", BiopythonExperimentalWarning)
+
 from Bio.Seq import Seq
 from Bio import pairwise2
 from Bio.Alphabet import IUPAC
@@ -40,6 +46,7 @@ from seqann.models.base_model_ import Model
 from seqann.align import align_seqs
 from seqann.util import randomid
 from seqann.util import get_seqs
+from seqann.util import checkseq
 from seqann.util import isexon
 from seqann.util import isutr
 from seqann.gfe import GFE
@@ -47,12 +54,6 @@ from seqann.gfe import GFE
 from itertools import repeat
 from typing import Dict
 from typing import List
-
-import logging
-import warnings
-
-from Bio import BiopythonExperimentalWarning
-warnings.simplefilter("ignore", BiopythonExperimentalWarning)
 
 
 class BioSeqAnn(Model):
@@ -214,17 +215,28 @@ class BioSeqAnn(Model):
             >>> from Bio.Seq import Seq
             >>> from Bio.SeqRecord import SeqRecord
             >>> from seqann import BioSeqAnn
-            >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC...ATG', SingleLetterAlphabet())
+            >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
             >>> seqann = BioSeqAnn()
             >>> ann = seqann.annotate(sequence)
             >>> for f in ann.annotation:
-            ...    print(f, ann.method, ann.annotation[f], sep="\t")
+            ...    print(f, ann.method, str(ann.annotation[f].seq), sep="\t")
             exon_2  nt_search and clustalo  AGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACCAACGGGACGGAGCGCGTGCGTTATGTGACCAGATACATCTATAACCGAGAGGAGTACGCACGCTTCGACAGCGACGTGGAGGTGTACCGGGCGGTGACGCCGCTGGGGCCGCCTGCCGCCGAGTACTGGAACAGCCAGAAGGAAGTCCTGGAGAGGACCCGGGCGGAGTTGGACACGGTGTGCAGACACAACTACCAGTTGGAGCTCCGCACGACCTTGCAGCGGCGAG
             exon_3  nt_search and clustalo  TGGAGCCCACAGTGACCATCTCCCCATCCAGGACAGAGGCCCTCAACCACCACAACCTGCTGGTCTGCTCAGTGACAGATTTCTATCCAGCCCAGATCAAAGTCCGGTGGTTTCGGAATGACCAGGAGGAGACAACCGGCGTTGTGTCCACCCCCCTTATTAGGAACGGTGACTGGACCTTCCAGATCCTGGTGATGCTGGAAATGACTCCCCAGCATGGAGACGTCTACACCTGCCACGTGGAGCACCCCAGCCTCCAGAACCCCATCACCGTGGAGTGGC
             exon_1  nt_search and clustalo  AGAGACTCTCCCG
             exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
 
         """
+
+        # If sequence contains any characters
+        # other than ATCG then the GFE notation
+        # can not be created
+        create_gfe = checkseq(sequence.seq)
+
+        if self.verbose and not create_gfe:
+            self.logger.warning(self.logname + " Sequence alphabet "
+                                + "contains non DNA")
+            self.logger.warning(self.logname
+                                + " No GFE string will be generated")
 
         # Check it the locus exists
         if not locus:
@@ -246,14 +258,18 @@ class BioSeqAnn(Model):
         # Exact match found
         matched_annotation = self.refdata.search_refdata(sequence, locus)
         if matched_annotation:
+
+            matched_annotation.exact = True
+
             # TODO: return name of allele
             if self.verbose:
                 self.logger.info(self.logname + " exact match found")
 
             # Create GFE
-            feats, gfe = self.gfe.get_gfe(matched_annotation, locus)
-            matched_annotation.gfe = gfe
-            matched_annotation.exact = True
+            if create_gfe:
+                feats, gfe = self.gfe.get_gfe(matched_annotation, locus)
+                matched_annotation.gfe = gfe
+
             return matched_annotation
 
         # Run blast to get ref sequences
@@ -329,13 +345,14 @@ class BioSeqAnn(Model):
                                                    .annotation[f].seq))
 
                 # Create GFE
-                feats, gfe = self.gfe.get_gfe(annotation, locus)
-                annotation.gfe = gfe
+                if create_gfe:
+                    feats, gfe = self.gfe.get_gfe(annotation, locus)
+                    annotation.gfe = gfe
                 annotation.clean()
                 return annotation
             else:
                 partial_ann = annotation
-                if self.verbose:
+                if self.verbose and self.verbosity > 0:
                     self.logger.info(self.logname
                                      + " Using partial annotation * run "
                                      + str(i) + " *")
@@ -393,12 +410,13 @@ class BioSeqAnn(Model):
                                                    .annotation[f].seq))
 
                 # Create GFE
-                feats, gfe = self.gfe.get_gfe(annotation, locus)
-                annotation.gfe = gfe
+                if create_gfe:
+                    feats, gfe = self.gfe.get_gfe(annotation, locus)
+                    annotation.gfe = gfe
                 annotation.clean()
                 return aligned_ann
             else:
-                if self.verbose:
+                if self.verbose and self.verbosity > 0:
                     self.logger.info(self.logname
                                      + " Using partial annotation "
                                      + "for alignment * run "

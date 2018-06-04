@@ -35,7 +35,6 @@ Tests for `seqann.models.reference_data` module.
 import os
 import json
 import pymysql
-import logging
 import unittest
 
 from Bio import SeqIO
@@ -77,10 +76,6 @@ if os.getenv("BIOSQLDB"):
 biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
-
-logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
 
 
 def conn():

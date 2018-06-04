@@ -32,8 +32,12 @@ Tests for `seqann` module.
 import os
 import unittest
 
+from Bio.Seq import Seq
+
 from seqann.util import isutr
 from seqann.util import is_kir
+from seqann.util import checkseq
+from seqann.util import randomid
 from seqann.util import is_classII
 
 
@@ -49,15 +53,27 @@ class TestUtil(unittest.TestCase):
         self.assertFalse(isutr('exon-3'))
         pass
 
-    def test_001_iskir(self):
+    def test_002_iskir(self):
         self.assertTrue(is_kir('KIR*3DL1'))
         self.assertFalse(is_kir('exon-3'))
         pass
 
-    def test_001_is_classII(self):
+    def test_003_is_classII(self):
         self.assertTrue(is_classII('HLA-DRB1*15:01'))
         self.assertTrue(is_classII('HLA-DQB1*06:01'))
         self.assertFalse(is_classII('HLA-A*02:01'))
         pass
 
+    def test_004_checkseq(self):
+        self.assertTrue(checkseq(Seq('AAACTGATCG')))
+        self.assertTrue(checkseq(Seq('AAACTGATCGGGGGAAACCCTTT')))
+        self.assertFalse(checkseq(Seq('AAACTGATCGGGGGAAACCCTTTNN')))
+        self.assertFalse(checkseq(Seq('NNNNAAACTGATCGGGGGAAACCCTTTNNNN')))
+        self.assertFalse(checkseq(Seq('AAACTGATCGGGGGAAACCCTTTZ')))
+        pass
 
+    def test_005_randomid(self):
+        self.assertEqual(len(randomid()), 12)
+        self.assertEqual(len(randomid(N=6)), 6)
+        self.assertEqual(len(randomid(N=13)), 13)
+        pass

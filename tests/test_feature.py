@@ -31,7 +31,6 @@ Tests for `seqann` module.
 """
 import os
 import json
-import logging
 import unittest
 import warnings
 
@@ -43,10 +42,6 @@ from seqann.feature_client.rest import ApiException
 from seqann.feature_client.models.feature import Feature
 from seqann.feature_client.apis.features_api import FeaturesApi
 from seqann.feature_client.models.feature_request import FeatureRequest
-
-logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
 
 
 def ignore_warnings(test_func):

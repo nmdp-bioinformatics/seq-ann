@@ -31,7 +31,6 @@ Tests for `seqann` module.
 """
 import os
 import json
-import logging
 import pymysql
 import unittest
 
@@ -74,10 +73,6 @@ if os.getenv("BIOSQLDB"):
 biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
-
-logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
 
 
 def conn():
@@ -455,7 +450,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 012 Requires MySQL connection")
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 013 Requires MySQL connection")
     def test_013_logging(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
@@ -466,7 +461,7 @@ class TestBioSeqAnn(unittest.TestCase):
 
         with self.assertLogs(level='INFO') as cm:
             seqann = BioSeqAnn(server=server,
-                               verbose=False, verbosity=0)
+                               verbose=True)
             input_seq = self.data_dir + '/failed_seqs.fasta'
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
             annotation = seqann.annotate(in_seq)
@@ -480,5 +475,30 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 014 Requires MySQL connection")
+    def test_014_nogfe(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+
+        with self.assertLogs(level='INFO') as cm:
+            seqann = BioSeqAnn(server=server,
+                               verbose=True)
+            input_seq = self.data_dir + '/failed_seqs.fasta'
+            in_seq = list(SeqIO.parse(input_seq, "fasta"))[1]
+            annotation = seqann.annotate(in_seq)
+            self.assertFalse(annotation.gfe)
+            self.assertTrue(annotation.annotation)
+
+        self.assertGreater(len(cm.output), 2)
+        error = list(cm.output)[0].split(":")[0]
+        error_msg = list(cm.output)[0].split("-")[1]
+        self.assertEqual(error, "WARNING")
+        self.assertEqual(error_msg, " Sequence alphabet contains non DNA")
+        server.close()
+        pass
 
 

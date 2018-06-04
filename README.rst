@@ -91,7 +91,7 @@ running the imgt_biosqldb from DockerHub_ then the following parameters we be th
     from BioSQL import BioSeqDatabase
     server = BioSeqDatabase.open_database(driver="pymysql", user="root",
                                           passwd="my-secret-pw", host="localhost",
-                                          db="bioseqdb")
+                                          db="bioseqdb", port=3306)
     seqann = BioSeqAnn(server=server)
     ann = seqann.annotate(sequence, "HLA-A")
 
@@ -122,7 +122,7 @@ annotation is not able to be produced then nothing will be returned. Below is an
 
     ann = seqann.annotate(sequence, "HLA-A")
     for feat in ann.annotation:
-        print(feat, ann.annotation[feat], sep="\t")
+        print(feat, ann.gfe, str(ann.annotation[feat].seq), sep="\t")
 
 
 Install

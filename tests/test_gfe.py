@@ -31,22 +31,15 @@ Tests for `seqann` module.
 """
 import os
 import json
-import logging
 import unittest
 import warnings
 
-from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 from seqann.gfe import GFE
 from Bio.Alphabet import generic_dna
-from seqann.util import get_features
 from seqann.models.annotation import Annotation
-
-logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
 
 
 def ignore_warnings(test_func):
