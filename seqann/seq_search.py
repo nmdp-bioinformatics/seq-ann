@@ -148,7 +148,11 @@ class SeqSearch(Model):
 
             found_feats = partial_ann.features
 
-            #print(found_feats['intron_2'])
+            if self.verbose and self.verbosity > 4:
+                self.logger.info("Found partial features:")
+                for f in found_feats:
+                    self.logger.info(f)
+
             # Skip references that only have features
             # that have already been annoated
             if len([f for f in feats if f in found_feats]) == len(feats):
@@ -202,6 +206,11 @@ class SeqSearch(Model):
                 seq_covered -= len(str(feats[feat_name]))
                 end = int(len(str(feats[feat_name])) + seq_search[1])
 
+                if feat_name == 'three_prime_UTR' \
+                        and len(str(in_seq.seq)) > end:
+                        end = len(str(in_seq.seq))
+
+                #if feat_name == "three_prime_UTR" and 
                 # If the feature is found and it's a five_prime_UTR then
                 # the start should always be 0, so insertions at the
                 # beinging of the sequence will be found.
@@ -224,10 +233,10 @@ class SeqSearch(Model):
 
                         if o1 < o2 and loctyp:
                             skip = True
-                            self.logger.info("1-Skipping map for " + feat_name)
+                            self.logger.info("Skipping map for " + feat_name)
                         elif o2 < o1 and not loctyp:
                             skip = True
-                            self.logger.info("2-Skipping map for " + feat_name)
+                            self.logger.info("Skipping map for " + feat_name)
 
                 if 1 not in mapcheck and not skip:
                     for i in range(si, end+1):

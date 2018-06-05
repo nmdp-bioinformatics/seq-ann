@@ -563,8 +563,9 @@ class BioSeqAnn(Model):
                                                                   an.annotation[f]
                                                                   })
 
-                                    i = annotation.refmissing.index(f)
-                                    del annotation.refmissing[i]
+                                    if f in annotation.refmissing:
+                                        i = annotation.refmissing.index(f)
+                                        del annotation.refmissing[i]
                                     del annotation.missing[f]
 
                                     if an.blocks:
@@ -608,6 +609,7 @@ class BioSeqAnn(Model):
                                              + " with targeted ref_align")
                         return annotation
                     else:
+                        #print("HERE")
                         if an.mapping and an.features:
                             for k in an.mapping:
                                 m = an.mapping[k]
@@ -812,7 +814,10 @@ class BioSeqAnn(Model):
             nxt_order = len(self.refdata.structures[locus])+1
         else:
             next_feat = mapping[end_pos+1]
-            nxt_order = self.refdata.structures[locus][next_feat]
+            if isinstance(next_feat, int):
+                nxt_order = prv_order + 2
+            else:
+                nxt_order = self.refdata.structures[locus][next_feat]
 
         start = 0
         exstart = 0
