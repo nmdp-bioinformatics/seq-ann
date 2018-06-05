@@ -299,7 +299,6 @@ class BioSeqAnn(Model):
             return self.annotate(sequence, locus)
 
         # Do seq_search first on all blast sequences
-        
         mi = 0
         partial_ann = None
         partial_missing = None
@@ -320,10 +319,11 @@ class BioSeqAnn(Model):
             # * Running sequence search *
             # This does a simple string search for the
             # reference features within the provided sequence
-            annotation = self.seqsearch.search_seqs(found[i],
-                                                    sequence, locus,
-                                                    partial_ann=partial_ann)
-            if annotation.complete_annotation:
+            ann = self.seqsearch.search_seqs(found[i],
+                                             sequence, locus,
+                                             partial_ann=partial_ann)
+
+            if ann.complete_annotation:
                 # TODO: change clean to cleanup
                 if self.verbose:
                     self.logger.info(self.logname
@@ -334,31 +334,31 @@ class BioSeqAnn(Model):
                 if self.align:
                     if self.verbose:
                         self.logger.info(self.logname + " Adding alignment")
-                    annotation = self.add_alignment(found[i], annotation)
+                    ann = self.add_alignment(found[i], ann)
 
                 if self.verbose and self.verbosity > 0:
                     self.logger.info(self.logname
                                      + " Features annotated = "
-                                     + ",".join(list(annotation
+                                     + ",".join(list(ann
                                                      .annotation.keys())))
                     if self.verbosity > 2:
-                        for f in annotation.features:
+                        for f in ann.features:
                             self.logger.info(self.logname
                                              + " " + f + " = "
-                                             + str(annotation
+                                             + str(ann
                                                    .annotation[f].seq))
 
                 # Create GFE
                 if create_gfe:
-                    feats, gfe = self.gfe.get_gfe(annotation, locus)
-                    annotation.gfe = gfe
-                annotation.clean()
-                return annotation
+                    feats, gfe = self.gfe.get_gfe(ann, locus)
+                    ann.gfe = gfe
+                ann.clean()
+                return ann
             else:
-                partial_ann = annotation
+                partial_ann = ann
 
                 if i == mi:
-                    partial_missing = annotation.missing
+                    partial_missing = ann.missing
 
                 if self.verbose and self.verbosity > 1:
                     self.logger.info(self.logname
@@ -366,11 +366,11 @@ class BioSeqAnn(Model):
                                      + str(i) + " *")
                     self.logger.info(self.logname
                                      + " Features found = "
-                                     + ",".join(list(annotation
+                                     + ",".join(list(ann
                                                      .features.keys())))
                     self.logger.info(self.logname
                                      + " Sequence unmapped = "
-                                     + str(annotation.covered))
+                                     + str(ann.covered))
 
         # The number of sequences being used for alignment
         # can't be greater than the number of sequences
@@ -609,7 +609,6 @@ class BioSeqAnn(Model):
                                              + " with targeted ref_align")
                         return annotation
                     else:
-                        #print("HERE")
                         if an.mapping and an.features:
                             for k in an.mapping:
                                 m = an.mapping[k]

@@ -376,7 +376,8 @@ class SeqSearch(Model):
                                     method=method,
                                     refmissing=refmissing,
                                     mapping=mapping,
-                                    exact_match=exact_matches)
+                                    exact_match=exact_matches,
+                                    annotation=None)
         else:
             if self.verbose and self.verbosity > 0:
                 self.logger.info("* No missing blocks *")
@@ -404,7 +405,8 @@ class SeqSearch(Model):
                                     ambig=ambig_map,
                                     method=method,
                                     mapping=mapping,
-                                    exact_match=exact_matches)
+                                    exact_match=exact_matches,
+                                    annotation=None)
 
         return annotation
 
