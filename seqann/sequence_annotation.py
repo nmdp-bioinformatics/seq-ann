@@ -559,9 +559,12 @@ class BioSeqAnn(Model):
                                                          + " Annotated " + f
                                                          + " with clustalo")
 
-                                    annotation.annotation.update({f:
-                                                                  an.annotation[f]
+                                    if annotation.annotation:
+                                        annotation.annotation.update({f:
+                                                                    an.annotation[f]
                                                                   })
+                                    else:
+                                        annotation.annotation = an.annotation
 
                                     if f in annotation.refmissing:
                                         i = annotation.refmissing.index(f)
