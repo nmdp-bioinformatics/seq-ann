@@ -53,7 +53,7 @@ import logging
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def align_seqs(found_seqs, sequence, locus, verbose=False, verbosity=0):
+def align_seqs(found_seqs, sequence, locus, start_pos, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -111,8 +111,12 @@ def align_seqs(found_seqs, sequence, locus, verbose=False, verbosity=0):
         logger.info("Number of features found = " + str(len(all_features)))
 
     if len(all_features) > 0:
-        annotation = resolve_feats(all_features, align[len(align)-1],
-                                   verbose, verbosity)
+        annotation = resolve_feats(all_features,
+                                   align[len(align)-1],
+                                   start_pos,
+                                   seql,
+                                   verbose,
+                                   verbosity)
         return annotation, insers, dels
     else:
         return Annotation(complete_annotation=False), 0, 0
@@ -156,7 +160,7 @@ def find_features(feats, sequ):
     return feats
 
 
-def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
+def resolve_feats(feat_list, seqin,  start, verbose=False, verbosity=0):
     """
     Resolves features from alignments
 
@@ -179,6 +183,7 @@ def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
             logger.error("resolve_feats error")
         return Annotation(complete_annotation=False)
     else:
+        features = {}
         full_annotation = {}
         features = feat_list[0]
         for feat in features:
@@ -188,14 +193,21 @@ def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
             if re.search("-", str(seqrec.seq)):
                 newseq = re.sub(r'-', '', str(seqrec.seq))
                 seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
+
             if seqrec.seq:
                 full_annotation.update({feat: seqrec})
+                sp = f.location.start + start
+                ep = f.location.end + start
+                featn = SeqFeature(FeatureLocation(ExactPosition(sp), ExactPosition(ep), strand=1), type=f.type)
+                features.update({feat: featn})
                 for i in range(f.location.start, f.location.end):
                     if i in coordinates:
                         del coordinates[i]
                     mapping[i] = feat
 
         blocks = getblocks(coordinates)
+
+        rmapping = {k+start: mapping[k] for k in mapping.keys()}
 
         # Print out what blocks haven't been annotated
         if verbose and verbosity > 2:
@@ -211,6 +223,8 @@ def resolve_feats(feat_list, seqin,  verbose=False, verbosity=0):
 
         return Annotation(annotation=full_annotation,
                           method="clustalo",
+                          features=features,
+                          mapping=rmapping,
                           blocks=blocks)
 
 
@@ -269,6 +283,9 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper))
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
+
+    # TODO:
+    # These numbers need to be fine t
     if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
         if verbose:
             logger.info("Alignment coverage NOT high enough to return annotation")

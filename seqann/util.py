@@ -115,6 +115,7 @@ def get_seqfeat(seqrecord):
     n = 3 if len(seqrecord.features) >= 3 else len(seqrecord.features)
     fiveutr = [["five_prime_UTR", seqrecord.features[i]] for i in range(0, n) if seqrecord.features[i].type != "source"
                and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
+               and seqrecord.features[i].type != "3UTR"
                and not seqrecord.features[i].qualifiers]
     feats = [[str(feat.type + "_" + feat.qualifiers['number'][0]), feat]
              for feat in seqrecord.features if feat.type != "source"
@@ -122,6 +123,7 @@ def get_seqfeat(seqrecord):
              and 'number' in feat.qualifiers]
     threeutr = [["three_prime_UTR", seqrecord.features[i]] for i in range(len(seqrecord.features)-1, len(seqrecord.features)) if seqrecord.features[i].type != "source"
                 and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
+                and seqrecord.features[i].type != "5UTR"
                 and not seqrecord.features[i].qualifiers]
 
     feat_list = fiveutr + feats + threeutr
@@ -131,7 +133,9 @@ def get_seqfeat(seqrecord):
 
 def get_seqs(seqrecord):
     fiveutr = [["five_prime_UTR", str(seqrecord.features[i].extract(seqrecord.seq))] for i in range(0, 3) if seqrecord.features[i].type != "source"
-               and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
+               and seqrecord.features[i].type != "CDS"
+               and seqrecord.features[i].type != "3UTR"
+               and isinstance(seqrecord.features[i], SeqFeature)
                and not seqrecord.features[i].qualifiers]
     feats = [[str(feat.type + "_" + feat.qualifiers['number'][0]), str(feat.extract(seqrecord.seq))]
              for feat in seqrecord.features if feat.type != "source"
@@ -139,10 +143,10 @@ def get_seqs(seqrecord):
              and 'number' in feat.qualifiers]
     threeutr = [["three_prime_UTR", str(seqrecord.features[i].extract(seqrecord.seq))] for i in range(len(seqrecord.features)-1, len(seqrecord.features)) if seqrecord.features[i].type != "source"
                 and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
+                and seqrecord.features[i].type != "5UTR"
                 and not seqrecord.features[i].qualifiers]
     feat_list = fiveutr + feats + threeutr
     annotation = {k[0]: str(k[1]) for k in feat_list}
-    #print(annotation)
     return(annotation)
 
 

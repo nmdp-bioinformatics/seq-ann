@@ -147,7 +147,9 @@ class SeqSearch(Model):
         if partial_ann:
 
             found_feats = partial_ann.features
-            
+            print("FOUND FEATS")
+            print(found_feats)
+
             # Skip references that only have features
             # that have already been annoated
             if len([f for f in feats if f in found_feats]) == len(feats):
@@ -175,7 +177,6 @@ class SeqSearch(Model):
 
         for feat_name in sorted(feats,
                                 key=lambda k: self.refdata.structures[locus][k]):
-
 
             # skip if partial annotation is provided
             # and the feat name is not one of the
@@ -320,10 +321,14 @@ class SeqSearch(Model):
 
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
+        print("SEQ SEARCH")
+        print(found_feats.keys())
+
         annotated_feats, mb = self._resolve_unmapped(blocks,
                                                      feat_missing,
                                                      ambig_map, mapping,
                                                      found_feats, locus)
+        print(annotated_feats.keys())
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
@@ -461,6 +466,9 @@ class SeqSearch(Model):
                         if expected_p == previous_feat \
                             and expected_p != 1 \
                                 and b[0]-1 in locats:
+                                print("BLOCK MAPPED2")
+                                print(b)
+                                print(featname)
                                 block_mapped.append(b)
                                 found_feats.update({featname:
                                                     SeqFeature(
@@ -475,6 +483,9 @@ class SeqSearch(Model):
                     if expected_n == next_feat \
                         and expected_p != 1 \
                             and b[0]-1 in locats:
+                            print("BLOCK MAPPED3")
+                            print(b)
+                            print(featname)
                             block_mapped.append(b)
                             found_feats.update({featname:
                                                 SeqFeature(
@@ -509,6 +520,9 @@ class SeqSearch(Model):
                                 if b in missing_blocks:
                                     del missing_blocks[missing_blocks.index(b)]
                                 block_mapped.append(b)
+                                print("BLOCK MAPPED11")
+                                print(b)
+                                print(featname)
                                 found_feats.update({featname:
                                                     SeqFeature(
                                                         FeatureLocation(
