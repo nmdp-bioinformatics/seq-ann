@@ -147,9 +147,8 @@ class SeqSearch(Model):
         if partial_ann:
 
             found_feats = partial_ann.features
-            print("FOUND FEATS")
-            print(found_feats)
 
+            #print(found_feats['intron_2'])
             # Skip references that only have features
             # that have already been annoated
             if len([f for f in feats if f in found_feats]) == len(feats):
@@ -321,14 +320,10 @@ class SeqSearch(Model):
 
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
-        print("SEQ SEARCH")
-        print(found_feats.keys())
-
         annotated_feats, mb = self._resolve_unmapped(blocks,
                                                      feat_missing,
                                                      ambig_map, mapping,
                                                      found_feats, locus)
-        print(annotated_feats.keys())
         if mb:
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
@@ -412,6 +407,7 @@ class SeqSearch(Model):
         for f in found_feats:
             if re.search("intron", f) or re.search("UTR", f):
                 exon_only = False
+
             if re.search("exon", f):
                 found_exons += 1
 
@@ -466,10 +462,6 @@ class SeqSearch(Model):
                         if expected_p == previous_feat \
                             and expected_p != 1 \
                                 and b[0]-1 in locats:
-                                print("BLOCK MAPPED2")
-                                print(b)
-                                print(featname)
-                                block_mapped.append(b)
                                 found_feats.update({featname:
                                                     SeqFeature(
                                                         FeatureLocation(
@@ -483,10 +475,6 @@ class SeqSearch(Model):
                     if expected_n == next_feat \
                         and expected_p != 1 \
                             and b[0]-1 in locats:
-                            print("BLOCK MAPPED3")
-                            print(b)
-                            print(featname)
-                            block_mapped.append(b)
                             found_feats.update({featname:
                                                 SeqFeature(
                                                     FeatureLocation(
@@ -520,9 +508,6 @@ class SeqSearch(Model):
                                 if b in missing_blocks:
                                     del missing_blocks[missing_blocks.index(b)]
                                 block_mapped.append(b)
-                                print("BLOCK MAPPED11")
-                                print(b)
-                                print(featname)
                                 found_feats.update({featname:
                                                     SeqFeature(
                                                         FeatureLocation(
@@ -558,12 +543,13 @@ class SeqSearch(Model):
                         if expected_n == next_feat:
                             if b in missing_blocks:
                                 del missing_blocks[missing_blocks.index(b)]
+                            add = 0
                             block_mapped.append(b)
                             found_feats.update({featname:
                                                 SeqFeature(
                                                     FeatureLocation(
                                                         ExactPosition(b[0]),
-                                                        ExactPosition(b[len(b)-1]),
+                                                        ExactPosition(b[len(b)-1]+add),
                                                         strand=1),
                                                     type=featname)})
                         else:

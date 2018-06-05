@@ -466,7 +466,7 @@ class BioSeqAnn(Model):
         """
         if annotation:
 
-            if 0 in annotation.mapping:
+            if 0 in annotation.mapping and not isinstance(annotation.mapping[0], int):
                 start_order = self.refdata.structures[locus][annotation.mapping[0]]
             else:
                 start_order = 0
@@ -476,13 +476,13 @@ class BioSeqAnn(Model):
             # missing features
             # Start with all blocks missing
             # and then delete block if it is found
+            tmp_missing = []
             missing_blocks = annotation.blocks
             for b in sorted(annotation.blocks):
 
                 # **** Check if block equals full input sequence *** #
                 # - If it does, then just align the ful
                 start = b[0]-1 if b[0] != 0 else 0
-                endp = b[len(b)-1]
                 seq_feat = \
                     SeqFeature(
                         FeatureLocation(
@@ -562,17 +562,27 @@ class BioSeqAnn(Model):
                                     annotation.annotation.update({f:
                                                                   an.annotation[f]
                                                                   })
-                                    del annotation.refmissing[annotation.refmissing.index(f)]
+
+                                    i = annotation.refmissing.index(f)
+                                    del annotation.refmissing[i]
                                     del annotation.missing[f]
+
                                     if an.blocks:
-                                        new_blocks = []
+
                                         for nb in an.blocks:
                                             bl = [b[i] for i in nb]
-                                            new_blocks.append(bl)
-                                        mbtmp += new_blocks
+
+                                            # TODO: check if this
+                                            # is the case in other
+                                            # situations
+                                            if 0 in bl:
+                                                bl.append(bl[len(bl)-1]+1)
+                                            missing_blocks.append(bl)
+                                            tmp_missing.append(bl)
+
                                         if b in missing_blocks:
                                             del missing_blocks[missing_blocks.index(b)]
-
+        
                                         if self.verbose and self.verbosity > 0:
                                             self.logger.info(self.logname
                                                              + " Part of block mapped")
@@ -582,13 +592,13 @@ class BioSeqAnn(Model):
                                                              + " All blocks mapped")
                                         if b in missing_blocks:
                                             del missing_blocks[missing_blocks.index(b)]
+
                                 elif b not in mbtmp and b in missing_blocks:
                                     mbtmp.append(b)
                     elif b not in mbtmp and b in missing_blocks:
                         mbtmp.append(b)
 
                     mbtmp += missing_blocks
-
                     annotation.blocks = mbtmp
                     annotation.check_annotation()
                     if annotation.complete_annotation:
@@ -608,9 +618,14 @@ class BioSeqAnn(Model):
 
                             for f in an.features:
                                 f_order = self.refdata.structures[locus][f]
-                                if f_order >= start_order and f not in annotation.features:
-                                    annotation.features[f] = an.features[f]
+                                # Only add features if they are after the
+                                # first feature mapped
+                                if f_order >= start_order and f not in annotation.features \
+                                        and f in annotation.annotation:
+                                            annotation.features[f] = an.features[f]
 
+                            # Rerunning seqsearch with
+                            # new annotation from alignment
                             tmpann = self.seqsearch.search_seqs(found_seqs,
                                                                 sequence,
                                                                 locus,
@@ -643,7 +658,13 @@ class BioSeqAnn(Model):
                                                  + str(len(exonan
                                                            .annotation[f])))
                             annotation.annotation.update({f: exonan.annotation[f]})
-                        del missing_blocks[missing_blocks.index(b)]
+
+                        if b in missing_blocks:
+                            del missing_blocks[missing_blocks.index(b)]
+                        else:
+                            for bm in tmp_missing:
+                                if bm in missing_blocks:
+                                    del missing_blocks[missing_blocks.index(bm)]
 
                         annotation.blocks = missing_blocks
                         annotation.check_annotation()

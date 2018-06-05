@@ -75,6 +75,12 @@ if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
 
+import logging
+logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
+            datefmt='%m/%d/%Y %I:%M:%S %p',
+            level=logging.INFO)
+
+
 def conn():
     try:
         conn = pymysql.connect(host=biosqlhost,
@@ -132,7 +138,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="003_ambig")
+        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="003_ambig")
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
         for ex in self.expected['ambig']:
@@ -535,4 +541,50 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 requires MySQL connection")
+    def test_006_pa(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="006_partialambig")
+        input_seq = self.data_dir + '/partial_ambig.fasta'
+
+        ex = self.expected['partial_ambig'][1]
+        i = int(ex['index'])
+        locus = ex['locus']
+        allele = ex['name']
+        hla, loc = locus.split("-")
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
+        ann = seqann.annotate(in_seq, locus)
+        self.assertTrue(ann.complete_annotation)
+        self.assertEqual(ann.method, ex['method'])
+        self.assertFalse(ann.blocks)
+        self.assertIsInstance(ann, Annotation)
+        self.assertTrue(ann.complete_annotation)
+        self.assertGreater(len(ann.annotation.keys()), 1)
+        db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
+        expected = db.lookup(name=allele)
+        expected_seqs = get_features(expected)
+        self.assertGreater(len(expected_seqs.keys()), 1)
+        self.assertGreater(len(ann.annotation.keys()), 1)
+
+        # Make sure only mapped feats exist
+        for mf in ex['missing_feats']:
+            self.assertFalse(mf in ann.annotation)
+
+        for feat in ex['feats']:
+            if feat in ex['diff']:
+                self.assertNotEqual(str(expected_seqs[feat]),
+                                    str(ann.annotation[feat].seq))
+            else:
+                self.assertEqual(str(expected_seqs[feat]),
+                                 str(ann.annotation[feat].seq))
+
+        self.assertEqual(ann.gfe, ex['gfe'])
+        server.close()
+        pass
 

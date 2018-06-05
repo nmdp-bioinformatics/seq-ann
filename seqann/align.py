@@ -114,7 +114,6 @@ def align_seqs(found_seqs, sequence, locus, start_pos, verbose=False, verbosity=
         annotation = resolve_feats(all_features,
                                    align[len(align)-1],
                                    start_pos,
-                                   seql,
                                    verbose,
                                    verbosity)
         return annotation, insers, dels
