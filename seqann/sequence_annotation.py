@@ -569,7 +569,9 @@ class BioSeqAnn(Model):
                                     if f in annotation.refmissing:
                                         i = annotation.refmissing.index(f)
                                         del annotation.refmissing[i]
-                                    del annotation.missing[f]
+
+                                    if f in annotation.missing:
+                                        del annotation.missing[f]
 
                                     if an.blocks:
 
