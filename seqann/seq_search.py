@@ -178,6 +178,8 @@ class SeqSearch(Model):
                 self.logger.info("Partial sequence metho = "
                                  + method)
 
+        added_feat = {}
+        deleted_coords = {}
         for feat_name in sorted(feats,
                                 key=lambda k: self.refdata.structures[locus][k]):
 
@@ -210,7 +212,6 @@ class SeqSearch(Model):
                         and len(str(in_seq.seq)) > end:
                         end = len(str(in_seq.seq))
 
-                #if feat_name == "three_prime_UTR" and 
                 # If the feature is found and it's a five_prime_UTR then
                 # the start should always be 0, so insertions at the
                 # beinging of the sequence will be found.
@@ -222,6 +223,7 @@ class SeqSearch(Model):
                 mapcheck = set([0 if i in coordinates else 1
                                 for i in range(si, end+1)])
 
+                # Dont map features if they are out of order
                 skip = False
                 if found_feats and len(found_feats) > 0:
                     for f in found_feats:
@@ -233,14 +235,20 @@ class SeqSearch(Model):
 
                         if o1 < o2 and loctyp:
                             skip = True
-                            self.logger.info("Skipping map for " + feat_name)
+                            if self.verbose:
+                                self.logger.info("Skipping map for "
+                                                 + feat_name)
                         elif o2 < o1 and not loctyp:
                             skip = True
-                            self.logger.info("Skipping map for " + feat_name)
+                            if self.verbose:
+                                self.logger.info("Skipping map for "
+                                                 + feat_name)
 
                 if 1 not in mapcheck and not skip:
                     for i in range(si, end+1):
                         if i in coordinates:
+                            if feat_name == "exon_8" or feat_name == 'three_prime_UTR':
+                                deleted_coords.update({i: coordinates[i]})
                             del coordinates[i]
                         else:
                             if self.verbose:
@@ -257,6 +265,8 @@ class SeqSearch(Model):
                                                 ExactPosition(end), strand=1),
                                             type=feat_name)})
 
+                    if feat_name == "exon_8" or feat_name == 'three_prime_UTR':
+                        added_feat.update({feat_name: feats[feat_name]})
                     if self.verbose and self.verbosity > 3:
                         self.logger.info("Coordinates | Start = " + str(start) + " - End = " + str(end))
 
@@ -334,6 +344,27 @@ class SeqSearch(Model):
                                                      ambig_map, mapping,
                                                      found_feats, locus)
         if mb:
+
+            # Unmap exon 8
+            if locus == "HLA-C" and len(in_seq.seq) < 1200 \
+                    and 'exon_8' in exact_matches:
+                for i in deleted_coords:
+                    mapping[i] = 1
+                coordinates.update(deleted_coords)
+                mb = getblocks(coordinates)
+                feat_missing.update(added_feat)
+
+                # Delte from found features
+                del exact_matches[exact_matches.index('exon_8')]
+                del found_feats['exon_8']
+
+                if 'exon_8' in annotated_feats:
+                    del annotated_feats['exon_8']
+                if 'three_prime_UTR' in found_feats:
+                    del found_feats['three_prime_UTR']
+                if 'three_prime_UTR' in annotated_feats:
+                    del annotated_feats['three_prime_UTR']
+
             refmissing = [f for f in self.refdata.structures[locus]
                           if f not in annotated_feats]
 
@@ -379,6 +410,26 @@ class SeqSearch(Model):
                                     exact_match=exact_matches,
                                     annotation=None)
         else:
+
+            mb = None
+            # Unmap exon 8
+            if locus == "HLA-C" and len(in_seq.seq) < 1200 \
+                    and 'exon_8' in exact_matches \
+                    and 'three_prime_UTR' in annotated_feats:
+                for i in deleted_coords:
+                    mapping[i] = 1
+                coordinates.update(deleted_coords)
+                mb = getblocks(coordinates)
+                feat_missing.update(added_feat)
+                del exact_matches[exact_matches.index('exon_8')]
+                del found_feats['exon_8']
+                if 'exon_8' in annotated_feats:
+                    del annotated_feats['exon_8']
+                if 'three_prime_UTR' in found_feats:
+                    del found_feats['three_prime_UTR']
+                if 'three_prime_UTR' in annotated_feats:
+                    del annotated_feats['three_prime_UTR']
+
             if self.verbose and self.verbosity > 0:
                 self.logger.info("* No missing blocks *")
 
@@ -404,6 +455,7 @@ class SeqSearch(Model):
                                     missing=feat_missing,
                                     ambig=ambig_map,
                                     method=method,
+                                    blocks=mb,
                                     mapping=mapping,
                                     exact_match=exact_matches,
                                     annotation=None)

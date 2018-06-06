@@ -138,7 +138,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=5, pid="003_ambig")
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="003_ambig")
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
         for ex in self.expected['ambig']:
@@ -519,7 +519,8 @@ class TestBioSeqAnn(unittest.TestCase):
         seqann = BioSeqAnn(server=server)
         refdata = ReferenceData()
 
-        test_list = ['HLA-A*01:07', 'HLA-A*01:01:59', 'HLA-A*01:09:01:01', 'HLA-A*02:545']
+        test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
+                     'HLA-A*01:09:01:01', 'HLA-A*02:545']
         for seqrec in refdata.imgtdat:
             seqname = seqrec.description.split(",")[0]
             if seqname not in test_list:

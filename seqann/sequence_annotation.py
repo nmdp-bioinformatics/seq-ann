@@ -357,8 +357,8 @@ class BioSeqAnn(Model):
             else:
                 partial_ann = ann
 
-                if i == mi:
-                    partial_missing = ann.missing
+                #if i == mi:
+                partial_missing = ann.missing
 
                 if self.verbose and self.verbosity > 1:
                     self.logger.info(self.logname
@@ -378,10 +378,12 @@ class BioSeqAnn(Model):
         if alignseqs > len(found):
             alignseqs = len(found)-1
 
+        # Use the missing features from
+        # the blast with the highest score
+        # TODO: Validate this is actually better
         partial_ann.missing = partial_missing
 
         # Now loop through doing alignment
-        # TODO: Add parameter for limiting this step
         for i in range(0, alignseqs):
 
             # Skip a reference
@@ -433,7 +435,7 @@ class BioSeqAnn(Model):
                                      + str(i) + " *")
                     self.logger.info(self.logname
                                      + " Features found = "
-                                     + ",".join(list(annotation
+                                     + ",".join(list(aligned_ann
                                                      .features.keys())))
 
                 partial_ann = aligned_ann
