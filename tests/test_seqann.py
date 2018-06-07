@@ -520,7 +520,8 @@ class TestBioSeqAnn(unittest.TestCase):
         refdata = ReferenceData()
 
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
-                     'HLA-A*01:09:01:01', 'HLA-A*02:545']
+                     'HLA-A*01:09:01:01', 'HLA-A*02:545',
+                     'HLA-A*29:13']
         for seqrec in refdata.imgtdat:
             seqname = seqrec.description.split(",")[0]
             if seqname not in test_list:

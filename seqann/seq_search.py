@@ -346,8 +346,9 @@ class SeqSearch(Model):
         if mb:
 
             # Unmap exon 8
-            if locus == "HLA-C" and len(in_seq.seq) < 1200 \
+            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 1200 \
                     and 'exon_8' in exact_matches:
+
                 for i in deleted_coords:
                     mapping[i] = 1
                 coordinates.update(deleted_coords)
@@ -413,9 +414,10 @@ class SeqSearch(Model):
 
             mb = None
             # Unmap exon 8
-            if locus == "HLA-C" and len(in_seq.seq) < 1200 \
+            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 1200 \
                     and 'exon_8' in exact_matches \
-                    and 'three_prime_UTR' in annotated_feats:
+                    and 'three_prime_UTR' in annotated_feats\
+                    and 'three_prime_UTR' not in exact_matches:
                 for i in deleted_coords:
                     mapping[i] = 1
                 coordinates.update(deleted_coords)
