@@ -70,6 +70,8 @@ def download_dat(url, dat):
     urllib.request.urlretrieve(url, dat)
 
 
+# TODO: Use pandas to get latest version
+
 class ReferenceData(Model):
     '''
     classdocs
@@ -133,7 +135,8 @@ class ReferenceData(Model):
 
         self.logger = logging.getLogger("Logger." + __name__)
 
-        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/' + dbversion + '/hla.dat'
+        hla_url = 'https://raw.githubusercontent.com/ANHIG/IMGTHLA/' \
+            + dbversion + '/hla.dat'
         kir_url = 'ftp://ftp.ebi.ac.uk/pub/databases/ipd/kir/KIR.dat'
         hla_loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
                     'HLA-DPB1', 'HLA-DQA1', 'HLA-DPA1', 'HLA-DRB3',
@@ -141,12 +144,14 @@ class ReferenceData(Model):
 
         if self.verbose and verbosity > 0:
             self.logger.info("IPD-IMGT/HLA release = " + str(dbversion))
-            self.logger.info("BIOSQLUSER = " + biosqluser)
-            self.logger.info("BIOSQLHOST = " + biosqlhost)
-            self.logger.info("BIOSQLDB = " + biosqldb)
-            self.logger.info("BIOSQLPORT = " + str(biosqlport))
             self.logger.info("HLA URL = " + hla_url)
             self.logger.info("KIR URL = " + kir_url)
+            if self.server_avail:
+                self.logger.info("Using BioSQL Server")
+                self.logger.info("BIOSQLUSER = " + biosqluser)
+                self.logger.info("BIOSQLHOST = " + biosqlhost)
+                self.logger.info("BIOSQLDB = " + biosqldb)
+                self.logger.info("BIOSQLPORT = " + str(biosqlport))
 
         # TODO: Download! Don't have in package!
         hla_names = []
@@ -212,7 +217,7 @@ class ReferenceData(Model):
         self._struct_order = get_structorder()
 
         self._structure_max = {'KIR2DP1': 20, 'KIR2DL5A': 20, 'KIR2DS4': 20,
-                               'HLA-DPA1': 9,
+                               'HLA-DPA1': 9, 'HLA-DQA1': 9,
                                'HLA-DPB1': 11, 'KIR2DS2': 20, 'KIR3DP1': 20,
                                'HLA-DRB4': 13, 'KIR2DL1': 20, 'KIR2DS5': 20,
                                'HLA-DRB3': 13, 'KIR2DS3': 20, 'KIR3DL1': 20,

@@ -327,7 +327,6 @@ class BioSeqAnn(Model):
                                              partial_ann=partial_ann)
 
             if ann.complete_annotation:
-                # TODO: change clean to cleanup
                 if self.verbose:
                     self.logger.info(self.logname
                                      + " Finished annotation using "
@@ -461,7 +460,12 @@ class BioSeqAnn(Model):
                              + " Finished ref_align annotation using full "
                              + leastmissing_feat.name)
 
-        if full_align.complete_annotation and self.verbose:
+        if not isinstance(full_align, Annotation):
+            self.logger.info(self.logname + " Failed annotation!")
+            return Annotation()
+
+        if isinstance(full_align, Annotation) \
+                and not full_align.complete_annotation and self.verbose:
             self.logger.info(self.logname + " Incomplete annotation!")
 
         if self.align and full_align.complete_annotation:
@@ -507,7 +511,7 @@ class BioSeqAnn(Model):
         :rtype: Annotation
 
         """
-        if annotation:
+        if annotation and isinstance(annotation, Annotation):
 
             if 0 in annotation.mapping and not isinstance(annotation.mapping[0], int):
                 start_order = self.refdata.structures[locus][annotation.mapping[0]]

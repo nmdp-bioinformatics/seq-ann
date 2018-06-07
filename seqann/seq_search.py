@@ -498,6 +498,10 @@ class SeqSearch(Model):
                 locats = ambig_map[featname]
                 start_i = b[0]-1
                 end_i = b[len(b)-1]+1
+                
+                # TODO: Catch ERROR
+                #if not end_i in mapping:
+                #
                 feat_num = self.refdata.structures[loc][featname]
                 if feat_num+add_num <= self.refdata.structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
@@ -534,7 +538,8 @@ class SeqSearch(Model):
                                                             ExactPosition(b[len(b)-1]),
                                                             strand=1),
                                                         type=featname)})
-                elif feat_num+add_num <= self.refdata.structure_max[loc] and feat_num-add_num < 0:
+                elif feat_num+add_num <= self.refdata.structure_max[loc] \
+                        and feat_num-add_num < 0:
                     expected_n = self.refdata.struct_order[loc][feat_num+1]
                     next_feat = mapping[end_i]
                     if expected_n == next_feat \
@@ -602,7 +607,9 @@ class SeqSearch(Model):
                         else:
                             if b not in missing_blocks:
                                 missing_blocks.append(b)
-                    elif(feat_num+add_num <= self.refdata.structure_max[loc] and feat_num-add_num < 1 and end_i <= len(mapping) - 1):
+                    elif(feat_num+add_num <= self.refdata.structure_max[loc]
+                            and feat_num-add_num < 1
+                            and end_i <= len(mapping) - 1):
                         expected_n = self.refdata.struct_order[loc][feat_num+add_num]
                         next_feat = mapping[end_i]
                         if expected_n == next_feat:

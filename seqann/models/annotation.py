@@ -23,11 +23,22 @@
 
 from __future__ import absolute_import
 from seqann.models.base_model_ import Model
-from datetime import date, datetime
 from typing import List, Dict
 from BioSQL.BioSeq import DBSeqRecord
 from ..util import deserialize_model
 from Bio.SeqRecord import SeqRecord
+
+
+# TODO: redo models
+#
+#   - AnnRecord
+#       - sequence
+#       - ID
+#       - method
+#       - Annotation
+#           - dictionary of feature objects
+#               * add coordinates
+#           - gfe
 
 
 class Annotation(Model):
@@ -451,20 +462,23 @@ class Annotation(Model):
         self.complete_annotation = True
         self.method = "nt_search and clustalo"
 
-        if self.missing:
-            for feat in self.missing:
-                if feat not in self.annotation:
-                    self.complete_annotation = False
-
-        if self.ambig:
-            for feat in self.ambig:
-                if feat not in self.annotation:
-                    self.complete_annotation = False
-
-        if self.blocks:
+        if not self.annotation:
             self.complete_annotation = False
         else:
-            self.complete_annotation = True
+            if self.missing:
+                for feat in self.missing:
+                    if feat not in self.annotation:
+                        self.complete_annotation = False
+
+            if self.ambig:
+                for feat in self.ambig:
+                    if feat not in self.annotation:
+                        self.complete_annotation = False
+
+            if self.blocks:
+                self.complete_annotation = False
+            else:
+                self.complete_annotation = True
 
     def clean(self):
         self.missing = ''

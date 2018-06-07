@@ -527,7 +527,6 @@ class TestBioSeqAnn(unittest.TestCase):
             if seqname not in test_list:
                 continue
 
-            print(seqname)
             locus = seqrec.description.split("*")[0]
             ann1 = seqann.annotate(seqrec, locus=locus)
             ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])

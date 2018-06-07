@@ -23,7 +23,6 @@
 #
 from __future__ import absolute_import
 from seqann.models.base_model_ import Model
-from datetime import date, datetime
 from typing import List, Dict
 from BioSQL.BioSeq import DBSeqRecord
 from ..util import deserialize_model
@@ -33,7 +32,8 @@ class Blast(Model):
     '''
     classdocs
     '''
-    def __init__(self, failed: bool=None, match_seqs: List[DBSeqRecord]=None, alleles: List[str]=None):
+    def __init__(self, failed: bool=None, match_seqs: List[DBSeqRecord]=None,
+                 alleles: List[str]=None):
         """
         Blast
         TODO: ADD evalues
