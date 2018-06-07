@@ -346,9 +346,8 @@ class SeqSearch(Model):
         if mb:
 
             # Unmap exon 8
-            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 1200 \
+            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 600 \
                     and 'exon_8' in exact_matches:
-
                 for i in deleted_coords:
                     mapping[i] = 1
                 coordinates.update(deleted_coords)
@@ -414,10 +413,11 @@ class SeqSearch(Model):
 
             mb = None
             # Unmap exon 8
-            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 1200 \
+            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 600 \
                     and 'exon_8' in exact_matches \
                     and 'three_prime_UTR' in annotated_feats\
                     and 'three_prime_UTR' not in exact_matches:
+
                 for i in deleted_coords:
                     mapping[i] = 1
                 coordinates.update(deleted_coords)
@@ -436,19 +436,19 @@ class SeqSearch(Model):
                 self.logger.info("* No missing blocks *")
 
             # Print out what features were ambig matches
-            if self.verbose and self.verbosity > 2 and len(ambig_map) > 1:
+            if self.verbose and self.verbosity > 0 and len(ambig_map) > 1:
                 self.logger.info("Features with ambig matches = " + ",".join(list(ambig_map)))
 
             # Print out what features were exact matches
-            if self.verbose and self.verbosity > 2 and len(exact_matches) > 1:
+            if self.verbose and self.verbosity > 0 and len(exact_matches) > 1:
                 self.logger.info("Features exact matches = " + ",".join(list(exact_matches)))
 
             # Print out what features have been annotated
-            if self.verbose and self.verbosity > 2 and len(annotated_feats) > 1:
+            if self.verbose and self.verbosity > 0 and len(annotated_feats) > 1:
                 self.logger.info("Features annotated = " + ",".join(list(annotated_feats)))
 
             # Print out what features are missing
-            if self.verbose and self.verbosity > 2 and len(feat_missing) > 1:
+            if self.verbose and self.verbosity > 0 and len(feat_missing) > 1:
                 self.logger.info("Features missing = " + ",".join(list(feat_missing)))
 
             annotation = Annotation(features=annotated_feats,
