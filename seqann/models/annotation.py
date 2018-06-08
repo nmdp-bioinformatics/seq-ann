@@ -23,11 +23,24 @@
 
 from __future__ import absolute_import
 from seqann.models.base_model_ import Model
-from datetime import date, datetime
 from typing import List, Dict
 from BioSQL.BioSeq import DBSeqRecord
 from ..util import deserialize_model
 from Bio.SeqRecord import SeqRecord
+
+from seqann.feature_client.models.feature import Feature
+
+# TODO: redo models
+#
+#   - AnnRecord
+#       - sequence
+#       - ID
+#       - method
+#       - Annotation
+#           - dictionary of featureAnnotation objects
+#               * Extend Feature object
+#               * add coordinates
+#           - gfe
 
 
 class Annotation(Model):
@@ -41,6 +54,7 @@ class Annotation(Model):
                  refmissing: List[str]=None,
                  exact_match: List[str]=None,
                  exact: bool=False,
+                 structure: List[Feature]=None,
                  complete_annotation: bool=False,
                  gfe: str=None):
         """
@@ -65,6 +79,7 @@ class Annotation(Model):
             'mapping': Dict,
             'exact': bool,
             'aligned': Dict,
+            'structure': List[Feature],
             'refmissing': List[str],
             'exact_match': List[str]
         }
@@ -83,6 +98,7 @@ class Annotation(Model):
             'blocks': 'blocks',
             'method': 'method',
             'mapping': 'mapping',
+            'structure': 'structure',
             'refmissing': 'refmissing',
             'exact_match': 'exact_match'
         }
@@ -101,6 +117,7 @@ class Annotation(Model):
         self._annotation = annotation
         self._gfe = gfe
         self._exact = exact
+        self._structure = structure
 
         missing_blocks = {}
         if not annotation:
@@ -205,6 +222,26 @@ class Annotation(Model):
         :type features: Dict
         """
         self._features = features
+
+    @property
+    def structure(self) -> List[Feature]:
+        """
+        Gets the structure of this Annotation.
+
+        :return: The structure of this Annotation.
+        :rtype: List[Feature]
+        """
+        return self._structure
+
+    @structure.setter
+    def structure(self, structure: List[Feature]):
+        """
+        Sets the structure of this Annotation.
+
+        :param structure: The structure of this Annotation.
+        :type structure: List[Feature]
+        """
+        self._structure = structure
 
     @property
     def covered(self) ->int:
@@ -451,20 +488,23 @@ class Annotation(Model):
         self.complete_annotation = True
         self.method = "nt_search and clustalo"
 
-        if self.missing:
-            for feat in self.missing:
-                if feat not in self.annotation:
-                    self.complete_annotation = False
-
-        if self.ambig:
-            for feat in self.ambig:
-                if feat not in self.annotation:
-                    self.complete_annotation = False
-
-        if self.blocks:
+        if not self.annotation:
             self.complete_annotation = False
         else:
-            self.complete_annotation = True
+            if self.missing:
+                for feat in self.missing:
+                    if feat not in self.annotation:
+                        self.complete_annotation = False
+
+            if self.ambig:
+                for feat in self.ambig:
+                    if feat not in self.annotation:
+                        self.complete_annotation = False
+
+            if self.blocks:
+                self.complete_annotation = False
+            else:
+                self.complete_annotation = True
 
     def clean(self):
         self.missing = ''

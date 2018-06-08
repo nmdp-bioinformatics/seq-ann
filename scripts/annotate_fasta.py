@@ -46,6 +46,11 @@ def main():
                         default=False,
                         type=bool)
 
+    if verbose:
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
+
     args = parser.parse_args()
     fastafile = args.file
     loc = args.locus

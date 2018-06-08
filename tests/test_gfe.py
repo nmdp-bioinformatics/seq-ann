@@ -40,6 +40,7 @@ from Bio.SeqRecord import SeqRecord
 from seqann.gfe import GFE
 from Bio.Alphabet import generic_dna
 from seqann.models.annotation import Annotation
+from seqann.feature_client.models.feature import Feature
 
 
 def ignore_warnings(test_func):
@@ -79,6 +80,8 @@ class TestGfe(unittest.TestCase):
                 annotation.update({f: seqrec})
             a = Annotation(annotation=annotation)
             features, gfe = gfe.get_gfe(a, loc)
+            for feat in features:
+                self.assertIsInstance(feat, Feature)
             self.assertEqual(gfe, exp)
         pass
 
