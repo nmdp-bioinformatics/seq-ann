@@ -78,7 +78,7 @@ class BioSeqAnn(Model):
         :type store_features: bool
         :param cached_features: Dictionary containing all the features from the feature service.
         :type cached_features: Dict
-        :param kir: Flag for indicating the input sequences are from the KIR gene system. 
+        :param kir: Flag for indicating the input sequences are from the KIR gene system.
         :type kir: bool
         :param align: Flag for producing the alignments along with the annotations.
         :type align: bool
@@ -227,6 +227,14 @@ class BioSeqAnn(Model):
             exon_4  nt_search and clustalo  GGGCTCAGTCTGAATCTGCCCAGAGCAAGATG
 
         """
+
+        # If sequence is now a biopython
+        # sequence record convert it to one
+        if isinstance(sequence, Seq) \
+                or isinstance(sequence, str):
+                sequence = SeqRecord(seq=sequence,
+                                     id=self.logname)
+
         # If sequence contains any characters
         # other than ATCG then the GFE notation
         # can not be created
@@ -250,8 +258,9 @@ class BioSeqAnn(Model):
                 self.logger.info(self.logname + " Locus prediction = " + locus)
 
             if not locus:
-                self.logger.error(self.logname
-                                  + " Locus could not be determined!")
+                if self.verbose:
+                    self.logger.error(self.logname
+                                      + " Locus could not be determined!")
                 # TODO: Raise exception
                 return ''
 
@@ -269,7 +278,7 @@ class BioSeqAnn(Model):
             if create_gfe:
                 feats, gfe = self.gfe.get_gfe(matched_annotation, locus)
                 matched_annotation.gfe = gfe
-
+                matched_annotation.structure = feats
             return matched_annotation
 
         # Run blast to get ref sequences
@@ -302,9 +311,8 @@ class BioSeqAnn(Model):
         #mi = 0
         # retain what the largest ref seq is
         leastmissing = 100
-        leastmissing_feat = None
         partial_ann = None
-        partial_missing = None
+        leastmissing_feat = None
         found = blast.match_seqs
         for i in range(0, len(found)-1):
 
@@ -322,9 +330,15 @@ class BioSeqAnn(Model):
             # * Running sequence search *
             # This does a simple string search for the
             # reference features within the provided sequence
-            ann = self.seqsearch.search_seqs(found[i],
-                                             sequence, locus,
-                                             partial_ann=partial_ann)
+            try:
+                ann = self.seqsearch.search_seqs(found[i],
+                                                 sequence, locus,
+                                                 partial_ann=partial_ann)
+            except:
+                self.logger.warnings(self.logname
+                                     + " FAILED seq_search with "
+                                     + found[i].name)
+                continue
 
             if ann.complete_annotation:
                 if self.verbose:
@@ -354,12 +368,11 @@ class BioSeqAnn(Model):
                 if create_gfe:
                     feats, gfe = self.gfe.get_gfe(ann, locus)
                     ann.gfe = gfe
+                    ann.structure = feats
                 ann.clean()
                 return ann
             else:
                 partial_ann = ann
-                #if i == mi:
-                partial_missing = ann.missing
 
                 if hasattr(partial_ann, 'refmissing'):
                     if len(partial_ann.refmissing) < leastmissing:
@@ -387,11 +400,6 @@ class BioSeqAnn(Model):
         if alignseqs > len(found):
             alignseqs = len(found)-1
 
-        # Use the missing features from
-        # the blast with the highest score
-        # TODO: Validate this is actually better
-        partial_ann.missing = partial_missing
-
         # Now loop through doing alignment
         for i in range(0, alignseqs):
 
@@ -405,8 +413,16 @@ class BioSeqAnn(Model):
                                  + " running ref_align with "
                                  + found[i].name)
 
-            aligned_ann = self.ref_align(found[i], sequence, locus,
-                                         annotation=partial_ann)
+            # Try doing targeted alignment
+            try:
+                aligned_ann = self.ref_align(found[i], sequence, locus,
+                                             annotation=partial_ann)
+            except:
+                self.logger.warnings(self.logname
+                                     + " FAILED ref_align with "
+                                     + found[i].name)
+                continue
+
             if aligned_ann.complete_annotation:
                 if self.align:
                     if self.verbose:
@@ -434,6 +450,7 @@ class BioSeqAnn(Model):
                 if create_gfe:
                     feats, gfe = self.gfe.get_gfe(aligned_ann, locus)
                     aligned_ann.gfe = gfe
+                    aligned_ann.structure = feats
                 aligned_ann.clean()
                 return aligned_ann
             else:
@@ -452,20 +469,32 @@ class BioSeqAnn(Model):
         if self.verbose:
             self.logger.info(self.logname + " running full alignment")
 
-        full_align = self.ref_align(leastmissing_feat, sequence, locus,
-                                    partial_ann=partial_ann)
+        # Try doing full alignment
+        try:
+            full_align = self.ref_align(leastmissing_feat,
+                                        sequence,
+                                        locus,
+                                        partial_ann=partial_ann)
+        except:
+            self.logger.warnings(self.logname
+                                 + " FAILED full alignment with "
+                                 + leastmissing_feat.name)
+            self.logger.warnings(self.logname
+                                 + " Annotation could not"
+                                 + " be generated!")
+            return Annotation()
 
         if self.verbose:
             self.logger.info(self.logname
                              + " Finished ref_align annotation using full "
                              + leastmissing_feat.name)
 
-        if not isinstance(full_align, Annotation):
+        if not isinstance(full_align, Annotation) \
+                or isinstance(full_align, str):
             self.logger.info(self.logname + " Failed annotation!")
             return Annotation()
 
-        if isinstance(full_align, Annotation) \
-                and not full_align.complete_annotation and self.verbose:
+        if not full_align.complete_annotation and self.verbose:
             self.logger.info(self.logname + " Incomplete annotation!")
 
         if self.align and full_align.complete_annotation:
@@ -484,11 +513,11 @@ class BioSeqAnn(Model):
                                      + " " + f + " = "
                                      + str(full_align
                                            .annotation[f].seq))
-
         # Create GFE
-        if create_gfe:
+        if create_gfe and full_align.complete_annotation:
             feats, gfe = self.gfe.get_gfe(full_align, locus)
             full_align.gfe = gfe
+            full_align.structure = feats
         full_align.clean()
         return full_align
 
@@ -513,8 +542,10 @@ class BioSeqAnn(Model):
         """
         if annotation and isinstance(annotation, Annotation):
 
-            if 0 in annotation.mapping and not isinstance(annotation.mapping[0], int):
-                start_order = self.refdata.structures[locus][annotation.mapping[0]]
+            if 0 in annotation.mapping \
+                    and not isinstance(annotation.mapping[0], int):
+                ft = annotation.mapping[0]
+                start_order = self.refdata.structures[locus][ft]
             else:
                 start_order = 0
 
@@ -554,7 +585,8 @@ class BioSeqAnn(Model):
                     if len(mapped_feat) >= 1:
                         for f in an.annotation:
                             f_order = self.refdata.structures[locus][f]
-                            if f in annotation.missing and f_order >= start_order:
+                            if f in annotation.missing \
+                                    and f_order >= start_order:
                                 length, lengthsd = 0, 0
                                 length = float(self.refdata.feature_lengths[locus][f][0])
                                 lengthsd = float(self.refdata.feature_lengths[locus][f][1])
@@ -730,8 +762,10 @@ class BioSeqAnn(Model):
             # Do full sequence alignments
             # any only extract out the part
             # that couldn't be explained from above
-            if 0 in partial_ann.mapping and not isinstance(partial_ann.mapping[0], int):
-                start_order = self.refdata.structures[locus][partial_ann.mapping[0]]
+            if 0 in partial_ann.mapping \
+                    and not isinstance(partial_ann.mapping[0], int):
+                ft = partial_ann.mapping[0]
+                start_order = self.refdata.structures[locus][ft]
             else:
                 start_order = 0
 
@@ -763,15 +797,18 @@ class BioSeqAnn(Model):
                                                            b)
                 if len(fullrec.seq) >= 4:
 
-                    fullref, ins, dels = align_seqs(fullrec, feat, locus, start,
-                                         verbose=self.align_verbose,
-                                         verbosity=self.align_verbosity)
+                    fullref, ins, dels = align_seqs(fullrec, feat,
+                                                    locus, start,
+                                                    verbose=self.align_verbose,
+                                                    verbosity=self.align_verbosity)
 
                     mapped_full = list(fullref.annotation.keys())
                     if len(mapped_full) >= 1:
 
                         if self.verbose:
-                            self.logger.info(self.logname + " Annotated fullrec with clustalo")
+                            self.logger.info(self.logname
+                                             + " Annotated fullrec"
+                                             + " with clustalo")
 
                         # If it wasn't found
                         del missing_blocks[missing_blocks.index(b)]
@@ -801,11 +838,11 @@ class BioSeqAnn(Model):
                 self.logger.info(self.logname
                                  + " Failed to annotate features")
             return ''
-        else:
-            self.logger.error(self.logname + " full alginment")
-            # Option for user that just want to
-            # align a set of sequences
-            return
+        # else:
+        #     self.logger.error(self.logname + " invalid use")
+        #     # Option for user that just want to
+        #     # align a set of sequences
+        #     return
 
     def add_alignment(self, ref_seq, annotation) -> Annotation:
         """

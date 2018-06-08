@@ -128,8 +128,9 @@ def blastn(sequences, locus, nseqs, kir=False,
 
     # TODO: Use logging
     if len(blast_qresult.hits) == 0:
-        logger.error("Failed blast! No hits!")
-        logger.error(stderr)
+        if verbose:
+            logger.error("Failed blast! No hits!")
+            logger.error(stderr)
         return Blast(failed=True)
 
     alleles = []

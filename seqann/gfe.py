@@ -22,10 +22,7 @@
 #    > http://www.opensource.org/licenses/lgpl-license.php
 #
 
-import os
-import glob
 import sys
-import re
 import logging
 
 from BioSQL.BioSeq import DBSeq
@@ -34,10 +31,10 @@ from seqann.util import get_structures
 from seqann.util import get_structorder
 from seqann.util import isutr
 
-from seqann.feature_client.apis.features_api import FeaturesApi
-from seqann.feature_client.api_client import ApiClient
 from seqann.feature_client.rest import ApiException
+from seqann.feature_client.api_client import ApiClient
 from seqann.feature_client.models.feature import Feature
+from seqann.feature_client.apis.features_api import FeaturesApi
 from seqann.feature_client.models.feature_request import FeatureRequest
 
 

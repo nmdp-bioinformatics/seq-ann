@@ -33,7 +33,7 @@ import os
 import json
 import pymysql
 import unittest
-
+import warnings
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
 
@@ -41,6 +41,7 @@ from seqann.util import get_features
 from seqann.models.annotation import Annotation
 from seqann.sequence_annotation import BioSeqAnn
 from seqann.models.reference_data import ReferenceData
+from seqann.feature_client.models.feature import Feature
 
 neo4jpass = 'gfedb'
 if os.getenv("NEO4JPASS"):
@@ -74,11 +75,27 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
+verbose = False
+if os.getenv("VERBOSE"):
+    import logging
+    if os.getenv("VERBOSE") == "True" \
+            or int(os.getenv("VERBOSE")) == 1:
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            level=logging.INFO)
+        verbose = True
 
-import logging
-logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
-            datefmt='%m/%d/%Y %I:%M:%S %p',
-            level=logging.INFO)
+verbosity = 0
+if os.getenv("VERBOSITY"):
+    verbosity = int(os.getenv("VERBOSITY"))
+
+
+def ignore_warnings(test_func):
+    def do_test(self, *args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            test_func(self, *args, **kwargs)
+    return do_test
 
 
 def conn():
@@ -111,7 +128,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, pid="001_seqann")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="001_seqann")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertIsInstance(seqann.refdata, ReferenceData)
@@ -121,7 +141,9 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_002_noserver(self):
-        seqann = BioSeqAnn(verbose=False, verbosity=5, pid="002_noserver")
+        seqann = BioSeqAnn(verbose=verbose,
+                           verbosity=verbosity,
+                           pid="002_noserver")
         self.assertIsInstance(seqann, BioSeqAnn)
         self.assertIsInstance(seqann.refdata, ReferenceData)
         self.assertGreater(len(seqann.refdata.hla_names), 10)
@@ -130,6 +152,7 @@ class TestBioSeqAnn(unittest.TestCase):
         self.assertGreater(len(seqann.refdata.imgtdat), 0)
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 003 requires MySQL connection")
     def test_003_ambig(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -138,7 +161,8 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="003_ambig")
+        seqann = BioSeqAnn(server=server, verbose=verbose,
+                           verbosity=verbosity, pid="003_ambig")
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
         for ex in self.expected['ambig']:
@@ -151,6 +175,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertEqual(ann.method, "nt_search")
             self.assertFalse(ann.missing)
             self.assertFalse(ann.blocks)
+            self.assertTrue(ann.structure)
             self.assertIsInstance(ann, Annotation)
             self.assertTrue(ann.complete_annotation)
             self.assertGreater(len(ann.annotation.keys()), 1)
@@ -160,6 +185,9 @@ class TestBioSeqAnn(unittest.TestCase):
             expected = db.lookup(name=allele)
             expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
+            self.assertGreater(len(ann.structure), 1)
+            for feat in ann.structure:
+                self.assertIsInstance(feat, Feature)
             for feat in expected_seqs:
                 if feat not in ann.annotation:
                     self.assertEqual(feat, None)
@@ -175,6 +203,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 004 requires MySQL connection")
     def test_004_insertion(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -183,7 +212,8 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="004_insertion")
+        seqann = BioSeqAnn(server=server, verbose=verbose,
+                           verbosity=verbosity, pid="004_insertion")
         input_seq = self.data_dir + '/insertion_seqs.fasta'
         for ex in self.expected['insertion']:
             i = int(ex['index'])
@@ -201,7 +231,9 @@ class TestBioSeqAnn(unittest.TestCase):
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
             self.assertEqual(ann.gfe, ex['gfe'])
-
+            self.assertGreater(len(ann.structure), 1)
+            for feat in ann.structure:
+                self.assertIsInstance(feat, Feature)
             n_diffs = 0
             expected_seqs = get_features(expected)
             self.assertGreater(len(expected_seqs.keys()), 1)
@@ -223,6 +255,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 005 requires MySQL connection")
     def test_005_partial(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -231,7 +264,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="005_partial")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="005_partial")
         input_seq = self.data_dir + '/partial_seqs.fasta'
 
         for ex in self.expected['partial']:
@@ -253,7 +289,9 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(ann.annotation.keys()), 1)
             self.assertEqual(ann.gfe, ex['gfe'])
-
+            self.assertGreater(len(ann.structure), 1)
+            for feat in ann.structure:
+                self.assertIsInstance(feat, Feature)
             # Make sure only mapped feats exist
             for mf in ex['missing_feats']:
                 self.assertFalse(mf in ann.annotation)
@@ -269,6 +307,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 006 requires MySQL connection")
     def test_006_partialambig(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -277,7 +316,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="006_partialambig")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="006_partialambig")
         input_seq = self.data_dir + '/partial_ambig.fasta'
 
         for ex in self.expected['partial_ambig']:
@@ -300,6 +342,9 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertGreater(len(ann.annotation.keys()), 1)
             self.assertEqual(ann.gfe, ex['gfe'])
 
+            self.assertGreater(len(ann.structure), 1)
+            for feat in ann.structure:
+                self.assertIsInstance(feat, Feature)
             # Make sure only mapped feats exist
             for mf in ex['missing_feats']:
                 self.assertFalse(mf in ann.annotation)
@@ -315,6 +360,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 007 requires MySQL connection")
     def test_007_exact(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -323,7 +369,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="007_exact")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="007_exact")
         input_seq = self.data_dir + '/exact_seqs.fasta'
 
         for ex in self.expected['exact']:
@@ -342,6 +391,9 @@ class TestBioSeqAnn(unittest.TestCase):
             db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
             expected = db.lookup(name=allele)
             expected_seqs = get_features(expected)
+            self.assertGreater(len(annotation.structure), 1)
+            for feat in annotation.structure:
+                self.assertIsInstance(feat, Feature)
             self.assertEqual(annotation.gfe, ex['gfe'])
             self.assertGreater(len(expected_seqs.keys()), 1)
             self.assertGreater(len(annotation.annotation.keys()), 1)
@@ -354,6 +406,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 009 Requires MySQL connection")
     def test_009_nomatch(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -362,7 +415,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="009_nomatch")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="009_nomatch")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -373,6 +429,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 010 Requires MySQL connection")
     def test_010_noloc(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -381,7 +438,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=5, pid="010_noloc")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="010_noloc")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
@@ -402,7 +462,10 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0, pid="011_fail")
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="011_fail")
         self.assertFalse(seqann.refdata.imgtdat)
         annotation = seqann.annotate(in_seq)
         self.assertFalse(annotation)
@@ -456,6 +519,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 013 Requires MySQL connection")
     def test_013_logging(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -481,6 +545,7 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 014 Requires MySQL connection")
     def test_014_nogfe(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -491,12 +556,12 @@ class TestBioSeqAnn(unittest.TestCase):
                                               port=biosqlport)
 
         with self.assertLogs(level='INFO') as cm:
-            seqann = BioSeqAnn(server=server,
-                               verbose=True)
+            seqann = BioSeqAnn(server=server, verbose=True)
             input_seq = self.data_dir + '/failed_seqs.fasta'
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[1]
             annotation = seqann.annotate(in_seq)
             self.assertFalse(annotation.gfe)
+            self.assertFalse(annotation.structure)
             self.assertTrue(annotation.annotation)
 
         self.assertGreater(len(cm.output), 2)
@@ -507,7 +572,8 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 014 Requires MySQL connection")
+    @ignore_warnings
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 015 Requires MySQL connection")
     def test_015_skip(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
@@ -516,12 +582,15 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
 
-        seqann = BioSeqAnn(server=server)
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity)
         refdata = ReferenceData()
 
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
-                     'HLA-A*29:13', 'HLA-A*24:03:02']
+                     'HLA-A*29:13', 'HLA-A*24:03:02',
+                     'HLA-DQA1*04:01:01:01']
         for seqrec in refdata.imgtdat:
             seqname = seqrec.description.split(",")[0]
             if seqname not in test_list:
@@ -534,6 +603,10 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertEqual(len(ann2.annotation), len(ann1.annotation))
             self.assertEqual(ann1.gfe, ann2.gfe)
 
+            self.assertGreater(len(ann2.structure), 1)
+            for feat in ann2.structure:
+                self.assertIsInstance(feat, Feature)
+
             for f in ann1.annotation:
                 self.assertTrue(f in ann2.annotation)
                 seq1 = str(ann1.annotation[f])
@@ -543,3 +616,54 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    @ignore_warnings
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 016 Requires MySQL connection")
+    def test_016_stringseq(self):
+        server = BioSeqDatabase.open_database(driver="pymysql",
+                                              user=biosqluser,
+                                              passwd=biosqlpass,
+                                              host=biosqlhost,
+                                              db=biosqldb,
+                                              port=biosqlport)
+
+        seqann = BioSeqAnn(server=server,
+                           verbose=verbose,
+                           verbosity=verbosity,
+                           pid="015_stringseq")
+
+        input_seq = self.data_dir + '/exact_seqs.fasta'
+
+        ex = self.expected['exact'][0]
+        locus = ex['locus']
+        allele = ex['name']
+        hla, loc = locus.split("-")
+        in_seqrec = list(SeqIO.parse(input_seq, "fasta"))[0]
+        in_str = str(in_seqrec.seq)
+        in_seq = in_seqrec.seq
+        ann_str = seqann.annotate(in_str, locus)
+        ann_seq = seqann.annotate(in_seq, locus)
+
+        for annotation in [ann_str, ann_seq]:
+            self.assertTrue(annotation.exact)
+            self.assertIsNone(annotation.features)
+            self.assertEqual(annotation.method, "match")
+            self.assertIsInstance(annotation, Annotation)
+            self.assertTrue(annotation.complete_annotation)
+            self.assertGreater(len(annotation.annotation.keys()), 1)
+            db = seqann.refdata.server[seqann.refdata.dbversion + "_" + loc]
+            expected = db.lookup(name=allele)
+            expected_seqs = get_features(expected)
+            self.assertEqual(annotation.gfe, ex['gfe'])
+            self.assertGreater(len(expected_seqs.keys()), 1)
+            self.assertGreater(len(annotation.annotation.keys()), 1)
+            self.assertGreater(len(annotation.structure), 1)
+            for feat in annotation.structure:
+                self.assertIsInstance(feat, Feature)
+            for feat in expected_seqs:
+                if feat not in annotation.annotation:
+                    self.assertEqual(feat, None)
+                else:
+                    self.assertEqual(str(expected_seqs[feat]),
+                                     str(annotation.annotation[feat]))
+        server.close()
+        pass
