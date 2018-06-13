@@ -127,6 +127,7 @@ class TestAlign(unittest.TestCase):
                         print("FAILED:", allele, i, list(align)[i], list(ex['alignment'])[i])
                     self.assertEqual(list(align)[i],
                                      list(ex['alignment'])[i])
+        server.close()
 
 
 

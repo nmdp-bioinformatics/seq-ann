@@ -161,12 +161,16 @@ def blastn(sequences, locus, nseqs, kir=False,
                     seq = db.lookup(name=n)
                     full_sequences.append(seq)
                 except:
-                    logger.error("Allele doesnt exist in IMGT BioSQL DB!! " + n)
+                    logger.error("Allele doesnt exist in IMGT BioSQL DB!! "
+                                 + n)
     else:
         if verbose:
             logger.info("Getting sequences from HLA.dat file")
-        full_sequences = [a for a in refdata.imgtdat
-                          if a.description.split(",")[0] in alleles]
+
+        full_sequences = [refdata.hlaref[a] for a in alleles
+                          if a in refdata.hlaref]
+
+        # TODO: check if this is needed still
         full_sequences.reverse()
 
     #   Build Blast object

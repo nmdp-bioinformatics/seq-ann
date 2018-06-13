@@ -107,7 +107,8 @@ class TestRefdata(unittest.TestCase):
         self.assertGreater(len(refdata.hla_names), 10)
         self.assertEqual(refdata.structure_max['HLA-A'], 17)
         self.assertFalse(refdata.server_avail)
-        self.assertGreater(len(refdata.imgtdat), 0)
+        self.assertGreater(len(refdata.seqref), 0)
+        self.assertGreater(len(refdata.hlaref), 0)
         pass
 
     @unittest.skipUnless(conn(), "TestRefdata 002 Requires MySQL connection")
@@ -121,7 +122,8 @@ class TestRefdata(unittest.TestCase):
         refdata = ReferenceData(server=server)
         self.assertIsInstance(refdata, ReferenceData)
         self.assertTrue(refdata.server_avail)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         server.close()
         pass
 
@@ -137,7 +139,8 @@ class TestRefdata(unittest.TestCase):
             refdata = ReferenceData(server=server, dbversion=db)
             self.assertEqual(refdata.dbversion, db)
             self.assertTrue(refdata.server_avail)
-            self.assertFalse(refdata.imgtdat)
+            self.assertFalse(refdata.seqref)
+            self.assertFalse(refdata.hlaref)
         server.close()
         pass
 
@@ -151,7 +154,8 @@ class TestRefdata(unittest.TestCase):
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
         input_seq = self.data_dir + '/exact_seqs.fasta'
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.hlaref)
+        self.assertFalse(refdata.seqref)
 
         for ex in self.expected['exact']:
             i = int(ex['index'])
@@ -189,8 +193,7 @@ class TestRefdata(unittest.TestCase):
         refdata1 = ReferenceData(server=server)
         refdata2 = ReferenceData()
 
-        datseqs = [a for a in refdata2.imgtdat
-                   if a.description.split(",")[0] == 'HLA-A*01:01:01:01'][0]
+        datseqs = refdata2.hlaref['HLA-A*01:01:01:01']
 
         db = refdata1.server[refdata1.dbversion + "_" + 'A']
         expected = db.lookup(name='HLA-A*01:01:01:01')
@@ -237,7 +240,12 @@ class TestRefdata(unittest.TestCase):
             self.assertEqual(str(align),
                              str(ex['alignment']))
 
-
-
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
+    def test_007_cache(self):
+        refdata = ReferenceData(verbose=True, verbosity=2)
+        self.assertTrue(refdata.hlaref)
+        self.assertTrue(refdata.seqref)
+        self.assertGreater(len(refdata.seqref), 10)
+        self.assertGreater(len(refdata.hlaref), 10)
 
 

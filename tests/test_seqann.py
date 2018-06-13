@@ -138,6 +138,7 @@ class TestBioSeqAnn(unittest.TestCase):
         self.assertGreater(len(seqann.refdata.hla_names), 10)
         self.assertEqual(seqann.refdata.structure_max['HLA-A'], 17)
         self.assertTrue(seqann.refdata.server_avail)
+        server.close()
         pass
 
     def test_002_noserver(self):
@@ -149,7 +150,8 @@ class TestBioSeqAnn(unittest.TestCase):
         self.assertGreater(len(seqann.refdata.hla_names), 10)
         self.assertEqual(seqann.refdata.structure_max['HLA-A'], 17)
         self.assertFalse(seqann.refdata.server_avail)
-        self.assertGreater(len(seqann.refdata.imgtdat), 0)
+        self.assertGreater(len(seqann.refdata.seqref), 0)
+        self.assertGreater(len(seqann.refdata.hlaref), 0)
         pass
 
     @ignore_warnings
@@ -466,7 +468,8 @@ class TestBioSeqAnn(unittest.TestCase):
                            verbose=verbose,
                            verbosity=verbosity,
                            pid="011_fail")
-        self.assertFalse(seqann.refdata.imgtdat)
+        self.assertFalse(seqann.refdata.seqref)
+        self.assertFalse(seqann.refdata.hlaref)
         annotation = seqann.annotate(in_seq)
         self.assertFalse(annotation)
         server.close()
@@ -591,11 +594,11 @@ class TestBioSeqAnn(unittest.TestCase):
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
                      'HLA-DQA1*04:01:01:01']
-        for seqrec in refdata.imgtdat:
-            seqname = seqrec.description.split(",")[0]
+        for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
 
+            seqrec = refdata.hlaref[seqname]
             locus = seqrec.description.split("*")[0]
             ann1 = seqann.annotate(seqrec, locus=locus)
             ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])

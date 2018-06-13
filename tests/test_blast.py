@@ -107,7 +107,8 @@ class TestBlast(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
@@ -127,7 +128,8 @@ class TestBlast(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)
         self.assertIsInstance(blast_o, Blast)
         self.assertTrue(blast_o.failed)
@@ -146,7 +148,8 @@ class TestBlast(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         locus = get_locus(in_seq, refdata=refdata)
         self.assertIsInstance(locus, str)
         self.assertTrue(locus)
@@ -162,9 +165,5 @@ class TestBlast(unittest.TestCase):
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
         self.assertEqual(len(blast_o.alleles), 3)
-
-
-
-
 
 
