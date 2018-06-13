@@ -170,8 +170,8 @@ def blastn(sequences, locus, nseqs, kir=False,
         full_sequences = [refdata.hlaref[a] for a in alleles
                           if a in refdata.hlaref]
 
-        # TODO: check if this is needed still
-        full_sequences.reverse()
+        for s in full_sequences:
+            s.name = s.description.split(",")[0]
 
     #   Build Blast object
     blast_o = Blast(match_seqs=full_sequences, alleles=alleles)

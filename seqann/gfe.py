@@ -25,6 +25,7 @@
 import sys
 import logging
 
+from Bio.Seq import Seq
 from BioSQL.BioSeq import DBSeq
 
 from seqann.util import get_structures
@@ -148,7 +149,8 @@ class GFE(object):
         features = []
         accessions = {}
         for feat in annotation.annotation:
-            if isinstance(annotation.annotation[feat], DBSeq):
+            if isinstance(annotation.annotation[feat], DBSeq) \
+                    or isinstance(annotation.annotation[feat], Seq):
                 seq = str(annotation.annotation[feat])
             else:
                 seq = str(annotation.annotation[feat].seq)

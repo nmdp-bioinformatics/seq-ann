@@ -107,8 +107,10 @@ class TestRefdata(unittest.TestCase):
         self.assertGreater(len(refdata.hla_names), 10)
         self.assertEqual(refdata.structure_max['HLA-A'], 17)
         self.assertFalse(refdata.server_avail)
-        self.assertGreater(len(refdata.seqref), 0)
-        self.assertGreater(len(refdata.hlaref), 0)
+        self.assertTrue(refdata.hlaref)
+        self.assertTrue(refdata.seqref)
+        self.assertGreater(len(refdata.seqref), 10)
+        self.assertGreater(len(refdata.hlaref), 10)
         pass
 
     @unittest.skipUnless(conn(), "TestRefdata 002 Requires MySQL connection")
@@ -145,7 +147,7 @@ class TestRefdata(unittest.TestCase):
         pass
 
     @unittest.skipUnless(conn(), "TestRefdata 004 requires MySQL connection")
-    def test_004_select(self):
+    def test_004_selectserv(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
@@ -156,7 +158,6 @@ class TestRefdata(unittest.TestCase):
         input_seq = self.data_dir + '/exact_seqs.fasta'
         self.assertFalse(refdata.hlaref)
         self.assertFalse(refdata.seqref)
-
         for ex in self.expected['exact']:
             i = int(ex['index'])
             locus = ex['locus']
@@ -182,8 +183,35 @@ class TestRefdata(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestRefdata 005 requires MySQL connection")
-    def test_005_dbtodat(self):
+    def test_005_select(self):
+        refdata = ReferenceData()
+        input_seq = self.data_dir + '/exact_seqs.fasta'
+        self.assertTrue(refdata.hlaref)
+        self.assertTrue(refdata.seqref)
+        for ex in self.expected['exact']:
+            i = int(ex['index'])
+            locus = ex['locus']
+            allele = ex['name']
+            hla, loc = locus.split("-")
+            in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
+            annotation = refdata.search_refdata(in_seq, locus)
+            self.assertIsNone(annotation.features)
+            self.assertEqual(annotation.method, "match")
+            self.assertIsInstance(annotation, Annotation)
+            self.assertTrue(annotation.complete_annotation)
+            self.assertGreater(len(annotation.annotation.keys()), 1)
+            expected = refdata.hlaref[allele]
+            expected_seqs = get_features(expected)
+            for feat in expected_seqs:
+                if feat not in annotation.annotation:
+                    self.assertEqual(feat, None)
+                else:
+                    self.assertEqual(str(expected_seqs[feat]),
+                                     str(annotation.annotation[feat]))
+        pass
+
+    @unittest.skipUnless(conn(), "TestRefdata 006 requires MySQL connection")
+    def test_006_dbtodat(self):
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
@@ -210,8 +238,8 @@ class TestRefdata(unittest.TestCase):
         server.close()
         pass
 
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
-    def test_006_align(self):
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 007 Requires MySQL connection")
+    def test_007_align(self):
         # TODO: Add class II tests
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
@@ -225,27 +253,7 @@ class TestRefdata(unittest.TestCase):
             allele = ex['name'].split("_")[0]
             hla, loc = locus.split("-")
             align = "".join([refdata.annoated_alignments[loc][allele][s]['Seq'] for s in refdata.annoated_alignments[loc][allele].keys()])
-            # i = 0
-            # for f in refdata.annoated_alignments[loc][allele].keys():
-            #     print(f)
-            #     g = refdata.annoated_alignments[loc][allele][f]['Gaps']
-            #     l = (len(refdata.annoated_alignments[loc][allele][f]['Seq'])) + i
-            #     print(refdata.annoated_alignments[loc][allele][f]['Seq'])
-            #     print(g)
-            #     gapn = [[j+i for j in k] for k in g]
-            #     print(gapn)
-            #     print("Pos: ",str(i), " - ", str(l))
-            #     i = l
-            #     print("")
             self.assertEqual(str(align),
                              str(ex['alignment']))
-
-    @unittest.skipUnless(conn(), "TestBioSeqAnn 006 Requires MySQL connection")
-    def test_007_cache(self):
-        refdata = ReferenceData(verbose=True, verbosity=2)
-        self.assertTrue(refdata.hlaref)
-        self.assertTrue(refdata.seqref)
-        self.assertGreater(len(refdata.seqref), 10)
-        self.assertGreater(len(refdata.hlaref), 10)
 
 

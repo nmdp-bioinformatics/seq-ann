@@ -253,6 +253,7 @@ class ReferenceData(Model):
                 with open(pickle_file, 'rb') as handle:
                     self.annoated_alignments.update({locus:
                                                      pickle.load(handle)})
+                    handle.close()
                 allele = list(self.annoated_alignments[locus].keys())[0]
                 if not locus in self.align_coordinates and "HLA-" + locus in self.struct_order:
                     start = 0
@@ -313,18 +314,20 @@ class ReferenceData(Model):
                 with open(seqref_pickle, 'wb') as handle:
                     pickle.dump(self._seqref, handle,
                                 protocol=pickle.HIGHEST_PROTOCOL)
-
+                    handle.close()
                 with open(hlaref_pickle, 'wb') as handle:
                     pickle.dump(self._hlaref, handle,
                                 protocol=pickle.HIGHEST_PROTOCOL)
-
+                    handle.close()
             else:
                 if self.verbose:
                     self.logger.info("Loading pickle dat file")
                 with open(seqref_pickle, 'rb') as handle:
                     self._seqref = pickle.load(handle)
+                    handle.close()
                 with open(hlaref_pickle, 'rb') as handle:
                     self._hlaref = pickle.load(handle)
+                    handle.close()
 
     @classmethod
     def from_dict(cls, dikt) -> 'ReferenceData':
@@ -578,16 +581,6 @@ class ReferenceData(Model):
         """
         return self._server_avail
 
-    # @property
-    # def imgtdat(self) -> List[SeqRecord]:
-        
-    #     Gets the imgtdat of this ReferenceData.
-
-    #     :return: The imgtdat of this ReferenceData.
-    #     :rtype: List[SeqRecord]
-        
-    #     return self._imgtdat
-
     def search_refdata(self, seq, locus):
         """
         Gets the Annotation of this ReferenceData. "select ent.name from bioentry limit 10"
@@ -629,12 +622,12 @@ class ReferenceData(Model):
             else:
                 return
         else:
-            if seq in self.seqref:
+            if str(seq.seq) in self.seqref:
                 if self.verbose:
                     self.logger.info("Exact typing found in dat file")
-                seqrec = self.hlaref[self.seqref[seq]]
+                seqrec = self.hlaref[self.seqref[str(seq.seq)]]
                 return self.seqannotation(seqrec,
-                                          self.seqref[seq],
+                                          self.seqref[str(seq.seq)],
                                           locus)
             else:
                 return
