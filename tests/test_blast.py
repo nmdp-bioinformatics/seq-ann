@@ -77,6 +77,20 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
+verbose = False
+if os.getenv("VERBOSE"):
+    if os.getenv("VERBOSE") == "True" \
+            or int(os.getenv("VERBOSE")) == 1:
+        import logging
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            level=logging.INFO)
+        verbose = True
+
+verbosity = 0
+if os.getenv("VERBOSITY"):
+    verbosity = int(os.getenv("VERBOSITY"))
+
 
 def conn():
     try:
@@ -127,6 +141,20 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
+        self.assertEqual(len(blast_o.alleles), 3)
+        pass
+
+    def test_002_blastnoloc(self):
+        input_seq = self.data_dir + '/partial_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        refdata = ReferenceData()
+        self.assertTrue(refdata.seqref)
+        self.assertTrue(refdata.hlaref)
+        locus = get_locus(in_seq, refdata=refdata, verbose=True)
+        blast_o = blastn(in_seq, locus, 3, refdata=refdata, verbose=True)
+        self.assertIsInstance(blast_o, Blast)
+        self.assertFalse(blast_o.failed)
+        self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:12")
         self.assertEqual(len(blast_o.alleles), 3)
         pass
 

@@ -82,7 +82,10 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
 
     locus = set(loci)
     if len(locus) == 1:
-        return loci[0]
+        if has_hla(loci[0]):
+            return loci[0]
+        else:
+            return "HLA-" + loci[0]
     else:
         return ''
 
