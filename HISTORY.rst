@@ -2,6 +2,11 @@
 History
 =======
 
+0.0.30 (2018-06-14)
+~~~~~~~~~~~~~~~~~~~
+
+* Fixed issues with annotating class II sequences with large insertions (HLA-DRB1*04:04:01)
+
 0.0.29 (2018-06-14)
 ~~~~~~~~~~~~~~~~~~~
 

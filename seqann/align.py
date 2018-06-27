@@ -333,6 +333,9 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
 
+    if match == 455:
+        return Annotation(complete_annotation=False)
+
     if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
         if verbose:
             logger.info("Alignment coverage high enough to complete annotation")

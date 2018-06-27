@@ -532,7 +532,7 @@ class SeqSearch(Model):
                                                         type=featname)})
                 elif feat_num+add_num > self.refdata.structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
-                        and end_i > len(mapping) - 1:
+                        and end_i >= len(mapping) - 1:
                         expected_p = self.refdata.struct_order[loc][feat_num-add_num]
                         previous_feat = mapping[start_i]
                         if expected_p == previous_feat \
@@ -547,8 +547,11 @@ class SeqSearch(Model):
                                                         type=featname)})
                 elif feat_num+add_num <= self.refdata.structure_max[loc] \
                         and feat_num-add_num < 0:
-                    expected_n = self.refdata.struct_order[loc][feat_num+1]
-                    next_feat = mapping[end_i]
+                    expected_n = self.refdata.struct_order[loc][feat_num+add_num]
+                    if not end_i in mapping:
+                        next_feat = mapping[end_i-1]
+                    else:
+                        next_feat = mapping[end_i]
                     if expected_n == next_feat \
                         and expected_p != 1 \
                             and b[0]-1 in locats:

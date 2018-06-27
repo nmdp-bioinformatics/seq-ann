@@ -76,18 +76,18 @@ if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
 verbose = False
-# if os.getenv("VERBOSE"):
-#     if os.getenv("VERBOSE") == "True" \
-#             or int(os.getenv("VERBOSE")) == 1:
-#         import logging
-#         logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-#                             datefmt='%m/%d/%Y %I:%M:%S %p',
-#                             level=logging.INFO)
-#         verbose = True
+if os.getenv("VERBOSE"):
+    if os.getenv("VERBOSE") == "True" \
+            or int(os.getenv("VERBOSE")) == 1:
+        import logging
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            level=logging.INFO)
+        verbose = True
 
 verbosity = 0
-# if os.getenv("VERBOSITY"):
-#     verbosity = int(os.getenv("VERBOSITY"))
+if os.getenv("VERBOSITY"):
+    verbosity = int(os.getenv("VERBOSITY"))
 
 
 def ignore_warnings(test_func):
@@ -130,7 +130,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="001_seqann")
         self.assertIsInstance(seqann, BioSeqAnn)
@@ -143,7 +143,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_002_noserver(self):
-        seqann = BioSeqAnn(verbose=verbose,
+        seqann = BioSeqAnn(verbose=False,
                            verbosity=verbosity,
                            pid="002_noserver")
         self.assertIsInstance(seqann, BioSeqAnn)
@@ -164,7 +164,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               host=biosqlhost,
                                               db=biosqldb,
                                               port=biosqlport)
-        seqann = BioSeqAnn(server=server, verbose=verbose,
+        seqann = BioSeqAnn(server=server, verbose=False,
                            verbosity=verbosity, pid="003_ambig")
         input_seq = self.data_dir + '/ambig_seqs.fasta'
 
@@ -207,7 +207,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_004_ambig(self):
-        seqann = BioSeqAnn(verbose=verbose,
+        seqann = BioSeqAnn(verbose=False,
                            verbosity=verbosity,
                            pid="003_ambig")
         input_seq = self.data_dir + '/ambig_seqs.fasta'
@@ -257,7 +257,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="004_insertion")
         input_seq = self.data_dir + '/insertion_seqs.fasta'
@@ -352,7 +352,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="005_partial")
         input_seq = self.data_dir + '/partial_seqs.fasta'
@@ -395,7 +395,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_008_partial(self):
-        seqann = BioSeqAnn(verbose=verbose,
+        seqann = BioSeqAnn(verbose=False,
                            verbosity=verbosity,
                            pid="005_partial")
         input_seq = self.data_dir + '/partial_seqs.fasta'
@@ -444,7 +444,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="006_partialambig")
         input_seq = self.data_dir + '/partial_ambig.fasta'
@@ -488,7 +488,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_010_partialambig(self):
-        seqann = BioSeqAnn(verbose=verbose,
+        seqann = BioSeqAnn(verbose=False,
                            verbosity=verbosity,
                            pid="006_partialambig")
         input_seq = self.data_dir + '/partial_ambig.fasta'
@@ -537,7 +537,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="007_exact")
         input_seq = self.data_dir + '/exact_seqs.fasta'
@@ -574,7 +574,7 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_012_exact(self):
-        seqann = BioSeqAnn(verbose=verbose,
+        seqann = BioSeqAnn(verbose=False,
                            verbosity=verbosity,
                            pid="007_exact")
         input_seq = self.data_dir + '/exact_seqs.fasta'
@@ -617,7 +617,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="009_nomatch")
         self.assertIsInstance(seqann, BioSeqAnn)
@@ -640,7 +640,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="010_noloc")
         self.assertIsInstance(seqann, BioSeqAnn)
@@ -664,7 +664,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="011_fail")
         self.assertFalse(seqann.refdata.seqref)
@@ -773,14 +773,15 @@ class TestBioSeqAnn(unittest.TestCase):
                                               port=biosqlport)
 
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity)
         refdata = ReferenceData()
 
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
-                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01']
+                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01',
+                     'HLA-B*51:42', 'HLA-C*03:04:05']
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
@@ -807,13 +808,14 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_020_skip(self):
-        seqann = BioSeqAnn(verbose=verbose,
+        seqann = BioSeqAnn(verbose=False,
                            verbosity=verbosity)
         refdata = ReferenceData()
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
-                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01']
+                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01',
+                     'HLA-B*51:42','HLA-C*03:04:05']
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
@@ -845,7 +847,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=verbose,
+                           verbose=False,
                            verbosity=verbosity,
                            pid="015_stringseq")
         input_seq = self.data_dir + '/exact_seqs.fasta'
