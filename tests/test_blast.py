@@ -81,7 +81,6 @@ verbose = False
 if os.getenv("VERBOSE"):
     if os.getenv("VERBOSE") == "True" \
             or int(os.getenv("VERBOSE")) == 1:
-        import logging
         logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
                             datefmt='%m/%d/%Y %I:%M:%S %p',
                             level=logging.INFO)
@@ -150,8 +149,8 @@ class TestBlast(unittest.TestCase):
         refdata = ReferenceData()
         self.assertTrue(refdata.seqref)
         self.assertTrue(refdata.hlaref)
-        locus = get_locus(in_seq, refdata=refdata, verbose=True)
-        blast_o = blastn(in_seq, locus, 3, refdata=refdata, verbose=True)
+        locus = get_locus(in_seq, refdata=refdata, verbose=verbose)
+        blast_o = blastn(in_seq, locus, 3, refdata=refdata, verbose=verbose)
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:12")

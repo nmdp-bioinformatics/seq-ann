@@ -174,7 +174,7 @@ class BioSeqAnn(Model):
                                    verbosity=seqsearch_verbosity)
 
     def annotate(self, sequence: Seq=None, locus: str=None,
-                 nseqs: int=10, alignseqs: int=10,
+                 nseqs: int=20, alignseqs: int=10,
                  skip: List=[]) -> Annotation:
         """
         annotate - method for annotating a BioPython sequence
@@ -330,15 +330,15 @@ class BioSeqAnn(Model):
             # * Running sequence search *
             # This does a simple string search for the
             # reference features within the provided sequence
-            try:
-                ann = self.seqsearch.search_seqs(found[i],
-                                                 sequence, locus,
-                                                 partial_ann=partial_ann)
-            except:
-                self.logger.warnings(self.logname
-                                     + " FAILED seq_search with "
-                                     + found[i].name)
-                continue
+            #try:
+            ann = self.seqsearch.search_seqs(found[i],
+                                             sequence, locus,
+                                             partial_ann=partial_ann)
+            # except:
+            #     self.logger.warnings(self.logname
+            #                          + " FAILED seq_search with "
+            #                          + found[i].name)
+            #     continue
 
             if ann.complete_annotation:
                 if self.verbose:
@@ -414,14 +414,14 @@ class BioSeqAnn(Model):
                                  + found[i].name)
 
             # Try doing targeted alignment
-            try:
-                aligned_ann = self.ref_align(found[i], sequence, locus,
-                                             annotation=partial_ann)
-            except:
-                self.logger.warnings(self.logname
-                                     + " FAILED ref_align with "
-                                     + found[i].name)
-                continue
+            #try:
+            aligned_ann = self.ref_align(found[i], sequence, locus,
+                                         annotation=partial_ann)
+            # except:
+            #     self.logger.warning(self.logname
+            #                         + " FAILED ref_align with "
+            #                         + found[i].name)
+            #     continue
 
             if aligned_ann.complete_annotation:
                 if self.align:
@@ -540,6 +540,8 @@ class BioSeqAnn(Model):
         :rtype: Annotation
 
         """
+        aligned_feats = []
+        missing_original = annotation.missing
         if annotation and isinstance(annotation, Annotation):
 
             if 0 in annotation.mapping \
@@ -575,10 +577,19 @@ class BioSeqAnn(Model):
                                                            annotation,
                                                            feat,
                                                            b)
+                # print("")
+                # print("^^^^^^^^^^")
+                # print("** SORTED COMBOS **")
+                # for combseqr in combosrecs:
+                #     print(combseqr.id)
+                # print("^^^^^^^^^^")
+                # print("")
                 for combseqr in combosrecs:
                     mbtmp = []
                     an, ins, dels = align_seqs(combseqr, feat, locus,
                                                start,
+                                               self.refdata,
+                                               annotation.missing,
                                                verbose=self.align_verbose,
                                                verbosity=self.align_verbosity)
                     mapped_feat = list(an.annotation.keys())
@@ -652,9 +663,13 @@ class BioSeqAnn(Model):
                                     if f in annotation.missing:
                                         del annotation.missing[f]
 
+                                    if f not in aligned_feats:
+                                        aligned_feats.append(f)
+
                                     if an.blocks:
                                         for nb in an.blocks:
-                                            bl = [b[i] for i in nb]
+
+                                            bl = [b[i] for i in nb if i < len(b)]
 
                                             # TODO: check if this
                                             # is the case in other
@@ -708,6 +723,79 @@ class BioSeqAnn(Model):
                                         and f in annotation.annotation:
                                             annotation.features[f] = an.features[f]
 
+                            missing_f = {}
+                            for f in self.refdata.structures[locus]:
+                                if f not in annotation.features:
+                                    missing_f.update({f:missing_original[f]})
+
+                            annotation.missing = missing_f
+                            #print("MISSING FEATS")
+                            #print(missing_f)
+                            coords = {}
+                        # if not missing_f:
+                        #     # TODO: have work with multiple
+                        #     # gaps
+                        #     # ** have this be done in the
+                        #     #    align step
+                            r = 1
+                            last = None
+                            start_feat = None
+                            end_feat = None
+                            f_c = []
+                            for i in annotation.mapping:
+                                f = annotation.mapping[i]
+                                if isinstance(f, int) and r:
+                                    f_c.append(f)
+                                    if 'missing' in coords:
+                                        tmp = coords['missing']
+                                        tmp.append(i)
+                                        coords.update({'missing': tmp})                                          
+                                    else:
+                                        tmp = []
+                                        tmp.append(i)
+                                        coords.update({'missing': tmp})
+                                    last = f
+                                else:
+                                    if isinstance(f, int):
+                                        if 'missing' in coords:
+                                            tmp = coords['missing']
+                                            tmp.append(i)
+                                            coords.update({'missing': tmp})                                          
+                                        else:
+                                            tmp = []
+                                            tmp.append(i)
+                                            coords.update({'missing': tmp})
+                                    else:
+                                        if f in coords:
+                                            tmp = coords[f]
+                                            tmp.append(i)
+                                            coords.update({f: tmp})                                       
+                                        else:
+                                            tmp = []
+                                            tmp.append(i)
+                                            coords.update({f: tmp})
+                                    if isinstance(last, int):
+                                        end_feat = f
+                                        r = 0
+                                    else:
+                                        start_feat = f
+                                        last = f
+
+                            # if start_feat in aligned_feats:
+                            #     print("WORKS!!!")
+                            #     print(start_feat)
+                            #     f = annotation.features[start_feat]
+                            #     print(f)
+                            #     print("---------")
+                            # print("")
+                            # print("----------------------------------------------")
+                            # print("REREUNNING SEQ SEARCH WITH ALIGNMENT")
+                            # if coords:
+                            #     for f in coords:
+                            #         print(f, str(coords[f][0]), str(coords[f][len(coords[f])-1]))
+                            # print("----------------------------------------------")
+                            # print("")
+                            #print(annotation.mapping)
                             # Rerunning seqsearch with
                             # new annotation from alignment
                             tmpann = self.seqsearch.search_seqs(found_seqs,
@@ -727,6 +815,8 @@ class BioSeqAnn(Model):
 
                 if len(exons.seq) >= 4:
                     exonan, ins, dels = align_seqs(exons, feat, locus, start,
+                                                   self.refdata,
+                                                   annotation.missing,
                                                    verbose=self.align_verbose,
                                                    verbosity=self.align_verbosity)
                     mapped_exons = list(exonan.annotation.keys())
@@ -799,6 +889,8 @@ class BioSeqAnn(Model):
 
                     fullref, ins, dels = align_seqs(fullrec, feat,
                                                     locus, start,
+                                                    self.refdata,
+                                                    annotation.missing,
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
 
@@ -1013,13 +1105,13 @@ class BioSeqAnn(Model):
 
                 max_length = length + lengthsd
                 min_length = length - lengthsd
-                if len(rec.seq) <= max_length \
-                        and len(rec.seq) >= min_length:
-                    recf, x = self._make_seqfeat(0, rec.seq, nfeat)
-                    ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
-                    tmprec1 = SeqRecord(seq=rec.seq, features=[recf],
-                                        id=ctmpid1)
-                    combos.append(tmprec1)
+                # if len(rec.seq) <= max_length \
+                #         and len(rec.seq) >= min_length:
+                recf, x = self._make_seqfeat(0, rec.seq, nfeat)
+                ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
+                tmprec1 = SeqRecord(seq=rec.seq, features=[recf],
+                                    id=ctmpid1)
+                combos.append(tmprec1)
             else:
                 cstart = 0
                 ref_feats = []
@@ -1055,11 +1147,11 @@ class BioSeqAnn(Model):
                     ctmpid = "|".join([str(ft) for ft in feat_names]) \
                              + "_" + str(randomid(N=2))
 
-                    if len(ctmpseq) <= max_length \
-                            and len(ctmpseq) >= min_length:
-                        tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
-                                           id=ctmpid)
-                        combos.append(tmprec)
+                    # if len(ctmpseq) <= max_length \
+                    #         and len(ctmpseq) >= min_length:
+                    tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
+                                       id=ctmpid)
+                    combos.append(tmprec)
         if combos:
             # Sort combos by how close they
             # are in length to the input sequence block

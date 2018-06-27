@@ -261,7 +261,7 @@ class ReferenceData(Model):
                     feat_order.sort()
                     self.align_coordinates.update({locus: {}})
                     if self.verbose and self.verbosity > 2:
-                            self.logger.info("* Alignment coordinates *")
+                        self.logger.info("* Alignment coordinates *")
                     for i in feat_order:
                         feat = self.struct_order["HLA-" + locus][i]
                         seq = self.annoated_alignments[locus][allele][feat]['Seq']

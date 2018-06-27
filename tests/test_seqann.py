@@ -76,18 +76,18 @@ if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
 verbose = False
-if os.getenv("VERBOSE"):
-    if os.getenv("VERBOSE") == "True" \
-            or int(os.getenv("VERBOSE")) == 1:
-        import logging
-        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-                            datefmt='%m/%d/%Y %I:%M:%S %p',
-                            level=logging.INFO)
-        verbose = True
+# if os.getenv("VERBOSE"):
+#     if os.getenv("VERBOSE") == "True" \
+#             or int(os.getenv("VERBOSE")) == 1:
+#         import logging
+#         logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+#                             datefmt='%m/%d/%Y %I:%M:%S %p',
+#                             level=logging.INFO)
+#         verbose = True
 
 verbosity = 0
-if os.getenv("VERBOSITY"):
-    verbosity = int(os.getenv("VERBOSITY"))
+# if os.getenv("VERBOSITY"):
+#     verbosity = int(os.getenv("VERBOSITY"))
 
 
 def ignore_warnings(test_func):
@@ -780,7 +780,7 @@ class TestBioSeqAnn(unittest.TestCase):
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
-                     'HLA-DQA1*04:01:01:01']
+                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01']
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
@@ -813,7 +813,7 @@ class TestBioSeqAnn(unittest.TestCase):
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
-                     'HLA-DQA1*04:01:01:01']
+                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01']
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
@@ -825,11 +825,9 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertTrue(ann1.exact)
             self.assertEqual(len(ann2.annotation), len(ann1.annotation))
             self.assertEqual(ann1.gfe, ann2.gfe)
-
             self.assertGreater(len(ann2.structure), 1)
             for feat in ann2.structure:
                 self.assertIsInstance(feat, Feature)
-
             for f in ann1.annotation:
                 self.assertTrue(f in ann2.annotation)
                 seq1 = str(ann1.annotation[f])
