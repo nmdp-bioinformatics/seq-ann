@@ -82,7 +82,10 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
 
     locus = set(loci)
     if len(locus) == 1:
-        return loci[0]
+        if has_hla(loci[0]):
+            return loci[0]
+        else:
+            return "HLA-" + loci[0]
     else:
         return ''
 
@@ -161,13 +164,17 @@ def blastn(sequences, locus, nseqs, kir=False,
                     seq = db.lookup(name=n)
                     full_sequences.append(seq)
                 except:
-                    logger.error("Allele doesnt exist in IMGT BioSQL DB!! " + n)
+                    logger.error("Allele doesnt exist in IMGT BioSQL DB!! "
+                                 + n)
     else:
         if verbose:
             logger.info("Getting sequences from HLA.dat file")
-        full_sequences = [a for a in refdata.imgtdat
-                          if a.description.split(",")[0] in alleles]
-        full_sequences.reverse()
+
+        full_sequences = [refdata.hlaref[a] for a in alleles
+                          if a in refdata.hlaref]
+
+        for s in full_sequences:
+            s.name = s.description.split(",")[0]
 
     #   Build Blast object
     blast_o = Blast(match_seqs=full_sequences, alleles=alleles)

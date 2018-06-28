@@ -77,6 +77,19 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
+verbose = False
+if os.getenv("VERBOSE"):
+    if os.getenv("VERBOSE") == "True" \
+            or int(os.getenv("VERBOSE")) == 1:
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            level=logging.INFO)
+        verbose = True
+
+verbosity = 0
+if os.getenv("VERBOSITY"):
+    verbosity = int(os.getenv("VERBOSITY"))
+
 
 def conn():
     try:
@@ -97,7 +110,7 @@ class TestBlast(unittest.TestCase):
         pass
 
     @unittest.skipUnless(conn(), "TestBlast 001 MySQL connection")
-    def test_001_blast(self):
+    def test_001_blastserv(self):
         input_seq = self.data_dir + '/ambig_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -107,7 +120,8 @@ class TestBlast(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
@@ -116,8 +130,35 @@ class TestBlast(unittest.TestCase):
         server.close()
         pass
 
+    def test_002_blast(self):
+        input_seq = self.data_dir + '/ambig_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        refdata = ReferenceData()
+        self.assertTrue(refdata.seqref)
+        self.assertTrue(refdata.hlaref)
+        blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)
+        self.assertIsInstance(blast_o, Blast)
+        self.assertFalse(blast_o.failed)
+        self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
+        self.assertEqual(len(blast_o.alleles), 3)
+        pass
+
+    def test_002_blastnoloc(self):
+        input_seq = self.data_dir + '/partial_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        refdata = ReferenceData()
+        self.assertTrue(refdata.seqref)
+        self.assertTrue(refdata.hlaref)
+        locus = get_locus(in_seq, refdata=refdata, verbose=verbose)
+        blast_o = blastn(in_seq, locus, 3, refdata=refdata, verbose=verbose)
+        self.assertIsInstance(blast_o, Blast)
+        self.assertFalse(blast_o.failed)
+        self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:12")
+        self.assertEqual(len(blast_o.alleles), 3)
+        pass
+
     @unittest.skipUnless(conn(), "TestBlast 002 MySQL connection")
-    def test_002_fail(self):
+    def test_003_fail(self):
         input_seq = self.data_dir + '/failed_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -127,7 +168,8 @@ class TestBlast(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         blast_o = blastn(in_seq, 'HLA-A', 3, refdata=refdata)
         self.assertIsInstance(blast_o, Blast)
         self.assertTrue(blast_o.failed)
@@ -136,7 +178,7 @@ class TestBlast(unittest.TestCase):
         pass
 
     @unittest.skipUnless(conn(), "TestBlast 003 MySQL connection")
-    def test_003_noloc(self):
+    def test_004_nolocserv(self):
         input_seq = self.data_dir + '/ambig_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
         server = BioSeqDatabase.open_database(driver="pymysql",
@@ -146,7 +188,8 @@ class TestBlast(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         refdata = ReferenceData(server=server)
-        self.assertFalse(refdata.imgtdat)
+        self.assertFalse(refdata.seqref)
+        self.assertFalse(refdata.hlaref)
         locus = get_locus(in_seq, refdata=refdata)
         self.assertIsInstance(locus, str)
         self.assertTrue(locus)
@@ -154,7 +197,19 @@ class TestBlast(unittest.TestCase):
         server.close()
         pass
 
-    def test_004_noref(self):
+    def test_005_noloc(self):
+        input_seq = self.data_dir + '/ambig_seqs.fasta'
+        in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
+        refdata = ReferenceData()
+        self.assertTrue(refdata.seqref)
+        self.assertTrue(refdata.hlaref)
+        locus = get_locus(in_seq, refdata=refdata)
+        self.assertIsInstance(locus, str)
+        self.assertTrue(locus)
+        self.assertEqual(locus, "HLA-A")
+        pass
+
+    def test_006_noref(self):
         input_seq = self.data_dir + '/ambig_seqs.fasta'
         in_seq = list(SeqIO.parse(input_seq, "fasta"))[0]
         blast_o = blastn(in_seq, 'HLA-A', 3)
@@ -162,9 +217,5 @@ class TestBlast(unittest.TestCase):
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
         self.assertEqual(len(blast_o.alleles), 3)
-
-
-
-
 
 

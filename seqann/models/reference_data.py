@@ -95,6 +95,9 @@ class ReferenceData(Model):
             'dbversion': str,
             'hla_names': List[str],
             'feature_lengths': Dict,
+            'hlaref': Dict,
+            'seqref': Dict,
+            'feature_lengths': Dict,
             'structure_max': Dict,
             'struct_order': Dict,
             'structures': Dict,
@@ -102,11 +105,12 @@ class ReferenceData(Model):
             'server_avail': bool,
             'verbose': bool,
             'verbosity': int,
-            'alignments': bool,
-            'imgtdat': List[SeqRecord]
+            'alignments': bool
         }
 
         self.attribute_map = {
+            'hlaref': 'hlaref',
+            'seqref': 'seqref',
             'server': 'server',
             'datafile': 'datafile',
             'dbversion': 'dbversion',
@@ -119,11 +123,12 @@ class ReferenceData(Model):
             'hla_loci': 'hla_loci',
             'server_avail': 'server_avail',
             'kir': 'kir',
-            'imgtdat': 'imgtdat',
             'alignments': 'alignments',
             'verbose': 'verbose',
             'verbosity': 'verbosity'
         }
+        self._seqref = {}
+        self._hlaref = {}
         self._kir = kir
         self._verbose = verbose
         self._verbosity = verbosity
@@ -153,6 +158,10 @@ class ReferenceData(Model):
                 self.logger.info("BIOSQLDB = " + biosqldb)
                 self.logger.info("BIOSQLPORT = " + str(biosqlport))
 
+        # TODO: ** Have script seqann --setup (--latest|--release|--all)
+        #           - downloads and creates all files
+        #           - removes all data files except alignment files
+        #           - Creates blast db
         # TODO: Download! Don't have in package!
         hla_names = []
         data_dir = os.path.dirname(__file__)
@@ -244,6 +253,7 @@ class ReferenceData(Model):
                 with open(pickle_file, 'rb') as handle:
                     self.annoated_alignments.update({locus:
                                                      pickle.load(handle)})
+                    handle.close()
                 allele = list(self.annoated_alignments[locus].keys())[0]
                 if not locus in self.align_coordinates and "HLA-" + locus in self.struct_order:
                     start = 0
@@ -251,7 +261,7 @@ class ReferenceData(Model):
                     feat_order.sort()
                     self.align_coordinates.update({locus: {}})
                     if self.verbose and self.verbosity > 2:
-                            self.logger.info("* Alignment coordinates *")
+                        self.logger.info("* Alignment coordinates *")
                     for i in feat_order:
                         feat = self.struct_order["HLA-" + locus][i]
                         seq = self.annoated_alignments[locus][allele][feat]['Seq']
@@ -265,8 +275,6 @@ class ReferenceData(Model):
         # If no server is provided
         # download the dat file
         if not self._server_avail:
-            datfile = ''
-
             if kir:
                 datfile = data_dir + '/../data/KIR.dat'
             else:
@@ -282,12 +290,44 @@ class ReferenceData(Model):
                 download_dat(kir_url, datfile)
 
             # Load HLA dat file
-            hladata = list(SeqIO.parse(datfile, "imgt"))
-            if self.verbose:
-                self.logger.info("Finished loading dat file")
-            self._imgtdat = hladata
-        else:
-            self._imgtdat = []
+            seqref_pickle = data_dir \
+                + '/../data/seqref.' + dbversion + ".pickle"
+
+            hlaref_pickle = data_dir \
+                + '/../data/hlaref.' + dbversion + ".pickle"
+
+            if not os.path.isfile(seqref_pickle) or \
+                    not os.path.isfile(hlaref_pickle):
+
+                hladata = SeqIO.parse(datfile, "imgt")
+                for seqrec in hladata:
+                    seqname = seqrec.description.split(",")[0]
+                    locus = seqname.split("*")[0]
+                    if locus in self.location:
+                        self._hlaref.update({seqname: seqrec})
+                        self._seqref.update({str(seqrec.seq): seqname})
+
+                if self.verbose:
+                    self.logger.info("Finished loading dat file")
+                    self.logger.info("Writing pickle of dat file")
+
+                with open(seqref_pickle, 'wb') as handle:
+                    pickle.dump(self._seqref, handle,
+                                protocol=pickle.HIGHEST_PROTOCOL)
+                    handle.close()
+                with open(hlaref_pickle, 'wb') as handle:
+                    pickle.dump(self._hlaref, handle,
+                                protocol=pickle.HIGHEST_PROTOCOL)
+                    handle.close()
+            else:
+                if self.verbose:
+                    self.logger.info("Loading pickle dat file")
+                with open(seqref_pickle, 'rb') as handle:
+                    self._seqref = pickle.load(handle)
+                    handle.close()
+                with open(hlaref_pickle, 'rb') as handle:
+                    self._hlaref = pickle.load(handle)
+                    handle.close()
 
     @classmethod
     def from_dict(cls, dikt) -> 'ReferenceData':
@@ -442,6 +482,36 @@ class ReferenceData(Model):
         return self._structure_max
 
     @property
+    def hlaref(self) -> Dict:
+        """
+        Gets the hlaref of this ReferenceData.
+
+        :return: The hlaref of this ReferenceData.
+        :rtype: Dict
+        """
+        return self._hlaref
+
+    @property
+    def seqref(self) -> Dict:
+        """
+        Gets the seqref of this ReferenceData.
+
+        :return: The seqref of this ReferenceData.
+        :rtype: Dict
+        """
+        return self._seqref
+
+    # @seqref.setter
+    # def seqref(self, seqref: str):
+        
+    #     Sets the seqref of this ReferenceData.
+
+    #     :param seqref: The seqref of this ReferenceData.
+    #     :type seqref: str
+        
+    #     self._seqref = seqref
+
+    @property
     def blastdb(self) -> str:
         """
         Gets the blastdb of this ReferenceData.
@@ -511,16 +581,6 @@ class ReferenceData(Model):
         """
         return self._server_avail
 
-    @property
-    def imgtdat(self) -> List[SeqRecord]:
-        """
-        Gets the imgtdat of this ReferenceData.
-
-        :return: The imgtdat of this ReferenceData.
-        :rtype: List[SeqRecord]
-        """
-        return self._imgtdat
-
     def search_refdata(self, seq, locus):
         """
         Gets the Annotation of this ReferenceData. "select ent.name from bioentry limit 10"
@@ -542,7 +602,8 @@ class ReferenceData(Model):
 
             # TODO: add try statement
             conn = pymysql.connect(host=biosqlhost, port=biosqlport,
-                                   user=biosqluser, passwd=biosqlpass, db=biosqldb)
+                                   user=biosqluser, passwd=biosqlpass,
+                                   db=biosqldb)
             cur = conn.cursor()
             cur.execute(select_stm)
 
@@ -556,46 +617,55 @@ class ReferenceData(Model):
             if typ:
                 if self.verbose:
                     self.logger.info("Exact typing found in BioSQL database")
-                return self.seqannotation(seq, typ, loc)
+                seqrecord = self.seqrecord(typ, loc)
+                return self.seqannotation(seqrecord, typ, loc)
             else:
                 return
         else:
-            return
-
-    def refseqs(self, locus, n):
-        hla, loc = locus.split('-')
-        if self.server_avail:
-            select_stm = "SELECT ent.name " + \
-                "FROM bioentry ent,biosequence seq,biodatabase dbb " + \
-                "WHERE dbb.biodatabase_id = ent.biodatabase_id AND " + \
-                "seq.bioentry_id = ent.bioentry_id " + \
-                "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
-                "LIMIT " + n
-
-            # TODO: add try statement
-            conn = pymysql.connect(host=biosqlhost, port=biosqlport,
-                                   user=biosqluser, passwd=biosqlpass,
-                                   db=biosqldb)
-            cur = conn.cursor()
-            cur.execute(select_stm)
-
-            typing = []
-            for row in cur:
-                typing.append(self.seqrecord(row[0], loc))
-
-            cur.close()
-            conn.close()
-
-            if typing:
+            if str(seq.seq) in self.seqref:
                 if self.verbose:
-                    self.logger.info("Exact typing found in BioSQL database")
-                return typing
+                    self.logger.info("Exact typing found in dat file")
+                seqrec = self.hlaref[self.seqref[str(seq.seq)]]
+                return self.seqannotation(seqrec,
+                                          self.seqref[str(seq.seq)],
+                                          locus)
             else:
                 return
-        else:
-            typings = [a for a in self.imgtdat
-                       if a.description.split(",")[0].split("*")[0] == locus][0:n]
-            return typings
+
+    # def refseqs(self, locus, n):
+    #     hla, loc = locus.split('-')
+    #     if self.server_avail:
+    #         select_stm = "SELECT ent.name " + \
+    #             "FROM bioentry ent,biosequence seq,biodatabase dbb " + \
+    #             "WHERE dbb.biodatabase_id = ent.biodatabase_id AND " + \
+    #             "seq.bioentry_id = ent.bioentry_id " + \
+    #             "AND dbb.name = \"" + self.dbversion + "_" + loc + "\" " + \
+    #             "LIMIT " + n
+
+    #         # TODO: add try statement
+    #         conn = pymysql.connect(host=biosqlhost, port=biosqlport,
+    #                                user=biosqluser, passwd=biosqlpass,
+    #                                db=biosqldb)
+    #         cur = conn.cursor()
+    #         cur.execute(select_stm)
+
+    #         typing = []
+    #         for row in cur:
+    #             typing.append(self.seqrecord(row[0], loc))
+
+    #         cur.close()
+    #         conn.close()
+
+    #         if typing:
+    #             if self.verbose:
+    #                 self.logger.info("Exact typing found in BioSQL database")
+    #             return typing
+    #         else:
+    #             return
+    #     else:
+    #         typings = [a for a in self.imgtdat
+    #                    if a.description.split(",")[0].split("*")[0] == locus][0:n]
+    #         return typings
 
     def seqrecord(self, allele, locus):
         """
@@ -614,7 +684,7 @@ class ReferenceData(Model):
         seqrecord = db.lookup(name=allele)
         return seqrecord
 
-    def seqannotation(self, seq, allele, loc):
+    def seqannotation(self, seqrecord, allele, loc):
         """
         Gets the Annotation from the found sequence
 
@@ -622,7 +692,7 @@ class ReferenceData(Model):
         :rtype: Annotation
         """
 
-        seqrecord = self.seqrecord(allele, loc)
+        #seqrecord = self.seqrecord(allele, loc)
         complete_annotation = get_features(seqrecord)
         annotation = Annotation(annotation=complete_annotation,
                                 method='match',

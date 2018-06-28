@@ -53,7 +53,7 @@ import logging
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def align_seqs(found_seqs, sequence, locus, start_pos, verbose=False, verbosity=0):
+def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -64,27 +64,55 @@ def align_seqs(found_seqs, sequence, locus, start_pos, verbose=False, verbosity=
     """
     logger = logging.getLogger("Logger." + __name__)
     seqs = [found_seqs, sequence]
-    indata = flatten([[">" + str(s.id), str(s.seq)]
-                      for s in seqs])
-    child = Popen(['clustalo',
-                   '--outfmt', 'clu',
-                   '--wrap=50000',
-                   '--auto', '-i', '-'],
-                  stdout=PIPE,
-                  stderr=STDOUT,
-                  stdin=PIPE)
 
-    stdout = child.communicate(input=str.encode("\n".join(indata)))
-    child.wait()
+    if verbose and verbosity > 0:
+        logger.info("found_seqs length = " + str(len(found_seqs)))
+        logger.info("sequence length = " + str(len(sequence)))
 
-    lines = bytes.decode(stdout[0]).split("\n")
+    seqs = []
+    seqs.append(found_seqs)
+    seqs.append(sequence)
+
     align = []
-    for line in lines:
-        if re.search("\w", line) and not re.search("CLUSTAL", line):
-            alignment = re.findall(r"[\S']+", line)
-            if len(alignment) == 2:
-                align.append(list(alignment[1]))
-    child.terminate()
+    if len(sequence) > 7000:
+        if verbose:
+            logger.info("Sequence too large to use pipe")
+        randid = randomid()
+        input_fasta = str(randid) + ".fasta"
+        output_clu = str(randid) + ".clu"
+        SeqIO.write(seqs, input_fasta, "fasta")
+        clustalomega_cline = ClustalOmegaCommandline(infile=input_fasta,
+                                                     outfile=output_clu,
+                                                     outfmt='clu', wrap=20000,
+                                                     verbose=True, auto=True)
+        stdout, stderr = clustalomega_cline()
+        aligns = AlignIO.read(output_clu, "clustal")
+        for aln in aligns:
+            align.append(str(aln.seq))
+
+        # Delete files
+        cleanup(randid)
+    else:
+        indata = flatten([[">" + str(s.id), str(s.seq)]
+                          for s in seqs])
+        child = Popen(['clustalo',
+                       '--outfmt', 'clu',
+                       '--wrap=50000',
+                       '--auto', '-i', '-'],
+                      stdout=PIPE,
+                      stderr=STDOUT,
+                      stdin=PIPE)
+
+        stdout = child.communicate(input=str.encode("\n".join(indata)))
+        child.wait()
+
+        lines = bytes.decode(stdout[0]).split("\n")
+        for line in lines:
+            if re.search("\w", line) and not re.search("CLUSTAL", line):
+                alignment = re.findall(r"[\S']+", line)
+                if len(alignment) == 2:
+                    align.append(list(alignment[1]))
+        child.terminate()
 
     # Print out what blocks haven't been annotated
     if verbose and len(align) > 0:
@@ -114,6 +142,9 @@ def align_seqs(found_seqs, sequence, locus, start_pos, verbose=False, verbosity=
         annotation = resolve_feats(all_features,
                                    align[len(align)-1],
                                    start_pos,
+                                   refdata,
+                                   locus,
+                                   missing,
                                    verbose,
                                    verbosity)
         return annotation, insers, dels
@@ -159,7 +190,7 @@ def find_features(feats, sequ):
     return feats
 
 
-def resolve_feats(feat_list, seqin,  start, verbose=False, verbosity=0):
+def resolve_feats(feat_list, seqin,  start, refdata, locus, missing, verbose=False, verbosity=0):
     """
     Resolves features from alignments
 
@@ -186,23 +217,27 @@ def resolve_feats(feat_list, seqin,  start, verbose=False, verbosity=0):
         full_annotation = {}
         features = feat_list[0]
         for feat in features:
-            f = features[feat]
-            seqrec = f.extract(seq)
-            seq_covered -= len(seqrec.seq)
-            if re.search("-", str(seqrec.seq)):
-                newseq = re.sub(r'-', '', str(seqrec.seq))
-                seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
+            if feat in missing:
+                f = features[feat]
+                seqrec = f.extract(seq)
+                seq_covered -= len(seqrec.seq)
+                if re.search("-", str(seqrec.seq)):
+                    newseq = re.sub(r'-', '', str(seqrec.seq))
+                    seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
 
-            if seqrec.seq:
-                full_annotation.update({feat: seqrec})
-                sp = f.location.start + start
-                ep = f.location.end + start
-                featn = SeqFeature(FeatureLocation(ExactPosition(sp), ExactPosition(ep), strand=1), type=f.type)
-                features.update({feat: featn})
-                for i in range(f.location.start, f.location.end):
-                    if i in coordinates:
-                        del coordinates[i]
-                    mapping[i] = feat
+                if seqrec.seq:
+                    sp = f.location.start + start
+                    ep = f.location.end + start
+                    featn = SeqFeature(FeatureLocation(ExactPosition(sp),
+                                                       ExactPosition(ep),
+                                                       strand=1), type=f.type)
+
+                    features.update({feat: featn})
+                    full_annotation.update({feat: seqrec})
+                    for i in range(f.location.start, f.location.end):
+                        if i in coordinates:
+                            del coordinates[i]
+                        mapping[i] = feat
 
         blocks = getblocks(coordinates)
 
@@ -220,11 +255,16 @@ def resolve_feats(feat_list, seqin,  start, verbose=False, verbosity=0):
             for f in full_annotation:
                 logger.info(f)
 
-        return Annotation(annotation=full_annotation,
-                          method="clustalo",
-                          features=features,
-                          mapping=rmapping,
-                          blocks=blocks)
+        if not full_annotation or len(full_annotation) == 0:
+            if verbose:
+                logger.info("Failed to align missing features")
+            return Annotation(complete_annotation=False)
+        else:
+            return Annotation(annotation=full_annotation,
+                              method="clustalo",
+                              features=features,
+                              mapping=rmapping,
+                              blocks=blocks)
 
 
 def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
@@ -283,16 +323,24 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
 
-    # TODO:
-    # These numbers need to be fine t
-    if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
-        if verbose:
-            logger.info("Alignment coverage NOT high enough to return annotation")
+    if match == 455:
         return Annotation(complete_annotation=False)
-    else:
+
+    if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
         if verbose:
             logger.info("Alignment coverage high enough to complete annotation")
         return insr, dels
+    else:
+        # TODO:
+        # These numbers need to be fine t
+        if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
+            if verbose:
+                logger.info("Alignment coverage NOT high enough to return annotation")
+            return Annotation(complete_annotation=False)
+        else:
+            if verbose:
+                logger.info("Alignment coverage high enough to complete annotation")
+            return insr, dels
 
 
 

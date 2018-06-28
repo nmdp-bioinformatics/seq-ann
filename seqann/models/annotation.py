@@ -125,15 +125,17 @@ class Annotation(Model):
             if not features:
                 self._complete_annotation = False
             else:
-                for feat in missing:
-                    if feat not in features:
-                        self._complete_annotation = False
-                        missing_blocks.update({feat: missing[feat]})
+                if missing:
+                    for feat in missing:
+                        if feat not in features:
+                            self._complete_annotation = False
+                            missing_blocks.update({feat: missing[feat]})
 
-                for feat in ambig:
-                    if feat not in features:
-                        self._complete_annotation = False
-                        missing_blocks.update({feat: missing[feat]})
+                if ambig:
+                    for feat in ambig:
+                        if feat not in features:
+                            self._complete_annotation = False
+                            missing_blocks.update({feat: missing[feat]})
 
                 if covered > 0 and refmissing:
                     self._complete_annotation = False
