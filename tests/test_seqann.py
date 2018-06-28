@@ -777,10 +777,12 @@ class TestBioSeqAnn(unittest.TestCase):
                            verbosity=verbosity)
         refdata = ReferenceData()
 
+        # removed 'HLA-DRB1*04:04:01' because it's
+        # too large to test with travis
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
-                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01',
+                     'HLA-DQA1*04:01:01:01',
                      'HLA-B*51:42', 'HLA-C*03:04:05']
         for seqname in refdata.hlaref:
             if seqname not in test_list:
@@ -814,8 +816,8 @@ class TestBioSeqAnn(unittest.TestCase):
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
-                     'HLA-DQA1*04:01:01:01', 'HLA-DRB1*04:04:01',
-                     'HLA-B*51:42','HLA-C*03:04:05']
+                     'HLA-DQA1*04:01:01:01',
+                     'HLA-B*51:42', 'HLA-C*03:04:05']
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue

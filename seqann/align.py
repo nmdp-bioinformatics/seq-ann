@@ -65,9 +65,9 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
     logger = logging.getLogger("Logger." + __name__)
     seqs = [found_seqs, sequence]
 
-    # logger.info("Running align_seqs")
-    # logger.info("found_seqs length = " + str(len(found_seqs)))
-    # logger.info("sequence length = " + str(len(sequence)))
+    if verbose and verbosity > 0:
+        logger.info("found_seqs length = " + str(len(found_seqs)))
+        logger.info("sequence length = " + str(len(sequence)))
 
     seqs = []
     seqs.append(found_seqs)
@@ -75,15 +75,15 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
 
     align = []
     if len(sequence) > 7000:
-
-        logger.info("Sequence too large!")
+        if verbose:
+            logger.info("Sequence too large to use pipe")
         randid = randomid()
         input_fasta = str(randid) + ".fasta"
         output_clu = str(randid) + ".clu"
         SeqIO.write(seqs, input_fasta, "fasta")
         clustalomega_cline = ClustalOmegaCommandline(infile=input_fasta,
                                                      outfile=output_clu,
-                                                     outfmt='clu', wrap=50000,
+                                                     outfmt='clu', wrap=20000,
                                                      verbose=True, auto=True)
         stdout, stderr = clustalomega_cline()
         aligns = AlignIO.read(output_clu, "clustal")
@@ -228,19 +228,9 @@ def resolve_feats(feat_list, seqin,  start, refdata, locus, missing, verbose=Fal
                 if seqrec.seq:
                     sp = f.location.start + start
                     ep = f.location.end + start
-                    featn = SeqFeature(FeatureLocation(ExactPosition(sp), ExactPosition(ep), strand=1), type=f.type)
-                    # if f.location.start != 0:
-                    #     prev_feat = mapping[f.location.start-1]
-                    #     expt_prev = refdata.struct_order[locus][refdata.structures[locus][feat]]
-                    #     #expt_prev = refdata.structures[locus][feat]
-                    #     # print("****************")
-                    #     # print("Feats", feat, str(prev_feat), expt_prev)
-                    #     # print("****************")
-                    #     #t = refdata.struct_order[locus][1]
-                    #     #print(t, refdata.struct_order[locus][expt_prev])
-                    #     #if not isinstance(prev_feat, int)
-                    #     # if not isinstance(prev_feat, int) \
-                    #     #     and prev_feat == expt_prev:
+                    featn = SeqFeature(FeatureLocation(ExactPosition(sp),
+                                                       ExactPosition(ep),
+                                                       strand=1), type=f.type)
 
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
