@@ -75,6 +75,11 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
+# import logging
+# logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+#                     datefmt='%m/%d/%Y %I:%M:%S %p',
+#                     level=logging.INFO)
+
 verbose = False
 if os.getenv("VERBOSE"):
     if os.getenv("VERBOSE") == "True" \
@@ -810,14 +815,15 @@ class TestBioSeqAnn(unittest.TestCase):
         pass
 
     def test_020_skip(self):
-        seqann = BioSeqAnn(verbose=False,
-                           verbosity=verbosity)
+        seqann = BioSeqAnn(verbose=True,
+                           verbosity=2)
         refdata = ReferenceData()
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
                      'HLA-DQA1*04:01:01:01',
                      'HLA-B*51:42', 'HLA-C*03:04:05']
+
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue

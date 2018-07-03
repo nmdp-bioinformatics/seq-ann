@@ -90,6 +90,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
         for aln in aligns:
             align.append(str(aln.seq))
 
+        #print("RAN ",randid)
         # Delete files
         cleanup(randid)
     else:
@@ -141,6 +142,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
     if len(all_features) > 0:
         annotation = resolve_feats(all_features,
                                    align[len(align)-1],
+                                   align[0],
                                    start_pos,
                                    refdata,
                                    locus,
@@ -190,7 +192,7 @@ def find_features(feats, sequ):
     return feats
 
 
-def resolve_feats(feat_list, seqin,  start, refdata, locus, missing, verbose=False, verbosity=0):
+def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verbose=False, verbosity=0):
     """
     Resolves features from alignments
 
@@ -208,6 +210,7 @@ def resolve_feats(feat_list, seqin,  start, refdata, locus, missing, verbose=Fal
     mapping = dict(map(lambda x: [x, 1],
                        [i for i in range(0, len(seq.seq)+1)]))
 
+    diff = 0
     if len(feat_list) > 1:
         if verbose:
             logger.error("resolve_feats error")
@@ -221,26 +224,44 @@ def resolve_feats(feat_list, seqin,  start, refdata, locus, missing, verbose=Fal
                 f = features[feat]
                 seqrec = f.extract(seq)
                 seq_covered -= len(seqrec.seq)
+                #print("--")
                 if re.search("-", str(seqrec.seq)):
+                    l1 = len(seqrec.seq)
                     newseq = re.sub(r'-', '', str(seqrec.seq))
                     seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
+                    #if feat == "five_prime_UTR":
+                    #tmdiff = l1 - len(newseq)
+                    #diff += tmdiff
+                    # print("align diff", feat, str(diff), str(len(seq.seq)), str(len(newseq)), str(len(seqrec.seq)))
 
                 if seqrec.seq:
-                    sp = f.location.start + start
-                    ep = f.location.end + start
+                    if feat == "five_prime_UTR":
+                        sp = f.location.start + start
+                    else:
+                        sp = f.location.start + start - diff
+
+                    ep = f.location.end + start - diff
+
+                    # if feat == "exon_1":
+                    #     ep -= 1
+                    #     sp += 1
                     featn = SeqFeature(FeatureLocation(ExactPosition(sp),
                                                        ExactPosition(ep),
                                                        strand=1), type=f.type)
 
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
-                    for i in range(f.location.start, f.location.end):
-                        if i in coordinates:
-                            del coordinates[i]
-                        mapping[i] = feat
+
+                    # print(feat,str(start),str(featn.location.start),str(featn.location.end))
+                    # print(feat,str(start),str(f.location.start),str(f.location.end))
+                    # print(feat,str(seqrec.seq))
+                #     for i in range(featn.location.start, featn.location.end):
+                #         if i in coordinates:
+                #             del coordinates[i]
+                #         mapping[i] = feat
+                # print("--")
 
         blocks = getblocks(coordinates)
-
         rmapping = {k+start: mapping[k] for k in mapping.keys()}
 
         # Print out what blocks haven't been annotated
@@ -264,7 +285,8 @@ def resolve_feats(feat_list, seqin,  start, refdata, locus, missing, verbose=Fal
                               method="clustalo",
                               features=features,
                               mapping=rmapping,
-                              blocks=blocks)
+                              blocks=blocks,
+                              seq=seq)
 
 
 def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
@@ -323,12 +345,12 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
 
-    if match == 455:
-        return Annotation(complete_annotation=False)
+    # if match == 455:
+    #     return Annotation(complete_annotation=False)
 
     if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
         if verbose:
-            logger.info("Alignment coverage high enough to complete annotation")
+            logger.info("Alignment coverage high enough to complete annotation 11")
         return insr, dels
     else:
         # TODO:

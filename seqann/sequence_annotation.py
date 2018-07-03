@@ -57,6 +57,29 @@ from typing import Dict
 from typing import List
 
 
+# TODO: Add documentation
+def getblocks(coords):
+    block = []
+    blocks = []
+    sorted_i = sorted(coords.keys())
+    for i in range(0, len(sorted_i)-1):
+        j = i+1
+        if i == 0:
+            block.append(sorted_i[i])
+        if(j <= len(sorted_i)-1):
+            if(sorted_i[i] == sorted_i[j]-1):
+                block.append(sorted_i[j])
+            else:
+                blocks.append(block)
+                block = []
+                block.append(sorted_i[j])
+        else:
+            block.append(sorted_i[j])
+    if len(block) > 1:
+        blocks.append(block)
+    return blocks
+
+
 class BioSeqAnn(Model):
     '''
         ::
@@ -402,7 +425,7 @@ class BioSeqAnn(Model):
 
             # Skip a reference
             # * For validation *
-            if found[i].name in skip:
+            if found[i].name in skip or found[i].name == "HLA-B*44:07":
                 continue
 
             if self.verbose:
@@ -413,10 +436,7 @@ class BioSeqAnn(Model):
             aligned_ann = self.ref_align(found[i], sequence, locus,
                                          annotation=partial_ann)
 
-            if i > 2:
-                aligned_ann.blocks = []
-                aligned_ann.check_annotation()
-
+            aligned_ann.check_annotation()
             if aligned_ann.complete_annotation:
                 if self.align:
                     if self.verbose:
@@ -531,7 +551,6 @@ class BioSeqAnn(Model):
 
         """
         if annotation and isinstance(annotation, Annotation):
-            missing_original = annotation.missing
             if 0 in annotation.mapping \
                     and not isinstance(annotation.mapping[0], int):
                 ft = annotation.mapping[0]
@@ -578,6 +597,7 @@ class BioSeqAnn(Model):
                                                annotation.missing,
                                                verbose=self.align_verbose,
                                                verbosity=self.align_verbosity)
+
                     mapped_feat = list(an.annotation.keys())
                     if len(mapped_feat) >= 1:
                         for f in an.annotation:
@@ -591,6 +611,65 @@ class BioSeqAnn(Model):
                                 # min and max lengths expected
                                 max_length = length + (lengthsd*3) + ins
                                 min_length = length - (lengthsd*3) - dels
+
+                                #Make sure order of alignment make sense
+                                if an.features[f].location.start == 0 \
+                                        and f != "five_prime_UTR" \
+                                        and 'three_prime_UTR' in annotation.annotation:
+                                    # for i in an.mapping:
+                                    #     if str(an.mapping[i]) == f:
+                                    #         an.mapping[i] = 1
+                                    # self.logger.info(self.logname + " out of order five_prime_UTR " + f)
+                                    # tmp = []
+                                    # for i in range(0,an.features[f].location.end):
+                                    #     tmp.append(i)
+                                    # mbtmp.append(tmp)
+                                    del an.features[f]
+                                    continue
+
+                                f_order = self.refdata.structures[locus][f]
+                                endp = an.features[f].location.end + 1
+                                if endp in annotation.mapping and not isinstance(annotation.mapping[endp], int):
+                                    mf = annotation.mapping[endp]
+                                    expected_order = f_order + 1
+                                    if expected_order != self.refdata.structures[locus][mf]:
+                                        # for i in an.mapping:
+                                        #     if str(an.mapping[i]) == f:
+                                        #         an.mapping[i] = 1
+                                        self.logger.info(self.logname + " out of order1 -> " + mf + " " + f)                                        
+                                        # tmp = []
+                                        # for i in range(0,an.features[f].location.end):
+                                        #     tmp.append(i)
+                                        # mbtmp.append(tmp)
+                                        del an.features[f]
+                                        continue
+                                    else:
+                                        g = 0
+                                        for k in range(an.features[f].location.end, max(annotation.mapping.keys())):
+                                            if g:
+                                                continue
+                                            if not isinstance(annotation.mapping[k], int) and not g:
+                                                g = 1
+                                                continue
+                                else:
+                                    g = 0
+                                    for i in range(endp+1, max(annotation.mapping.keys())):
+                                        if g:
+                                            continue
+                                        if not isinstance(annotation.mapping[i], int):
+                                            g = 1
+
+                                startp = an.features[f].location.start - 1
+                                if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
+                                    mf = annotation.mapping[startp]
+                                    expected_order = f_order - 1
+                                    if expected_order != self.refdata.structures[locus][mf]:
+                                        # for i in an.mapping:
+                                        #     if str(an.mapping[i]) == f:
+                                        #         an.mapping[i] = 1
+                                        self.logger.info(self.logname + " out of order2 -> " + mf + " " + f)
+                                        del an.features[f]
+                                        continue
 
                                 if self.verbose and self.verbosity > 0:
                                     sl = str(len(an.annotation[f]))
@@ -627,15 +706,6 @@ class BioSeqAnn(Model):
                                                          + " " + f
                                                          + " " + sl + " ! >= !"
                                                          + str(min_length))
-                                
-                                if an.features[f].location.start == 0 \
-                                        and f != "five_prime_UTR" \
-                                        and 'three_prime_UTR' in annotation.annotation:
-                                    del an.features[f]
-                                    for i in an.mapping:
-                                        if str(an.mapping[i]) == f:
-                                            an.mapping[i] = 1
-                                    continue
 
                                 if(len(an.annotation[f]) <= max_length and
                                         len(an.annotation[f]) >= min_length):
@@ -649,8 +719,10 @@ class BioSeqAnn(Model):
                                                                     an.annotation[f]
                                                                   })
                                     else:
-                                        annotation.annotation = an.annotation
-
+                                        annotation.annotation = {}
+                                        annotation.annotation.update({f:
+                                                                    an.annotation[f]
+                                                                  })
                                     if f in annotation.refmissing:
                                         i = annotation.refmissing.index(f)
                                         del annotation.refmissing[i]
@@ -659,18 +731,18 @@ class BioSeqAnn(Model):
                                         del annotation.missing[f]
 
                                     if an.blocks:
-                                        for nb in an.blocks:
+                                        # for nb in an.blocks:
 
-                                            bl = [b[i] for i in nb if i < len(b)]
+                                        #     bl = [b[i] for i in nb if i < len(b)]
 
-                                            # TODO: validate this
-                                            if 0 in bl:
-                                                bl.append(bl[len(bl)-1]+1)
-                                            missing_blocks.append(bl)
-                                            tmp_missing.append(bl)
+                                        #     # TODO: validate this
+                                        #     if 0 in bl:
+                                        #         bl.append(bl[len(bl)-1]+1)
+                                        #     missing_blocks.append(bl)
+                                        #     tmp_missing.append(bl)
 
-                                        if b in missing_blocks:
-                                            del missing_blocks[missing_blocks.index(b)]
+                                        # if b in missing_blocks:
+                                        #     del missing_blocks[missing_blocks.index(b)]
 
                                         if self.verbose and self.verbosity > 0:
                                             self.logger.info(self.logname
@@ -688,8 +760,23 @@ class BioSeqAnn(Model):
                     elif b not in mbtmp and b in missing_blocks:
                         mbtmp.append(b)
 
-                    mbtmp += missing_blocks
-                    annotation.blocks = mbtmp
+                    coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
+
+                    for f in annotation.features:
+                        s = annotation.features[f].location.start
+                        e = annotation.features[f].location.end
+                        if s != 0:
+                            s += 1
+                            e += 1
+                        else:
+                            e += 1
+                        for i in range(s, e):
+                            annotation.mapping[i] = f
+                            if i in coordinates:
+                                del coordinates[i]
+
+                    blocks = getblocks(coordinates)
+                    annotation.blocks = blocks
                     annotation.check_annotation()
                     if annotation.complete_annotation:
                         if self.verbose:
@@ -699,115 +786,17 @@ class BioSeqAnn(Model):
                         return annotation
                     else:
                         missing_f = {}
-                        sk = []
-
                         if an.mapping and an.features:
-                            #  ** DEBUGGING **
-                            #
-                            # an_coords = {}
-                            # for k in an.mapping:
-                            #     m = an.mapping[k]
-                            #     if m in self.refdata.structures[locus]:
-                            #         if m in an_coords:
-                            #             tmp = an_coords[m]
-                            #             tmp.append(k)
-                            #             an_coords[m] = tmp
-                            #         else:
-                            #             an_coords.update({m: [k]})
-                            #     else:
-                            #         an_coords.update({k: 1})
-                            # fu_coords = {}
-                            # for k in annotation.mapping:
-                            #     m = annotation.mapping[k]
-                            #     if m in self.refdata.structures[locus]:
-                            #         if m in fu_coords:
-                            #             tmp = fu_coords[m]
-                            #             tmp.append(k)
-                            #             fu_coords[m] = tmp
-                            #         else:
-                            #             fu_coords.update({m: [k]})
-                            #     else:
-                            #         fu_coords.update({k: 1})
-
-                            for k in an.mapping:
-                                m = an.mapping[k]
-                                if m in self.refdata.structures[locus]:
-                                    f_order = self.refdata.structures[locus][m]
-                                    if(f_order >= start_order and
-                                       f not in annotation.features
-                                       and k in annotation.mapping
-                                       and not annotation.mapping[k] in self.refdata.structures[locus]):
-                                        annotation.mapping[k] = an.mapping[k]
 
                             for f in an.features:
                                 f_order = self.refdata.structures[locus][f]
                                 # Only add features if they are after the
                                 # first feature mapped
                                 if f_order >= start_order and f not in annotation.features \
-                                        and f in annotation.annotation and not f in sk:
-                                            annotation.features[f] = an.features[f]
-
-                            for f in self.refdata.structures[locus]:
-                                if f not in annotation.features:
-                                    missing_f.update({f: missing_original[f]})
+                                        and f in annotation.annotation:
+                                    annotation.features[f] = an.features[f]
 
                             annotation.missing = missing_f
-                            if self.verbose and self.verbosity > 0:
-                                self.logger.info(self.logname + " Missing after alignment: "
-                                                 + ",".join(list(missing_f.keys())))
-
-                            if self.verbose and self.verbosity > 0:
-                                r = 1
-                                f_c = []
-                                last = None
-                                coords = {}
-                                for i in annotation.mapping:
-                                    f = annotation.mapping[i]
-                                    if isinstance(f, int) and r:
-                                        f_c.append(f)
-                                        if 'missing' in coords:
-                                            tmp = coords['missing']
-                                            tmp.append(i)
-                                            coords.update({'missing': tmp})
-                                        else:
-                                            tmp = []
-                                            tmp.append(i)
-                                            coords.update({'missing': tmp})
-                                        last = f
-                                    else:
-                                        if isinstance(f, int):
-                                            if 'missing' in coords:
-                                                tmp = coords['missing']
-                                                tmp.append(i)
-                                                coords.update({'missing': tmp})
-                                            else:
-                                                tmp = []
-                                                tmp.append(i)
-                                                coords.update({'missing': tmp})
-                                        else:
-                                            if f in coords:
-                                                tmp = coords[f]
-                                                tmp.append(i)
-                                                coords.update({f: tmp})
-                                            else:
-                                                tmp = []
-                                                tmp.append(i)
-                                                coords.update({f: tmp})
-                                        if isinstance(last, int):
-                                            r = 0
-                                        else:
-                                            last = f
-
-                                if coords:
-                                    self.logger.info(self.logname + "-------" +
-                                                     "----------------")
-                                    self.logger.info(self.logname + " Feature coordinates")
-                                    for f in coords:
-                                        tmpl = " ".join([f, str(coords[f][0]),
-                                                         str(coords[f][len(coords[f])-1])])
-                                        self.logger.info(self.logname + tmpl)
-                                    self.logger.info(self.logname + "-------" +
-                                                     "----------------")
 
                             # Rerunning seqsearch with
                             # new annotation from alignment
@@ -825,6 +814,7 @@ class BioSeqAnn(Model):
                                                      + " with targeted ref_align and seqsearch!")
 
                                 return tmpann
+                            annotation = tmpann
 
                 if len(exons.seq) >= 4:
                     exonan, ins, dels = align_seqs(exons, feat, locus, start,
@@ -859,7 +849,9 @@ class BioSeqAnn(Model):
                             if self.verbose:
                                 self.logger.info(self.logname + " Completed annotation with targeted exons ref_align")
                             return annotation
-
+            #print("----- blocks 4 ----")
+            #print(annotation.blocks)
+            #print("-----------------")
             return annotation
         elif partial_ann:
             # Do full sequence alignments
@@ -903,7 +895,7 @@ class BioSeqAnn(Model):
                     fullref, ins, dels = align_seqs(fullrec, feat,
                                                     locus, start,
                                                     self.refdata,
-                                                    annotation.missing,
+                                                    partial_ann.missing,
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
 
@@ -1035,11 +1027,15 @@ class BioSeqAnn(Model):
         end_pos = start_pos + len(feat.seq)
         missing_feats = annotation.missing
         mapping = annotation.mapping
+        #print(start_pos, end_pos)
+        #print(mapping)
 
         if start_pos == 0:
             prv_order = -1
         else:
             prev_feat = mapping[start_pos-1]
+            if isinstance(prev_feat, int):
+                prev_feat = mapping[start_pos]
             prv_order = self.refdata.structures[locus][prev_feat]
 
         if len(mapping) == end_pos+1:

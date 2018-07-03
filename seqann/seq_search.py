@@ -172,6 +172,10 @@ class SeqSearch(Model):
             seq_covered = partial_ann.covered
             mapping = partial_ann.mapping
 
+            # if partial_ann and 'three_prime_UTR' in partial_ann.features:
+            #     print("MAPPING!")
+            #     print(mapping)
+
             if self.verbose and self.verbosity > 2:
                 self.logger.info("Partial sequence coverage = "
                                  + str(seq_covered))
