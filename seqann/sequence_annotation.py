@@ -436,6 +436,10 @@ class BioSeqAnn(Model):
             aligned_ann = self.ref_align(found[i], sequence, locus,
                                          annotation=partial_ann)
 
+            #if i > 1:
+            #    aligned_ann.blocks = []
+            #    aligned_ann.check_annotation()
+
             if aligned_ann.complete_annotation:
                 if self.align:
                     if self.verbose:
@@ -615,14 +619,6 @@ class BioSeqAnn(Model):
                                 if an.features[f].location.start == 0 \
                                         and f != "five_prime_UTR" \
                                         and 'three_prime_UTR' in annotation.annotation:
-                                    # for i in an.mapping:
-                                    #     if str(an.mapping[i]) == f:
-                                    #         an.mapping[i] = 1
-                                    # self.logger.info(self.logname + " out of order five_prime_UTR " + f)
-                                    # tmp = []
-                                    # for i in range(0,an.features[f].location.end):
-                                    #     tmp.append(i)
-                                    # mbtmp.append(tmp)
                                     del an.features[f]
                                     continue
 
@@ -649,7 +645,8 @@ class BioSeqAnn(Model):
                                 if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
                                     mf = annotation.mapping[startp]
                                     expected_order = f_order - 1
-                                    if expected_order != self.refdata.structures[locus][mf]:
+                                    expected_order2 = f_order - 2
+                                    if expected_order != self.refdata.structures[locus][mf] and expected_order2 != self.refdata.structures[locus][mf]:
                                         self.logger.info(self.logname + " out of order2 -> " + mf + " " + f)
                                         del an.features[f]
                                         continue
@@ -719,29 +716,34 @@ class BioSeqAnn(Model):
                                     if f in annotation.missing:
                                         del annotation.missing[f]
 
-                                    if an.blocks:
+                                    # if an.blocks:
+                                    #     #print("PARTIAL BLOCK")
+                                    #     #print(an.blocks)
+                                    #     if b in missing_blocks:
+                                    #         del missing_blocks[missing_blocks.index(b)]
 
-                                        if b in missing_blocks:
-                                            del missing_blocks[missing_blocks.index(b)]
+                                    #     if self.verbose and self.verbosity > 0:
+                                    #         self.logger.info(self.logname
+                                    #                          + " Part of block mapped")
 
-                                        if self.verbose and self.verbosity > 0:
-                                            self.logger.info(self.logname
-                                                             + " Part of block mapped")
+                                    # else:
+                                    #     if self.verbose and self.verbosity > 0:
+                                    #         self.logger.info(self.logname
+                                    #                          + " All blocks mapped")
+                                        
+                                    #     del annotation.blocks[annotation.blocks.index(b)]
+                                    #     if b in missing_blocks:
+                                    #         del missing_blocks[missing_blocks.index(b)]
 
-                                    else:
-                                        if self.verbose and self.verbosity > 0:
-                                            self.logger.info(self.logname
-                                                             + " All blocks mapped")
-                                        if b in missing_blocks:
-                                            del missing_blocks[missing_blocks.index(b)]
-
-                                elif b not in mbtmp and b in missing_blocks:
-                                    mbtmp.append(b)
-                    elif b not in mbtmp and b in missing_blocks:
-                        mbtmp.append(b)
+                                #elif b not in mbtmp and b in missing_blocks:
+                                #    mbtmp.append(b)
+                    #elif b not in mbtmp and b in missing_blocks:
+                        #del missing_blocks[missing_blocks.index(b)]
+                    #    mbtmp.append(b)
 
                     coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
 
+                    #print("-----")
                     for f in annotation.features:
                         s = annotation.features[f].location.start
                         e = annotation.features[f].location.end
@@ -750,26 +752,28 @@ class BioSeqAnn(Model):
                             e += 1
                         else:
                             e += 1
+
+                        if e > max(annotation.mapping.keys()):
+                            #print("WTF")
+                            e = max(annotation.mapping.keys())
+
                         for i in range(s, e):
                             annotation.mapping[i] = f
                             if i in coordinates:
                                 del coordinates[i]
 
-                    #print("MAPPING")
-                    #print(annotation.mapping)
-                    #print("-----")
-                    #print("annotations:")
-                    #print(",".join(annotation.annotation.keys()))
-                    
-                    #print("Features:")
-                    #print(print(",".join(annotation.features.keys())))
-
+                    # print("MAPPING")
+                    # print(annotation.mapping)
+                    # print("annotations:")
+                    # print(",".join(annotation.annotation.keys()))
+                    # print("Features:")
+                    # print(print(",".join(annotation.features.keys())))
+                    # print("BEFORE BLOCKS")
+                    # print(annotation.blocks)
                     blocks = getblocks(coordinates)
-
                     annotation.blocks = blocks
                     annotation.check_annotation()
                     if annotation.complete_annotation:
-                        #print("SHOULD BE COMPLETE")
                         if self.verbose:
                             self.logger.info(self.logname
                                              + " Completed annotation"
@@ -788,7 +792,8 @@ class BioSeqAnn(Model):
                                     annotation.features[f] = an.features[f]
 
                             #annotation.missing = missing_f
-
+                            #print("BEFORE SEQ SEARCH BLOCKS")
+                            #print(annotation.blocks)
                             # Rerunning seqsearch with
                             # new annotation from alignment
                             tmpann = self.seqsearch.search_seqs(found_seqs,
@@ -810,7 +815,8 @@ class BioSeqAnn(Model):
                             annotation = tmpann
 
                 if len(exons.seq) >= 4:
-                    #print("RUNNING EXONS ONLY")
+                    #print("RUNNING WITH EXONS ONLY!!!")
+                    #print(annotation.missing.keys())
                     exonan, ins, dels = align_seqs(exons, feat, locus, start,
                                                    self.refdata,
                                                    annotation.missing,
@@ -829,18 +835,18 @@ class BioSeqAnn(Model):
                                                  + str(len(exonan
                                                            .annotation[f])))
                             annotation.annotation.update({f: exonan.annotation[f]})
-                            annotation.features.update({f:exonan.features[f]})
+                            annotation.features.update({f: exonan.features[f]})
 
                         coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
                         for f in annotation.features:
                             s = annotation.features[f].location.start
                             e = annotation.features[f].location.end
                             #print("EXONS",f,str(s),str(e))
-                            # if s != 0:
-                            #     s += 1
-                            #     e += 1
-                            # else:
-                            #     e += 1
+                            if s != 0:
+                                s += 1
+                                e += 1
+                            else:
+                                e += 1
                             for i in range(s, e):
                                 annotation.mapping[i] = f
                                 if i in coordinates:
@@ -859,6 +865,7 @@ class BioSeqAnn(Model):
             #print(annotation.blocks)
             return annotation
         elif partial_ann:
+
             # Do full sequence alignments
             # any only extract out the part
             # that couldn't be explained from above
@@ -933,8 +940,8 @@ class BioSeqAnn(Model):
                         # first feature mapped
                         if f_order >= start_order and f not in partial_ann.features \
                                 and f in partial_ann.annotation:
-                            partial_ann.features[f] = exonan.features[f]
-                    
+                            partial_ann.features[f] = fullref.features[f]
+
                     coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
                     for f in partial_ann.features:
                         s = partial_ann.features[f].location.start
@@ -1073,6 +1080,10 @@ class BioSeqAnn(Model):
             else:
                 nxt_order = self.refdata.structures[locus][next_feat]
 
+        # #print("CREATE",str(nxt_order))
+        # print("missing_feats")
+        # print(missing_feats.keys())
+
         start = 0
         exstart = 0
         all_seqs = []
@@ -1083,7 +1094,6 @@ class BioSeqAnn(Model):
         for f in sorted(missing_feats,
                         key=lambda k: self.refdata.structures[locus][k]):
             mis_order = self.refdata.structures[locus][f]
-
             if mis_order > nxt_order \
                     or mis_order < prv_order:
                 continue
@@ -1140,13 +1150,13 @@ class BioSeqAnn(Model):
 
                 max_length = length + lengthsd
                 min_length = length - lengthsd
-                # if len(rec.seq) <= max_length \
-                #         and len(rec.seq) >= min_length:
-                recf, x = self._make_seqfeat(0, rec.seq, nfeat)
-                ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
-                tmprec1 = SeqRecord(seq=rec.seq, features=[recf],
-                                    id=ctmpid1)
-                combos.append(tmprec1)
+                if len(rec.seq) <= max_length \
+                        and len(rec.seq) >= min_length:
+                    recf, x = self._make_seqfeat(0, rec.seq, nfeat)
+                    ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
+                    tmprec1 = SeqRecord(seq=rec.seq, features=[recf],
+                                        id=ctmpid1)
+                    combos.append(tmprec1)
             else:
                 cstart = 0
                 ref_feats = []
@@ -1182,11 +1192,11 @@ class BioSeqAnn(Model):
                     ctmpid = "|".join([str(ft) for ft in feat_names]) \
                              + "_" + str(randomid(N=2))
 
-                    # if len(ctmpseq) <= max_length \
-                    #         and len(ctmpseq) >= min_length:
-                    tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
-                                       id=ctmpid)
-                    combos.append(tmprec)
+                    if len(ctmpseq) <= max_length \
+                            and len(ctmpseq) >= min_length:
+                        tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
+                                           id=ctmpid)
+                        combos.append(tmprec)
         if combos:
             # Sort combos by how close they
             # are in length to the input sequence block

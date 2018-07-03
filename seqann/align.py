@@ -90,7 +90,6 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
         for aln in aligns:
             align.append(str(aln.seq))
 
-        #print("RAN ",randid)
         # Delete files
         cleanup(randid)
     else:
@@ -219,6 +218,8 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
         features = {}
         full_annotation = {}
         features = feat_list[0]
+
+        # Need to sort
         for feat in features:
             if feat in missing:
                 f = features[feat]
@@ -229,10 +230,8 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                     l1 = len(seqrec.seq)
                     newseq = re.sub(r'-', '', str(seqrec.seq))
                     seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
-                    #if feat == "five_prime_UTR":
-                    #tmdiff = l1 - len(newseq)
-                    #diff += tmdiff
-                    #print("align diff", feat, str(diff), str(len(seq.seq)), str(len(newseq)), str(len(seqrec.seq)))
+                    tmdiff = l1 - len(newseq)
+                    diff += tmdiff
 
                 if seqrec.seq:
                     if feat == "five_prime_UTR":
@@ -241,7 +240,6 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                         sp = f.location.start + start - diff
 
                     ep = f.location.end + start - diff
-
 
                     featn = SeqFeature(FeatureLocation(ExactPosition(sp),
                                                        ExactPosition(ep),
