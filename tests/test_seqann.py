@@ -75,10 +75,10 @@ biosqlport = 3307
 if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
-# import logging
-# logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-#                     datefmt='%m/%d/%Y %I:%M:%S %p',
-#                     level=logging.INFO)
+import logging
+logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.INFO)
 
 verbose = False
 if os.getenv("VERBOSE"):
@@ -779,7 +779,7 @@ class TestBioSeqAnn(unittest.TestCase):
 
         seqann = BioSeqAnn(server=server,
                            verbose=False,
-                           verbosity=verbosity)
+                           verbosity=0)
         refdata = ReferenceData()
 
         # removed 'HLA-DRB1*04:04:01' because it's
@@ -788,19 +788,20 @@ class TestBioSeqAnn(unittest.TestCase):
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
                      'HLA-DQA1*04:01:01:01',
-                     'HLA-B*51:42', 'HLA-C*03:04:05']
+                     'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04']
+
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
 
+            #print(seqname)
             seqrec = refdata.hlaref[seqname]
             locus = seqrec.description.split("*")[0]
             ann1 = seqann.annotate(seqrec, locus=locus)
             ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
             self.assertTrue(ann1.exact)
             self.assertEqual(len(ann2.annotation), len(ann1.annotation))
-            self.assertEqual(ann1.gfe, ann2.gfe)
-
+        
             self.assertGreater(len(ann2.structure), 1)
             for feat in ann2.structure:
                 self.assertIsInstance(feat, Feature)
@@ -811,18 +812,20 @@ class TestBioSeqAnn(unittest.TestCase):
                 seq2 = str(ann2.annotation[f].seq)
                 self.assertEqual(seq1, seq2)
 
+            self.assertEqual(ann1.gfe, ann2.gfe)
+
         server.close()
         pass
 
     def test_020_skip(self):
-        seqann = BioSeqAnn(verbose=True,
-                           verbosity=2)
+        seqann = BioSeqAnn(verbose=False,
+                           verbosity=0)
         refdata = ReferenceData()
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02',
                      'HLA-DQA1*04:01:01:01',
-                     'HLA-B*51:42', 'HLA-C*03:04:05']
+                     'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04']
 
         for seqname in refdata.hlaref:
             if seqname not in test_list:

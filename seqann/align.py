@@ -232,7 +232,7 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                     #if feat == "five_prime_UTR":
                     #tmdiff = l1 - len(newseq)
                     #diff += tmdiff
-                    # print("align diff", feat, str(diff), str(len(seq.seq)), str(len(newseq)), str(len(seqrec.seq)))
+                    #print("align diff", feat, str(diff), str(len(seq.seq)), str(len(newseq)), str(len(seqrec.seq)))
 
                 if seqrec.seq:
                     if feat == "five_prime_UTR":
@@ -242,9 +242,7 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
 
                     ep = f.location.end + start - diff
 
-                    # if feat == "exon_1":
-                    #     ep -= 1
-                    #     sp += 1
+
                     featn = SeqFeature(FeatureLocation(ExactPosition(sp),
                                                        ExactPosition(ep),
                                                        strand=1), type=f.type)
@@ -252,9 +250,9 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
 
-                    # print(feat,str(start),str(featn.location.start),str(featn.location.end))
-                    # print(feat,str(start),str(f.location.start),str(f.location.end))
-                    # print(feat,str(seqrec.seq))
+                    #print(feat,str(start),str(featn.location.start),str(featn.location.end))
+                    #print(feat,str(start),str(f.location.start),str(f.location.end))
+                    #print(feat,str(seqrec.seq))
                 #     for i in range(featn.location.start, featn.location.end):
                 #         if i in coordinates:
                 #             del coordinates[i]
