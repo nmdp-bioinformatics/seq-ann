@@ -50,6 +50,7 @@ from seqann.util import checkseq
 from seqann.util import isexon
 from seqann.util import isfive
 from seqann.util import isutr
+from seqann.util import is_classII
 from seqann.gfe import GFE
 
 from itertools import repeat
@@ -63,6 +64,8 @@ def getblocks(coords):
     block = []
     blocks = []
     sorted_i = sorted(coords.keys())
+    if len(sorted_i) == 1:
+        return [sorted_i]
     for i in range(0, len(sorted_i)-1):
         j = i+1
         if i == 0:
@@ -628,6 +631,9 @@ class BioSeqAnn(Model):
                                 # min and max lengths expected
                                 max_length = length + (lengthsd*3) + ins
                                 min_length = length - (lengthsd*3) - dels
+
+                                if f == "exon_8" and not is_classII(f):
+                                    max_length = 10
 
                                 if exon_only:
                                     f_order = self.refdata.structures[locus][f]
