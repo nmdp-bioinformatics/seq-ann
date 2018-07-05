@@ -74,45 +74,51 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
     seqs.append(sequence)
 
     align = []
-    if len(sequence) > 7000:
-        if verbose:
-            logger.info("Sequence too large to use pipe")
-        randid = randomid()
-        input_fasta = str(randid) + ".fasta"
-        output_clu = str(randid) + ".clu"
-        SeqIO.write(seqs, input_fasta, "fasta")
-        clustalomega_cline = ClustalOmegaCommandline(infile=input_fasta,
-                                                     outfile=output_clu,
-                                                     outfmt='clu', wrap=20000,
-                                                     verbose=True, auto=True)
-        stdout, stderr = clustalomega_cline()
-        aligns = AlignIO.read(output_clu, "clustal")
-        for aln in aligns:
-            align.append(str(aln.seq))
+    #if len(sequence) > 7000:
+    if verbose:
+        logger.info("Sequence too large to use pipe")
+    randid = randomid()
+    input_fasta = str(randid) + ".fasta"
+    output_clu = str(randid) + ".clu"
+    SeqIO.write(seqs, input_fasta, "fasta")
+    clustalomega_cline = ClustalOmegaCommandline(infile=input_fasta,
+                                                 outfile=output_clu,
+                                                 outfmt='clu', wrap=20000,
+                                                 verbose=True, auto=True)
+    stdout, stderr = clustalomega_cline()
+    aligns = AlignIO.read(output_clu, "clustal")
+    for aln in aligns:
+        align.append(str(aln.seq))
 
-        # Delete files
-        cleanup(randid)
-    else:
-        indata = flatten([[">" + str(s.id), str(s.seq)]
-                          for s in seqs])
-        child = Popen(['clustalo',
-                       '--outfmt', 'clu',
-                       '--wrap=50000',
-                       '--auto', '-i', '-'],
-                      stdout=PIPE,
-                      stderr=STDOUT,
-                      stdin=PIPE)
+    #five_prime_UTR|exon_1|intron_1|exon_2|intron_2|exon_3_V3
+    #x = found_seqs.id
+    #y = "|".join(["|".join(x.split("|")[0:len(x.split("|"))-1]),"_".join(x.split("|")[len(x.split("|"))-1].split("_")[0:2])])
+    #if y != "five_prime_UTR|exon_1|intron_1|exon_2|intron_2|exon_3":
+    # Delete files
+    cleanup(randid)
+    #else:
+    #    print("KEEPING ALIGNMENT")
+    # else:
+    #     indata = flatten([[">" + str(s.id), str(s.seq)]
+    #                       for s in seqs])
+    #     child = Popen(['clustalo',
+    #                    '--outfmt', 'clu',
+    #                    '--wrap=50000',
+    #                    '--auto', '-i', '-'],
+    #                   stdout=PIPE,
+    #                   stderr=STDOUT,
+    #                   stdin=PIPE)
 
-        stdout = child.communicate(input=str.encode("\n".join(indata)))
-        child.wait()
+    #     stdout = child.communicate(input=str.encode("\n".join(indata)))
+    #     child.wait()
 
-        lines = bytes.decode(stdout[0]).split("\n")
-        for line in lines:
-            if re.search("\w", line) and not re.search("CLUSTAL", line):
-                alignment = re.findall(r"[\S']+", line)
-                if len(alignment) == 2:
-                    align.append(list(alignment[1]))
-        child.terminate()
+    #     lines = bytes.decode(stdout[0]).split("\n")
+    #     for line in lines:
+    #         if re.search("\w", line) and not re.search("CLUSTAL", line):
+    #             alignment = re.findall(r"[\S']+", line)
+    #             if len(alignment) == 2:
+    #                 align.append(list(alignment[1]))
+    #     child.terminate()
 
     # Print out what blocks haven't been annotated
     if verbose and len(align) > 0:
@@ -220,12 +226,16 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
         features = feat_list[0]
 
         # Need to sort
-        for feat in features:
+        feature_list = sorted(features.keys(),
+                              key=lambda f: refdata.structures[locus][f])
+        
+        diff_f = True
+        for feat in feature_list:
             if feat in missing:
+
                 f = features[feat]
                 seqrec = f.extract(seq)
                 seq_covered -= len(seqrec.seq)
-                #print("--")
                 if re.search("-", str(seqrec.seq)):
                     l1 = len(seqrec.seq)
                     newseq = re.sub(r'-', '', str(seqrec.seq))
@@ -234,23 +244,32 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                     diff += tmdiff
 
                 if seqrec.seq:
-                    if feat == "five_prime_UTR":
+                    if diff_f and diff > 0:
                         sp = f.location.start + start
+                        diff_f = False
                     else:
                         sp = f.location.start + start - diff
 
                     ep = f.location.end + start - diff
-
                     featn = SeqFeature(FeatureLocation(ExactPosition(sp),
                                                        ExactPosition(ep),
                                                        strand=1), type=f.type)
-
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
+            else:
 
-                    #print(feat,str(start),str(featn.location.start),str(featn.location.end))
-                    #print(feat,str(start),str(f.location.start),str(f.location.end))
-                    #print(feat,str(seqrec.seq))
+                f = features[feat]
+                seqrec = f.extract(seq)
+                seq_covered -= len(seqrec.seq)
+                if re.search("-", str(seqrec.seq)):
+                    print("DIFF21", str(diff), feat)
+                    l1 = len(seqrec.seq)
+                    newseq = re.sub(r'-', '', str(seqrec.seq))
+                    seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
+                    tmdiff = l1 - len(newseq)
+                    diff += tmdiff
+                    print("DIFF22", str(diff), feat)
+
                 #     for i in range(featn.location.start, featn.location.end):
                 #         if i in coordinates:
                 #             del coordinates[i]
