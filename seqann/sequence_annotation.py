@@ -1197,14 +1197,55 @@ class BioSeqAnn(Model):
 
                 max_length = length + lengthsd
                 min_length = length - lengthsd
-                if len(rec.seq) <= max_length \
-                       and len(rec.seq) >= min_length:
-                    recf, x = self._make_seqfeat(0, rec.seq, nfeat)
-                    ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
-                    tmprec1 = SeqRecord(seq=rec.seq, features=[recf],
-                                        id=ctmpid1)
-                    combos.append(tmprec1)
+                #if len(rec.seq) <= max_length \
+                #       and len(rec.seq) >= min_length:
+                recf, x = self._make_seqfeat(0, rec.seq, nfeat)
+                ctmpid1 = "Ref1_" + str(nfeat) + "_" + str(randomid(N=2))
+                tmprec1 = SeqRecord(seq=rec.seq, features=[recf],
+                                    id=ctmpid1)
+                combos.append(tmprec1)
             else:
+                if isexon(f):
+
+                    cstart = 0
+                    ref_feats = []
+                    combo_seq = []
+                    feat_names = []
+                    combo_feats = []
+                    for i in range(start_ord, nxt_order):
+                        nfeat = self.refdata.struct_order[locus][i]
+                        if nfeat not in all_seqrecs or not isexon(nfeat):
+                            continue
+
+                        ref_feats.append(nfeat)
+                        length, lengthsd = 0, 0
+
+                        for fr in ref_feats:
+                            length += float(self.refdata.feature_lengths[locus][fr][0])
+                            lengthsd += float(self.refdata.feature_lengths[locus][fr][1])
+
+                        # min and max lengths expected
+                        max_length = length + lengthsd
+                        min_length = length - lengthsd
+
+                        rec = all_seqrecs[nfeat]
+                        feat_names.append(nfeat)
+
+                        cfeat, cstart = self._make_seqfeat(cstart, rec.seq, nfeat)
+                        combo_feats.append(cfeat)
+                        combo_seq.append(rec.seq)
+
+                        seqtmp = "".join([str(ft) for ft in combo_seq])
+                        ctmpseq = Seq(seqtmp, IUPAC.unambiguous_dna)
+                        ctmpid = "|".join([str(ft) for ft in feat_names]) \
+                                 + "_" + str(randomid(N=2))
+
+                        #if len(ctmpseq) <= max_length \
+                        #       and len(ctmpseq) >= min_length:
+                        tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
+                                           id=ctmpid)
+                        combos.append(tmprec)
+
                 cstart = 0
                 ref_feats = []
                 combo_seq = []
@@ -1239,11 +1280,11 @@ class BioSeqAnn(Model):
                     ctmpid = "|".join([str(ft) for ft in feat_names]) \
                              + "_" + str(randomid(N=2))
 
-                    if len(ctmpseq) <= max_length \
-                           and len(ctmpseq) >= min_length:
-                        tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
-                                           id=ctmpid)
-                        combos.append(tmprec)
+                    #if len(ctmpseq) <= max_length \
+                    #       and len(ctmpseq) >= min_length:
+                    tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
+                                       id=ctmpid)
+                    combos.append(tmprec)
         if combos:
             # Sort combos by how close they
             # are in length to the input sequence block
