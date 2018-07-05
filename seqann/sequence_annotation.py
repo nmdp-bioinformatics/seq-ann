@@ -963,7 +963,7 @@ class BioSeqAnn(Model):
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
 
-                    if hasattr(fullref,features):
+                    if hasattr(fullref, 'features') and fullref.features:
                         mapped_full = list(fullref.annotation.keys())
                         if len(mapped_full) >= 1:
 
