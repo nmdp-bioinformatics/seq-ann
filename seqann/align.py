@@ -125,8 +125,9 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
         infeats = get_seqfeat(seqs[0])
         diffs = count_diffs(align, infeats, sequence, verbose, verbosity)
         if isinstance(diffs, Annotation):
-            logger.info("Run alignment with " + found_seqs.id)
-            logger.info("***********************")
+            if verbose:
+                logger.info("Run alignment with " + found_seqs.id)
+                logger.info("***********************")
             return diffs, 0, 0
         else:
             insers, dels = diffs[0], diffs[1]
@@ -158,7 +159,8 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
 
         return annotation, insers, dels
     else:
-        logger.info("***********************")
+        if verbose:
+            logger.info("***********************")
         return Annotation(complete_annotation=False), 0, 0
 
 

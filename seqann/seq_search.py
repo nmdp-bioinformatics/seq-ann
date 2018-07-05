@@ -280,9 +280,17 @@ class SeqSearch(Model):
                 if self.verbose and self.verbosity > 1:
                     self.logger.info("Found " + str(len(seq_search))
                                      + " matches for " + feat_name)
-                if partial_ann and feat_name == "exon_8":
+
+                new_seq = [seq_search[0]]
+                for i in range(1,len(seq_search)):
+                    tnp = seq_search[i]+1
+                    if seq_search[i] in coordinates or tnp in coordinates:
+                        new_seq.append(seq_search[i])
+
+                seq_search = new_seq
+                if partial_ann and feat_name == "exon_8" and len(seq_search) == 2:
                     missing_feats = sorted(list(partial_ann.missing.keys()))
-                    if missing_feats == ['exon_8','three_prime_UTR']:
+                    if missing_feats == ['exon_8', 'three_prime_UTR']:
                         if self.verbose and self.verbosity > 0:
                             self.logger.info("Resolving exon_8")
 
@@ -292,60 +300,39 @@ class SeqSearch(Model):
                         # If the feature is found and it's a five_prime_UTR then
                         # the start should always be 0, so insertions at the
                         # beinging of the sequence will be found.
-                        start = seq_search[len(seq_search)-1] if feat_name != 'five_prime_UTR' else 0
-                        si = seq_search[len(seq_search)-1]+1 if seq_search[len(seq_search)-1] != 0 and \
-                            feat_name != 'five_prime_UTR' else 0
+                        start = seq_search[len(seq_search)-1]
+                        si = seq_search[len(seq_search)-1]+1 if seq_search[len(seq_search)-1] != 0 else 0
 
                         # check if this features has already been mapped
                         mapcheck = set([0 if i in coordinates else 1
                                         for i in range(si, end+1)])
 
-                        # Dont map features if they are out of order
-                        skip = False
-                        if found_feats and len(found_feats) > 0:
-                            for f in found_feats:
-                                o1 = self.refdata.structures[locus][feat_name]
-                                o2 = self.refdata.structures[locus][f]
-                                loctyp = loctype(found_feats[f].location.start,
-                                                 found_feats[f].location.end,
-                                                 start, end)
+                        for i in range(si, end+1):
+                            if i in coordinates:
+                                del coordinates[i]
+                            else:
+                                if self.verbose:
+                                    self.logger.error("seqsearch - should't be here "
+                                                      + locus + " - "
+                                                      + self.refdata.dbversion
+                                                      + " - " + feat_name)
+                            mapping[i] = feat_name
 
-                                if o1 < o2 and loctyp:
-                                    skip = True
-                                    if self.verbose:
-                                        self.logger.info("Skipping map for "
-                                                         + feat_name)
-                                elif o2 < o1 and not loctyp:
-                                    skip = True
-                                    if self.verbose:
-                                        self.logger.info("Skipping map for "
-                                                         + feat_name)
+                        found_feats.update({feat_name:
+                                            SeqFeature(
+                                                FeatureLocation(
+                                                    ExactPosition(start),
+                                                    ExactPosition(end), strand=1),
+                                                type=feat_name)})
 
-                        if 1 not in mapcheck and not skip:
-                            for i in range(si, end+1):
-                                if i in coordinates:
-                                    # if feat_name == "exon_8" or feat_name == 'three_prime_UTR':
-                                    #     deleted_coords.update({i: coordinates[i]})
-                                    del coordinates[i]
-                                else:
-                                    if self.verbose:
-                                        self.logger.error("seqsearch - should't be here "
-                                                          + locus + " - "
-                                                          + self.refdata.dbversion
-                                                          + " - " + feat_name)
-                                mapping[i] = feat_name
-
-                            found_feats.update({feat_name:
-                                                SeqFeature(
-                                                    FeatureLocation(
-                                                        ExactPosition(start),
-                                                        ExactPosition(end), strand=1),
-                                                    type=feat_name)})
-
+                        if self.verbose and self.verbosity > 3:
                             self.logger.info("Coordinates | Start = " + str(start) + " - End = " + str(end))
-
-                feat_missing.update({feat_name: feats[feat_name]})
-                ambig_map.update({feat_name: seq_search[1:len(seq_search)]})
+                    else:
+                        feat_missing.update({feat_name: feats[feat_name]})
+                        ambig_map.update({feat_name: seq_search[1:len(seq_search)]})                        
+                else:
+                    feat_missing.update({feat_name: feats[feat_name]})
+                    ambig_map.update({feat_name: seq_search[1:len(seq_search)]})
             else:
                 if self.verbose and self.verbosity > 1:
                     self.logger.info("No match for " + feat_name)
@@ -444,6 +431,8 @@ class SeqSearch(Model):
             if self.verbose and self.verbosity > 1:
                 self.logger.info("* Annotation not complete *")
 
+            #print(coordinates)
+            #print(mapping)
             # Print out what blocks haven't been annotated
             if self.verbose and self.verbosity > 3:
                 self.logger.info("Number of blocks not annotated = " + str(len(mb)))
