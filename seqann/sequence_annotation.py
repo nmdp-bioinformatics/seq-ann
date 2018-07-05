@@ -340,8 +340,11 @@ class BioSeqAnn(Model):
         partial_ann = None
         leastmissing_feat = None
         found = blast.match_seqs
-        for i in range(0, len(found)-1):
+        for i in range(0, len(found)):
 
+            run = 0
+            if i == len(found)-1:
+                run = 1
             # Skip a reference
             # * For validation *
             if found[i].name in skip:
@@ -357,7 +360,8 @@ class BioSeqAnn(Model):
             # reference features within the provided sequence
             ann = self.seqsearch.search_seqs(found[i],
                                              sequence, locus,
-                                             partial_ann=partial_ann)
+                                             partial_ann=partial_ann,
+                                             run=run)
 
             if ann.complete_annotation:
                 if self.verbose:
@@ -441,7 +445,8 @@ class BioSeqAnn(Model):
                                  + found[i].name)
 
             aligned_ann = self.ref_align(found[i], sequence, locus,
-                                         annotation=partial_ann)
+                                         annotation=partial_ann,
+                                         run=i)
 
             #if i > 1:
             #    aligned_ann.blocks = []
@@ -543,7 +548,8 @@ class BioSeqAnn(Model):
 
     def ref_align(self, found_seqs, sequence: Seq=None,
                   locus: str=None, annotation: Annotation=None,
-                  partial_ann: Annotation=None) -> Annotation:
+                  partial_ann: Annotation=None,
+                  run: int=0) -> Annotation:
         """
         ref_align - Method for doing targeted alignments on partial annotations
 
@@ -864,7 +870,8 @@ class BioSeqAnn(Model):
                             tmpann = self.seqsearch.search_seqs(found_seqs,
                                                                 sequence,
                                                                 locus,
-                                                                partial_ann=annotation)
+                                                                partial_ann=annotation,
+                                                                run=run)
 
                             if tmpann.complete_annotation:
                                 for f in tmpann.annotation:
@@ -1141,10 +1148,6 @@ class BioSeqAnn(Model):
                 nxt_order = prv_order + 2
             else:
                 nxt_order = self.refdata.structures[locus][next_feat]
-
-        # #print("CREATE",str(nxt_order))
-        # print("missing_feats")
-        # print(missing_feats.keys())
 
         start = 0
         exstart = 0

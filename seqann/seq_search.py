@@ -117,7 +117,7 @@ class SeqSearch(Model):
         """
         return deserialize_model(dikt, cls)
 
-    def search_seqs(self, seqrec, in_seq, locus, partial_ann=None):
+    def search_seqs(self, seqrec, in_seq, locus, run=0, partial_ann=None):
 
         # Extract out the sequences and feature names
         # from the reference sequences
@@ -173,10 +173,6 @@ class SeqSearch(Model):
                                     for item in sublist]))
             seq_covered = partial_ann.covered
             mapping = partial_ann.mapping
-
-            # if partial_ann and 'three_prime_UTR' in partial_ann.features:
-            #     print("MAPPING!")
-            #     print(mapping)
 
             if self.verbose and self.verbosity > 2:
                 self.logger.info("Partial sequence coverage = "
@@ -282,13 +278,14 @@ class SeqSearch(Model):
                                      + " matches for " + feat_name)
 
                 new_seq = [seq_search[0]]
-                for i in range(1,len(seq_search)):
+                for i in range(1, len(seq_search)):
                     tnp = seq_search[i]+1
                     if seq_search[i] in coordinates or tnp in coordinates:
                         new_seq.append(seq_search[i])
 
                 seq_search = new_seq
-                if partial_ann and feat_name == "exon_8" and len(seq_search) == 2:
+                if(partial_ann and feat_name == "exon_8"
+                   and len(seq_search) == 2 and run > 0):
                     missing_feats = sorted(list(partial_ann.missing.keys()))
                     if missing_feats == ['exon_8', 'three_prime_UTR']:
                         if self.verbose and self.verbosity > 0:
@@ -325,7 +322,7 @@ class SeqSearch(Model):
                                                     ExactPosition(end), strand=1),
                                                 type=feat_name)})
 
-                        if self.verbose and self.verbosity > 3:
+                        if self.verbose and self.verbosity > 0:
                             self.logger.info("Coordinates | Start = " + str(start) + " - End = " + str(end))
                     else:
                         feat_missing.update({feat_name: feats[feat_name]})
@@ -394,6 +391,11 @@ class SeqSearch(Model):
                                   mapping=mapping,
                                   exact_match=exact_matches)
 
+        #print("BLOCKS")
+        #print(blocks)
+        ##print("FOUND FEATS")
+        #print(list(found_feats.keys()))
+        #tmp1 = set(list(found_feats.keys()))
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
         annotated_feats, mb, mapping = self._resolve_unmapped(blocks,
@@ -402,6 +404,13 @@ class SeqSearch(Model):
                                                               mapping,
                                                               found_feats,
                                                               locus)
+        # tmp2 = set(list(annotated_feats.keys()))
+        # diff_a = tmp2.difference(tmp1)
+        # print("FOUND FEATS AFTER")
+        # print(tmp2)
+
+        # print("DIFF")
+        # print(",".join(list(diff_a)))
 
         if mb:
 

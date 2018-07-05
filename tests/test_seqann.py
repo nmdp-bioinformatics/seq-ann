@@ -778,9 +778,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
 
-        seqann = BioSeqAnn(server=server,
-                          verbose=False,
-                          verbosity=0)
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0)
         #seqann = BioSeqAnn(server=server,debug={"seqann":4})
         refdata = ReferenceData()
 
@@ -792,12 +790,14 @@ class TestBioSeqAnn(unittest.TestCase):
                      'HLA-DQA1*04:01:01:01', 'HLA-A*01:217', 'HLA-A*01:22N',
                      'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
                      'HLA-A*01:09:01:01', 'HLA-B*82:01', 'HLA-A*03:04:01',
-                     'HLA-C*07:06:01:01','HLA-A*03:51','HLA-A*29:109']
+                     'HLA-C*07:06:01:01', 'HLA-A*03:51', 'HLA-A*29:109',
+                     'HLA-A*02:01:130']
 
-        #test_list = ['HLA-A*01:22N']
+        #test_list = ['HLA-A*03:51','HLA-A*02:01:130']
+
         #test_list = ['HLA-A*01:22N', 'HLA-A*02:01:11']
         #test_list = ['HLA-A*01:09:01:01']
-        #test_list = ['HLA-A*02:544']
+        #test_list = ['HLA-A*02:01:130']
         #test_list = ["HLA-A*03:04:01","HLA-B*82:01","HLA-B*40:66","HLA-B*27:05:10","HLA-DQA1*05:01:02"]
         # HLA-B*40:66
         #test_list = ['HLA-A*01:01:01:04']
@@ -809,7 +809,6 @@ class TestBioSeqAnn(unittest.TestCase):
 
             seqrec = refdata.hlaref[seqname]
             if len(seqrec.seq) > 5:
-                #print(seqname)
                 locus = seqrec.description.split("*")[0]
                 ann1 = seqann.annotate(seqrec, locus=locus)
                 ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
