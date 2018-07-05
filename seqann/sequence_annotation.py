@@ -632,6 +632,14 @@ class BioSeqAnn(Model):
                                 if exon_only:
                                     f_order = self.refdata.structures[locus][f]
                                     endp = an.features[f].location.end + 1
+
+                                    #Make sure order of alignment make sense
+                                    if an.features[f].location.start == 0 \
+                                            and f != "five_prime_UTR" \
+                                            and not isexon(f):
+                                        del an.features[f]
+                                        continue
+
                                     if endp in annotation.mapping and not isinstance(annotation.mapping[endp], int):
                                         mf = annotation.mapping[endp]
                                         expected_order = f_order + 1
@@ -955,57 +963,58 @@ class BioSeqAnn(Model):
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
 
-                    mapped_full = list(fullref.annotation.keys())
-                    if len(mapped_full) >= 1:
+                    if hasattr(fullref,features):
+                        mapped_full = list(fullref.annotation.keys())
+                        if len(mapped_full) >= 1:
 
-                        if self.verbose:
-                            self.logger.info(self.logname
-                                             + " Annotated fullrec"
-                                             + " with clustalo")
+                            if self.verbose:
+                                self.logger.info(self.logname
+                                                 + " Annotated fullrec"
+                                                 + " with clustalo")
 
-                        # If it wasn't found
-                        del missing_blocks[missing_blocks.index(b)]
+                            # If it wasn't found
+                            del missing_blocks[missing_blocks.index(b)]
 
-                        for f in fullref.annotation:
-                            if self.verbose and self.verbosity > 0:
-                                self.logger.info(self.logname + " Annotated " + f + " len = " + str(len(fullref.annotation[f])))
-                            partial_ann.annotation.update({f: fullref.annotation[f]})
+                            for f in fullref.annotation:
+                                if self.verbose and self.verbosity > 0:
+                                    self.logger.info(self.logname + " Annotated " + f + " len = " + str(len(fullref.annotation[f])))
+                                partial_ann.annotation.update({f: fullref.annotation[f]})
 
-                    if b in missing_blocks:
-                        del missing_blocks[missing_blocks.index(b)]
-                    else:
-                        for bm in tmp_missing:
-                            if bm in missing_blocks:
-                                del missing_blocks[missing_blocks.index(bm)]
-
-                    for f in fullref.features:
-                        f_order = self.refdata.structures[locus][f]
-                        # Only add features if they are after the
-                        # first feature mapped
-                        if f_order >= start_order and f not in partial_ann.features \
-                                and f in partial_ann.annotation:
-                            partial_ann.features[f] = fullref.features[f]
-
-                    coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
-                    for f in partial_ann.features:
-                        s = partial_ann.features[f].location.start
-                        e = partial_ann.features[f].location.end
-                        if s != 0:
-                            s += 1
-                            e += 1
+                        if b in missing_blocks:
+                            del missing_blocks[missing_blocks.index(b)]
                         else:
-                            e += 1
-                        for i in range(s, e):
-                            partial_ann.mapping[i] = f
-                            if i in coordinates:
-                                del coordinates[i]
+                            for bm in tmp_missing:
+                                if bm in missing_blocks:
+                                    del missing_blocks[missing_blocks.index(bm)]
 
-                    blocks = getblocks(coordinates)
-                    partial_ann.check_annotation()
-                    if partial_ann.complete_annotation:
-                        if self.verbose:
-                            self.logger.info(self.logname + " Annotated all features with clustalo")
-                    
+                        for f in fullref.features:
+                            f_order = self.refdata.structures[locus][f]
+                            # Only add features if they are after the
+                            # first feature mapped
+                            if f_order >= start_order and f not in partial_ann.features \
+                                    and f in partial_ann.annotation:
+                                partial_ann.features[f] = fullref.features[f]
+
+                        coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
+                        for f in partial_ann.features:
+                            s = partial_ann.features[f].location.start
+                            e = partial_ann.features[f].location.end
+                            if s != 0:
+                                s += 1
+                                e += 1
+                            else:
+                                e += 1
+                            for i in range(s, e):
+                                partial_ann.mapping[i] = f
+                                if i in coordinates:
+                                    del coordinates[i]
+
+                        blocks = getblocks(coordinates)
+                        partial_ann.check_annotation()
+                        if partial_ann.complete_annotation:
+                            if self.verbose:
+                                self.logger.info(self.logname + " Annotated all features with clustalo")
+                        
                     return partial_ann
 
             if self.verbose:

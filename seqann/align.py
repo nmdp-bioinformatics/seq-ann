@@ -89,7 +89,8 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
         aligns = AlignIO.read(output_clu, "clustal")
         for aln in aligns:
             align.append(str(aln.seq))
-
+        if found_seqs.id.split("|")[0] != "intron_1":
+            cleanup(randid)
         # Delete files
         cleanup(randid)
     else:
@@ -135,9 +136,6 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
             f = find_features(infeats, align[i])
             all_features.append(f)
 
-    if verbose:
-        logger.info("Number of features found = " + str(len(all_features)))
-
     if len(all_features) > 0:
         annotation = resolve_feats(all_features,
                                    align[len(align)-1],
@@ -148,8 +146,17 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
                                    missing,
                                    verbose,
                                    verbosity)
+        if verbose:
+            logger.info("Run alignment with " + found_seqs.id)
+            logger.info("Missing features = " + ",".join(list(missing.keys())))
+            logger.info("Number of features found = " + str(len(all_features)))
+            logger.info("Features found = " + ",".join(list(all_features[0].keys())))
+            logger.info("Features annotated = " + ",".join(list(annotation.annotation.keys())))
+            logger.info("***********************")
+
         return annotation, insers, dels
     else:
+        logger.info("***********************")
         return Annotation(complete_annotation=False), 0, 0
 
 
@@ -376,6 +383,7 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .9:
             if verbose:
                 logger.info("Alignment coverage NOT high enough to return annotation")
+                logger.info("***********************")
             return Annotation(complete_annotation=False)
         else:
             if verbose:
