@@ -698,6 +698,8 @@ class ReferenceData(Model):
 
         #seqrecord = self.seqrecord(allele, loc)
         complete_annotation = get_features(seqrecord)
+        #for f in seqrecord.features:
+        #    print(f)
         annotation = Annotation(annotation=complete_annotation,
                                 method='match',
                                 complete_annotation=True)

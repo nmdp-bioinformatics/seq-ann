@@ -73,6 +73,10 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
     seqs.append(found_seqs)
     seqs.append(sequence)
 
+    # print(found_seqs.id)
+    # for f in found_seqs.features:
+    #     print(f)
+    # print("--**--")
     align = []
     if len(sequence) > 7000:
         if verbose:
@@ -89,9 +93,10 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
         aligns = AlignIO.read(output_clu, "clustal")
         for aln in aligns:
             align.append(str(aln.seq))
-        if found_seqs.id.split("|")[0] != "intron_1":
-            cleanup(randid)
+
         # Delete files
+        # if not "_".join(found_seqs.id.split("_")[0:2]) == "exon_2":
+        #     cleanup(randid)
         cleanup(randid)
     else:
         indata = flatten([[">" + str(s.id), str(s.seq)]
@@ -167,6 +172,13 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
 def find_features(feats, sequ):
     feats_a = list(feats.keys())
 
+    # #print(found_seqs.id)
+    # print("## Before ##")
+    # for f in feats:
+    #     print(f)
+    #     print(feats[f])
+    # print("##")
+
     j = 0
     s = 0
     en = 0
@@ -184,21 +196,41 @@ def find_features(feats, sequ):
                     start += 1
                     en += 1
                     if s == 0:
-                        feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[j]].location.start), ExactPosition(int(feats[feats_a[j]].location.end + 1)), strand=1), type=feats[feats_a[j]].type)
+                        start_val = feats[feats_a[j]].location.start
+                        if feats_a[j] == "five_prime_UTR":
+                            start_val = 0
+                        #print("Before 1-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
+                        feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(start_val), ExactPosition(int(feats[feats_a[j]].location.end + 1)), strand=1), type=feats[feats_a[j]].type)
+                        #print("After 1-1",feats_a[j],str(start_val),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                         if j != len(feats_a):
                             for l in range(j+1, len(feats_a)):
+                                #print("Before 1-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
                                 feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+1), ExactPosition(int(feats[feats_a[l]].location.end + 1)), strand=1), type=feats[feats_a[l]].type)
-                      
+                                #print("After 1-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
             else:
                 if s == 1:
                     st = feats[feats_a[j]].location.start + start
                     end = feats[feats_a[j]].location.end + en
-                    feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(st), ExactPosition(end), strand=1), type=feats[feats_a[j]].type)
+                    #print("ST",str(start),"EN",str(en))
+                    #print("START",str(st),"END",str(end))
+                    start_val = st
+                    if feats_a[j] == "five_prime_UTR":
+                        start_val = 0
+
+                    #print("Before 2-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
+                    feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(start_val), ExactPosition(end), strand=1), type=feats[feats_a[j]].type)
+                    #print("After 2-1",feats_a[j],str(start_val),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                     if j != len(feats_a):
                         for l in range(j+1, len(feats_a)):
-                            feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+st+1), ExactPosition(int(feats[feats_a[l]].location.end + end)), strand=1), type=feats[feats_a[l]].type)
-
+                            #print("Before 2-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
+                            feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+st), ExactPosition(int(feats[feats_a[l]].location.end + st)), strand=1), type=feats[feats_a[l]].type)
+                            #print("After 2-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
                     s = 0
+    # print("## After ##")
+    # for f in feats:
+    #     print(f)
+    #     print(feats[f])
+    # print("##")
     return feats
 
 
@@ -239,6 +271,8 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
             if feat in missing:
 
                 f = features[feat]
+                #print(feat)
+                #print(f)
                 seqrec = f.extract(seq)
                 seq_covered -= len(seqrec.seq)
                 if re.search("-", str(seqrec.seq)):
@@ -262,14 +296,19 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
 
                     # if feat == "exon_7":
                     # #if diff > 0:
-                    #     print(feat,str(diff),str(start),str(featn.location.start),str(featn.location.end))
-                    #     print(feat,str(diff),str(start),str(f.location.start),str(f.location.end))
-                    #     print(feat,str(seqrec.seq))
-                    #     print("***")
-                    #     print("")
+                    # print(feat, str(diff), str(start), str(featn.location.start),str(featn.location.end))
+                    # print(feat, str(diff), str(start), str(f.location.start),str(f.location.end))
+                    # print(feat,str(seqrec.seq))
+                    # print("***")
+                    # print("")
 
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
+
+                    for i in range(featn.location.start, featn.location.end):
+                        if i in coordinates:
+                            del coordinates[i]
+                        mapping[i] = feat
             else:
 
                 f = features[feat]
@@ -283,11 +322,6 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                     tmdiff = l1 - len(newseq)
                     diff += tmdiff
                     #print("DIFF22", str(diff), feat)
-
-                #     for i in range(featn.location.start, featn.location.end):
-                #         if i in coordinates:
-                #             del coordinates[i]
-                #         mapping[i] = feat
                 # print("--")
 
         blocks = getblocks(coordinates)

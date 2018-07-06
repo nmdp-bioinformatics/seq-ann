@@ -443,7 +443,7 @@ class SeqSearch(Model):
             #print(coordinates)
             #print(mapping)
             # Print out what blocks haven't been annotated
-            if self.verbose and self.verbosity > 3:
+            if self.verbose and self.verbosity > 2:
                 self.logger.info("Number of blocks not annotated = " + str(len(mb)))
                 self.logger.info("Blocks not annotated:")
                 for b in mb:

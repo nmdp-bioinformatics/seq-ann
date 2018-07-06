@@ -660,14 +660,6 @@ class BioSeqAnn(Model):
                                             self.logger.info(self.logname + " out of order1 -> " + mf + " " + f)                                        
                                             del an.features[f]
                                             continue
-                                        else:
-                                            g = 0
-                                            for k in range(an.features[f].location.end, max(annotation.mapping.keys())):
-                                                if g:
-                                                    continue
-                                                if not isinstance(annotation.mapping[k], int) and not g:
-                                                    g = 1
-                                                    continue
 
                                     startp = an.features[f].location.start - 1
                                     if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
@@ -696,14 +688,6 @@ class BioSeqAnn(Model):
                                             self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)                                        
                                             del an.features[f]
                                             continue
-                                        else:
-                                            g = 0
-                                            for k in range(an.features[f].location.end, max(annotation.mapping.keys())):
-                                                if g:
-                                                    continue
-                                                if not isinstance(annotation.mapping[k], int) and not g:
-                                                    g = 1
-                                                    continue
 
                                     startp = an.features[f].location.start - 1
                                     if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
@@ -836,10 +820,12 @@ class BioSeqAnn(Model):
 
                     # print("MAPPING")
                     # print(annotation.mapping)
-                    # print("annotations:")
-                    # print(",".join(annotation.annotation.keys()))
-                    # print("Features:")
-                    # print(print(",".join(annotation.features.keys())))
+                    print("annotations:")
+                    print(",".join(annotation.annotation.keys()))
+                    print("Features:")
+                    print(print(",".join(annotation.features.keys())))
+                    for fe in annotation.features:
+                        print(fe, str(annotation.features[fe].location.start), str(annotation.features[fe].location.end))
                     # print("BEFORE BLOCKS")
                     # print(annotation.blocks)
 
