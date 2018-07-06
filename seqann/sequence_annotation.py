@@ -583,6 +583,10 @@ class BioSeqAnn(Model):
             elif(len(sequence.seq) > 900):
                 exon_only = False
 
+            annoated = []
+            if hasattr(annotation, 'annotation') and annotation.annotation:
+                annoated = list(annotation.annotation.keys())
+
             # print("HERE HERE HERE")
             # Extract the missing blocks and
             # only align those blocks to the known
@@ -620,6 +624,7 @@ class BioSeqAnn(Model):
                                                start,
                                                self.refdata,
                                                annotation.missing,
+                                               annoated,
                                                verbose=self.align_verbose,
                                                verbosity=self.align_verbosity)
 
@@ -820,12 +825,12 @@ class BioSeqAnn(Model):
 
                     # print("MAPPING")
                     # print(annotation.mapping)
-                    print("annotations:")
-                    print(",".join(annotation.annotation.keys()))
-                    print("Features:")
-                    print(print(",".join(annotation.features.keys())))
-                    for fe in annotation.features:
-                        print(fe, str(annotation.features[fe].location.start), str(annotation.features[fe].location.end))
+                    #print("annotations:")
+                    #print(",".join(annotation.annotation.keys()))
+                    #print("Features:")
+                    #print(print(",".join(annotation.features.keys())))
+                    #for fe in annotation.features:
+                    #    print(fe, str(annotation.features[fe].location.start), str(annotation.features[fe].location.end))
                     # print("BEFORE BLOCKS")
                     # print(annotation.blocks)
 
@@ -877,6 +882,7 @@ class BioSeqAnn(Model):
                     exonan, ins, dels = align_seqs(exons, feat, locus, start,
                                                    self.refdata,
                                                    annotation.missing,
+                                                   annoated,
                                                    verbose=self.align_verbose,
                                                    verbosity=self.align_verbosity)
                     mapped_exons = list(exonan.annotation.keys())
@@ -916,6 +922,10 @@ class BioSeqAnn(Model):
                                 self.logger.info(self.logname + " Completed annotation with targeted exons ref_align")
                             return annotation
         elif partial_ann:
+
+            annoated = []
+            if hasattr(partial_ann, 'annotation') and partial_ann.annotation:
+                annoated = list(partial_ann.annotation.keys())
 
             # Do full sequence alignments
             # any only extract out the part
@@ -959,6 +969,7 @@ class BioSeqAnn(Model):
                                                     locus, start,
                                                     self.refdata,
                                                     partial_ann.missing,
+                                                    annoated,
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
 

@@ -53,7 +53,7 @@ import logging
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose=False, verbosity=0):
+def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotated, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -136,12 +136,12 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
             return diffs, 0, 0
         else:
             insers, dels = diffs[0], diffs[1]
-        f = find_features(infeats, align[0])
+        f = find_features(infeats, align[0], annotated)
         all_features.append(f)
     else:
         for i in range(0, len(align)-2):
             infeats = get_seqfeat(seqs[i])
-            f = find_features(infeats, align[i])
+            f = find_features(infeats, align[i], annotated)
             all_features.append(f)
 
     if len(all_features) > 0:
@@ -169,7 +169,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, verbose
         return Annotation(complete_annotation=False), 0, 0
 
 
-def find_features(feats, sequ):
+def find_features(feats, sequ, annotated):
     feats_a = list(feats.keys())
 
     # #print(found_seqs.id)
@@ -214,7 +214,7 @@ def find_features(feats, sequ):
                     #print("ST",str(start),"EN",str(en))
                     #print("START",str(st),"END",str(end))
                     start_val = st
-                    if feats_a[j] == "five_prime_UTR":
+                    if feats_a[j] == "five_prime_UTR" or (len(feats_a) == 1 and len(annotated) == 0):
                         start_val = 0
 
                     #print("Before 2-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
