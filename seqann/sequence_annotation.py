@@ -640,8 +640,10 @@ class BioSeqAnn(Model):
                                 lengthsd = float(self.refdata.feature_lengths[locus][f][1])
 
                                 # min and max lengths expected
-                                max_length = length + (lengthsd*3) + ins
-                                min_length = length - (lengthsd*3) - dels
+                                incr = 3 if not is_classII(locus) else 4
+                                #print(locus, length, lengthsd, incr, ins, dels)
+                                max_length = length + (lengthsd*incr) + ins
+                                min_length = length - (lengthsd*incr) - dels
 
                                 if f == "exon_8" and not is_classII(f):
                                     max_length = 10

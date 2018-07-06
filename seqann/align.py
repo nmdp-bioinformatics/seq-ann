@@ -48,6 +48,8 @@ from seqann.util import randomid
 from seqann.util import get_seqfeat
 from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
+from seqann.util import is_classII
+
 import logging
 
 flatten = lambda l: [item for sublist in l for item in sublist]
@@ -128,7 +130,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotat
     all_features = []
     if len(align)-2 == 0:
         infeats = get_seqfeat(seqs[0])
-        diffs = count_diffs(align, infeats, sequence, verbose, verbosity)
+        diffs = count_diffs(align, infeats, sequence, locus, annotated, verbose, verbosity)
         if isinstance(diffs, Annotation):
             if verbose:
                 logger.info("Run alignment with " + found_seqs.id)
@@ -136,12 +138,12 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotat
             return diffs, 0, 0
         else:
             insers, dels = diffs[0], diffs[1]
-        f = find_features(infeats, align[0], annotated)
+        f = find_features(infeats, align[0], annotated, start_pos)
         all_features.append(f)
     else:
         for i in range(0, len(align)-2):
             infeats = get_seqfeat(seqs[i])
-            f = find_features(infeats, align[i], annotated)
+            f = find_features(infeats, align[i], annotated, start_pos)
             all_features.append(f)
 
     if len(all_features) > 0:
@@ -169,10 +171,10 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotat
         return Annotation(complete_annotation=False), 0, 0
 
 
-def find_features(feats, sequ, annotated):
+def find_features(feats, sequ, annotated, start_pos):
     feats_a = list(feats.keys())
 
-    # #print(found_seqs.id)
+    #print(found_seqs.id)
     # print("## Before ##")
     # for f in feats:
     #     print(f)
@@ -211,10 +213,10 @@ def find_features(feats, sequ, annotated):
                 if s == 1:
                     st = feats[feats_a[j]].location.start + start
                     end = feats[feats_a[j]].location.end + en
-                    #print("ST",str(start),"EN",str(en))
-                    #print("START",str(st),"END",str(end))
+                    #print("ST", str(start), "EN", str(en), str(start_pos))
+                    #print("START", str(st), "END", str(end))
                     start_val = st
-                    if feats_a[j] == "five_prime_UTR" or (len(feats_a) == 1 and len(annotated) == 0):
+                    if feats_a[j] == "five_prime_UTR" or len(annotated) == 0:
                         start_val = 0
 
                     #print("Before 2-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
@@ -352,7 +354,7 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                               seq=seq)
 
 
-def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
+def count_diffs(align, feats, inseq, locus, annotated, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -408,8 +410,14 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
 
-    # if match == 455:
-    #     return Annotation(complete_annotation=False)
+    exon_only = True
+    for f in annotated:
+        if re.search("intron", f) or re.search("UTR", f):
+            exon_only = False
+
+    cutoff = .88
+    if is_classII(locus) and exon_only and len(annotated) > 0:
+        cutoff = .80
 
     if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
         if verbose:
@@ -418,7 +426,7 @@ def count_diffs(align, feats, inseq, verbose=False, verbosity=0):
     else:
         # TODO:
         # These numbers need to be fine t
-        if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < .88:
+        if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < cutoff:
             if verbose:
                 logger.info("Alignment coverage NOT high enough to return annotation")
             return Annotation(complete_annotation=False)

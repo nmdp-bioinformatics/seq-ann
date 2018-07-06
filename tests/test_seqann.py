@@ -791,13 +791,15 @@ class TestBioSeqAnn(unittest.TestCase):
                      'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
                      'HLA-A*01:09:01:01', 'HLA-B*82:01', 'HLA-A*03:04:01',
                      'HLA-C*07:06:01:01', 'HLA-A*03:51', 'HLA-A*29:109',
-                     'HLA-A*02:01:130', 'HLA-B*07:271',"HLA-DRB1*13:247"]
+                     'HLA-A*02:01:130', 'HLA-B*07:271', "HLA-DRB1*13:247"]
 
         # HLA-B*07:271 <- insertion at beginning of 5'UTR
         #test_list = ['HLA-A*03:51','HLA-A*02:01:130']
+
         #test_list = ["HLA-B*07:271","HLA-DRB1*13:247","HLA-DRB4*01:03:04","HLA-DRB4*01:03:05","HLA-DRB4*01:03:06","HLA-DRB4*01:10","HLA-DRB4*01:63"]
+        
         #["HLA-B*07:271","HLA-C*02:16:02","HLA-DQA1*03:01:03","HLA-DQB1*02:84","HLA-DRB1*07:01:22","HLA-DRB1*13:247","HLA-DRB4*01:03:04","HLA-DRB4*01:03:05","HLA-DRB4*01:03:06","HLA-DRB4*01:10","HLA-DRB4*01:63
-        #test_list = ["HLA-DRB1*13:247"]
+        #test_list = ["HLA-DRB4*01:03:05"]
         #test_list = ['HLA-A*01:22N', 'HLA-A*02:01:11']
         #test_list = ['HLA-A*01:09:01:01']
         #test_list = ['HLA-A*02:01:130']
@@ -815,7 +817,7 @@ class TestBioSeqAnn(unittest.TestCase):
             # print("")
             # print("************************************")
             # print("************************************")
-            # print(seqname)
+            #print(seqname)
             #if len(seqrec.seq) > 5:
             locus = seqrec.description.split("*")[0]
             ann1 = seqann.annotate(seqrec, locus=locus)
@@ -824,7 +826,7 @@ class TestBioSeqAnn(unittest.TestCase):
             self.assertEqual(len(ann2.annotation), len(ann1.annotation))
 
             for feat in ann2.structure:
-                self.assertIsInstance(feat, Feature)
+               self.assertIsInstance(feat, Feature)
 
             for f in ann1.annotation:
                 #print(f)
@@ -832,13 +834,18 @@ class TestBioSeqAnn(unittest.TestCase):
                 seq1 = str(ann1.annotation[f])
                 #seq2 = '** NA **'
                 #if f in ann2.annotation:
+                # if f not in ann2.annotation:
+                #     print(seqname, "MISSING", f)
+                # else:
                 seq2 = str(ann2.annotation[f].seq)
+                #     if seq1 != seq2:
+                #         print(seqname, "NOT EQUAL", f)
                 #print(f, seq1, seq2)
                 self.assertEqual(seq1, seq2)
                 #print(f,seq2)
-            # for f in ann1.features:
-            #     print(f)
-            #     print(ann1.features[f])
+            #print("GFE",ann1.gfe, ann2.gfe)
+            #print("Actual GFE",ann2.gfe)
+
             #if ann1.gfe != ann2.gfe:
             #    print("DIFFER", seqname, ann1.gfe, ann2.gfe)
             #else:
