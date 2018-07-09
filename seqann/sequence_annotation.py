@@ -345,6 +345,7 @@ class BioSeqAnn(Model):
             run = 0
             if i == len(found)-1:
                 run = 1
+
             # Skip a reference
             # * For validation *
             if found[i].name in skip:
@@ -431,6 +432,9 @@ class BioSeqAnn(Model):
         if alignseqs > len(found):
             alignseqs = len(found)-1
 
+        # Aligned % cutoff
+        align_cutoff = .90
+
         # Now loop through doing alignment
         for i in range(0, alignseqs):
 
@@ -446,11 +450,8 @@ class BioSeqAnn(Model):
 
             aligned_ann = self.ref_align(found[i], sequence, locus,
                                          annotation=partial_ann,
-                                         run=i)
-
-            #if i > 1:
-            #    aligned_ann.blocks = []
-            #    aligned_ann.check_annotation()
+                                         run=i,
+                                         cutoff=align_cutoff)
 
             if aligned_ann and aligned_ann.complete_annotation:
                 if self.align:
@@ -483,11 +484,14 @@ class BioSeqAnn(Model):
                 aligned_ann.clean()
                 return aligned_ann
             elif(aligned_ann):
+
                 if self.verbose and self.verbosity > 0:
                     self.logger.info(self.logname
                                      + " Using partial annotation "
                                      + "for alignment * run "
-                                     + str(i) + " *")
+                                     + str(i) + " - cutoff = "
+                                     + str(align_cutoff)
+                                     + " *")
                     self.logger.info(self.logname
                                      + " Features found = "
                                      + ",".join(list(aligned_ann
@@ -500,6 +504,21 @@ class BioSeqAnn(Model):
                                      "##################")
                 partial_ann = aligned_ann
 
+                exon_only = True
+                for f in partial_ann.annotation:
+                    if re.search("intron", f) or re.search("UTR", f):
+                        exon_only = False
+
+                if(is_classII(locus) and exon_only
+                   and len(partial_ann.annotation.keys()) > 0
+                   and align_cutoff < .9):
+                    align_cutoff = .80
+
+            align_cutoff -= .01
+
+            if not is_classII(locus) and align_cutoff < .88:
+                align_cutoff = .88
+
         if self.verbose:
             self.logger.info(self.logname + " running full alignment")
 
@@ -507,7 +526,8 @@ class BioSeqAnn(Model):
         full_align = self.ref_align(leastmissing_feat,
                                     sequence,
                                     locus,
-                                    partial_ann=partial_ann)
+                                    partial_ann=partial_ann,
+                                    cutoff=.80)
 
         if self.verbose:
             self.logger.info(self.logname
@@ -549,7 +569,8 @@ class BioSeqAnn(Model):
     def ref_align(self, found_seqs, sequence: Seq=None,
                   locus: str=None, annotation: Annotation=None,
                   partial_ann: Annotation=None,
-                  run: int=0) -> Annotation:
+                  run: int=0,
+                  cutoff: float=.90) -> Annotation:
         """
         ref_align - Method for doing targeted alignments on partial annotations
 
@@ -625,6 +646,7 @@ class BioSeqAnn(Model):
                                                self.refdata,
                                                annotation.missing,
                                                annoated,
+                                               cutoff=cutoff,
                                                verbose=self.align_verbose,
                                                verbosity=self.align_verbosity)
 
@@ -885,6 +907,7 @@ class BioSeqAnn(Model):
                                                    self.refdata,
                                                    annotation.missing,
                                                    annoated,
+                                                   cutoff=cutoff,
                                                    verbose=self.align_verbose,
                                                    verbosity=self.align_verbosity)
                     mapped_exons = list(exonan.annotation.keys())
@@ -923,6 +946,7 @@ class BioSeqAnn(Model):
                             if self.verbose:
                                 self.logger.info(self.logname + " Completed annotation with targeted exons ref_align")
                             return annotation
+            return annotation
         elif partial_ann:
 
             annoated = []
@@ -972,6 +996,7 @@ class BioSeqAnn(Model):
                                                     self.refdata,
                                                     partial_ann.missing,
                                                     annoated,
+                                                    cutoff=cutoff,
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
 

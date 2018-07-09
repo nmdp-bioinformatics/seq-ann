@@ -55,7 +55,8 @@ import logging
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotated, verbose=False, verbosity=0):
+def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing,
+               annotated, cutoff=0.90, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -130,7 +131,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotat
     all_features = []
     if len(align)-2 == 0:
         infeats = get_seqfeat(seqs[0])
-        diffs = count_diffs(align, infeats, sequence, locus, annotated, verbose, verbosity)
+        diffs = count_diffs(align, infeats, sequence, locus, annotated, cutoff, verbose, verbosity)
         if isinstance(diffs, Annotation):
             if verbose:
                 logger.info("Run alignment with " + found_seqs.id)
@@ -138,12 +139,12 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotat
             return diffs, 0, 0
         else:
             insers, dels = diffs[0], diffs[1]
-        f = find_features(infeats, align[0], annotated, start_pos)
+        f = find_features(infeats, align[0], annotated, start_pos, cutoff)
         all_features.append(f)
     else:
         for i in range(0, len(align)-2):
             infeats = get_seqfeat(seqs[i])
-            f = find_features(infeats, align[i], annotated, start_pos)
+            f = find_features(infeats, align[i], annotated, start_pos, cutoff)
             all_features.append(f)
 
     if len(all_features) > 0:
@@ -171,7 +172,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing, annotat
         return Annotation(complete_annotation=False), 0, 0
 
 
-def find_features(feats, sequ, annotated, start_pos):
+def find_features(feats, sequ, annotated, start_pos, cutoff):
     feats_a = list(feats.keys())
 
     #print(found_seqs.id)
@@ -213,10 +214,18 @@ def find_features(feats, sequ, annotated, start_pos):
                 if s == 1:
                     st = feats[feats_a[j]].location.start + start
                     end = feats[feats_a[j]].location.end + en
-                    #print("ST", str(start), "EN", str(en), str(start_pos))
-                    #print("START", str(st), "END", str(end))
+
                     start_val = st
-                    if feats_a[j] == "five_prime_UTR" or len(annotated) == 0:
+                    if feats_a[j] != 'five_prime_UTR':
+                        if((len(annotated) == 0 and start_pos == 0
+                            and cutoff < 0.9) or
+                            (len(annotated) == 0 and start_pos == 0
+                             and st < 6)
+                           or (start_pos == 0 and
+                               len(feats) == 1 and cutoff < .9)):
+                            start_val = 0
+
+                    else:
                         start_val = 0
 
                     #print("Before 2-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
@@ -354,7 +363,7 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                               seq=seq)
 
 
-def count_diffs(align, feats, inseq, locus, annotated, verbose=False, verbosity=0):
+def count_diffs(align, feats, inseq, locus, annotated, cutoff, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -409,15 +418,6 @@ def count_diffs(align, feats, inseq, locus, annotated, verbose=False, verbosity=
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper))
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
-
-    exon_only = True
-    for f in annotated:
-        if re.search("intron", f) or re.search("UTR", f):
-            exon_only = False
-
-    cutoff = .88
-    if is_classII(locus) and exon_only and len(annotated) > 0:
-        cutoff = .80
 
     if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
         if verbose:
