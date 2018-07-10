@@ -36,6 +36,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import ExactPosition
 from Bio.SeqFeature import FeatureLocation
+from Bio.SeqUtils import nt_search
 
 from seqann.models.annotation import Annotation
 from seqann.models.reference_data import ReferenceData
@@ -363,6 +364,7 @@ class BioSeqAnn(Model):
                                              sequence, locus,
                                              partial_ann=partial_ann,
                                              run=run)
+            #print(ann.mapping)
 
             if ann.complete_annotation:
                 if self.verbose:
@@ -452,6 +454,7 @@ class BioSeqAnn(Model):
                                          annotation=partial_ann,
                                          run=i,
                                          cutoff=align_cutoff)
+            align_cutoff -= .01
 
             if aligned_ann and aligned_ann.complete_annotation:
                 if self.align:
@@ -504,17 +507,17 @@ class BioSeqAnn(Model):
                                      "##################")
                 partial_ann = aligned_ann
 
-                exon_only = True
-                for f in partial_ann.annotation:
-                    if re.search("intron", f) or re.search("UTR", f):
-                        exon_only = False
+                if(hasattr(partial_ann, 'annotation')
+                   and partial_ann.annotation):
+                    exon_only = True
+                    for f in partial_ann.annotation:
+                        if re.search("intron", f) or re.search("UTR", f):
+                            exon_only = False
 
-                if(is_classII(locus) and exon_only
-                   and len(partial_ann.annotation.keys()) > 0
-                   and align_cutoff < .9):
-                    align_cutoff = .80
-
-            align_cutoff -= .01
+                    if(is_classII(locus) and exon_only
+                       and len(partial_ann.annotation.keys()) > 0
+                       and align_cutoff < .9):
+                        align_cutoff = .80
 
             if not is_classII(locus) and align_cutoff < .88:
                 align_cutoff = .88
@@ -663,6 +666,7 @@ class BioSeqAnn(Model):
 
                                 # min and max lengths expected
                                 incr = 3 if not is_classII(locus) else 4
+
                                 #print(locus, length, lengthsd, incr, ins, dels)
                                 max_length = length + (lengthsd*incr) + ins
                                 min_length = length - (lengthsd*incr) - dels
@@ -714,7 +718,7 @@ class BioSeqAnn(Model):
                                         mf = annotation.mapping[endp]
                                         expected_order = f_order + 1
                                         if expected_order != self.refdata.structures[locus][mf]:
-                                            self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)                                        
+                                            self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)
                                             del an.features[f]
                                             continue
 
@@ -729,6 +733,15 @@ class BioSeqAnn(Model):
 
                                 if self.verbose and self.verbosity > 0:
                                     sl = str(len(an.annotation[f]))
+                                    #print(str(an.annotation[f].seq))
+                                    #print("--")
+                                    #print(f)
+                                    #print(str(an.annotation[f].seq))
+                                    #print("**")
+                                    #print(str(sequence.seq))
+                                    #seq_search = nt_search(str(sequence.seq), str(an.annotation[f].seq))
+                                    #print("SEQ SEARCH", seq_search)
+                                    #print("-----")
                                     self.logger.info(self.logname + " " + locus
                                                      + " " + f
                                                      + " len = " + sl
@@ -770,7 +783,11 @@ class BioSeqAnn(Model):
                                                          + " Annotated " + f
                                                          + " with clustalo using " +
                                                          combseqr.id)
-
+                                        self.logger.info(self.logname
+                                                         + " Coordinates for " + f
+                                                         + str(an.features[f].location.start)
+                                                         + " - " + str(an.features[f].location.end)
+                                                         )
                                     if annotation.annotation:
                                         annotation.annotation.update({f:
                                                                     an.annotation[f]
@@ -832,9 +849,9 @@ class BioSeqAnn(Model):
                         else:
                             e += 1
 
-                        # if e > max(annotation.mapping.keys()):
-                        #    print("WTF")
-                        #    e = max(annotation.mapping.keys())
+                        #if e > max(annotation.mapping.keys()):
+                        #   print("WTF")
+                        #   e = max(annotation.mapping.keys())
 
                         for i in range(s, e):
                             annotation.mapping[i] = f
@@ -849,12 +866,12 @@ class BioSeqAnn(Model):
 
                     # print("MAPPING")
                     # print(annotation.mapping)
-                    #print("annotations:")
-                    #print(",".join(annotation.annotation.keys()))
-                    #print("Features:")
-                    #print(print(",".join(annotation.features.keys())))
-                    #for fe in annotation.features:
-                    #    print(fe, str(annotation.features[fe].location.start), str(annotation.features[fe].location.end))
+                    # print("annotations:")
+                    # print(",".join(annotation.annotation.keys()))
+                    # print("Features:")
+                    # print(print(",".join(annotation.features.keys())))
+                    # for fe in annotation.features:
+                    #     print(fe, str(annotation.features[fe].location.start), str(annotation.features[fe].location.end))
                     # print("BEFORE BLOCKS")
                     # print(annotation.blocks)
 
@@ -876,10 +893,11 @@ class BioSeqAnn(Model):
                             #     if f_order >= start_order and f not in annotation.features \
                             #             and f in annotation.annotation:
                             #         annotation.features[f] = an.features[f]
+                            #         print("HERE order!!!!")
 
                             # annotation.missing = missing_f
-                            # print("BEFORE SEQ SEARCH BLOCKS")
-                            # print(annotation.blocks)
+                            #print("BEFORE SEQ SEARCH BLOCKS")
+                            #print(annotation.blocks)
                             # Rerunning seqsearch with
                             # new annotation from alignment
                             tmpann = self.seqsearch.search_seqs(found_seqs,
@@ -900,9 +918,13 @@ class BioSeqAnn(Model):
                                 return tmpann
                             annotation = tmpann
 
-                if len(exons.seq) >= 4:
-                    # print("RUNNING WITH EXONS ONLY!!!")
-                    #print(annotation.missing.keys())
+                # Has to be missing exons
+                exons_n = 0
+                for f in annotation.missing:
+                    if re.search("intron", f) or re.search("UTR", f):
+                        exons_n += 1
+
+                if len(exons.seq) >= 4 and exons_n > 0:
                     exonan, ins, dels = align_seqs(exons, feat, locus, start,
                                                    self.refdata,
                                                    annotation.missing,

@@ -768,13 +768,15 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
+    # TODO: Break alleles into separate tests
+    #       based on what they are testing
     @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 015 Requires MySQL connection")
     def test_019_skipserv(self):
-        #import logging
-        #logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-        #                   datefmt='%m/%d/%Y %I:%M:%S %p',
-        #                   level=logging.INFO)
+        # import logging
+        # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+        #                  datefmt='%m/%d/%Y %I:%M:%S %p',
+        #                 level=logging.INFO)
         server = BioSeqDatabase.open_database(driver="pymysql",
                                               user=biosqluser,
                                               passwd=biosqlpass,
@@ -782,7 +784,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
 
-        seqann = BioSeqAnn(server=server, verbose=True, verbosity=3)
+        seqann = BioSeqAnn(server=server, verbose=False, verbosity=0)
         #seqann = BioSeqAnn(server=server,debug={"seqann":4})
         refdata = ReferenceData()
 
@@ -797,11 +799,15 @@ class TestBioSeqAnn(unittest.TestCase):
                      'HLA-C*07:06:01:01', 'HLA-A*03:51', 'HLA-A*29:109',
                      'HLA-A*02:01:130', 'HLA-B*07:271', "HLA-DRB1*13:247",
                      "HLA-DRB4*01:03:05", "HLA-DRB4*01:03:06",
-                     "HLA-DQA1*05:01:02"]
+                     "HLA-DQA1*05:01:02", "HLA-DRB1*13:02:02",
+                     "HLA-DRB4*01:03:04"]
 
         # HLA-B*07:271 <- insertion at beginning of 5'UTR
         #test_list = ['HLA-A*03:51','HLA-A*02:01:130']
 
+        # 'HLA-A*02:19' -> IMGT could be wrong
+        #test_list = ['HLA-A*02:19','HLA-DRB4*01:03:04']
+        #test_list = ['HLA-DRB4*01:03:04']
         #test_list = ['HLA-B*40:02:05',"HLA-DRB4*01:03:05","HLA-DRB4*01:03:06","HLA-DRB4*01:10","HLA-DRB4*01:63"]
         
         #test_list = ["HLA-DQA1*05:01:02","HLA-DRB1*13:02:02"]
@@ -810,7 +816,7 @@ class TestBioSeqAnn(unittest.TestCase):
         #test_list = ["HLA-DRB1*13:02:02","HLA-DRB4*01:03:05", "HLA-DRB4*01:03:06"]
 
         # "HLA-DQA1*05:01:02","HLA-DRB1*13:02:02"
-        
+        #test_list = ["HLA-DRB1*13:02:02"]
         #test_list = ["HLA-DRB4*01:03:05", "HLA-DRB4*01:03:06", "HLA-DRB4*01:10","HLA-DRB4*01:63"]
         #test_list = ["HLA-DQA1*05:01:02"]
         for seqname in refdata.hlaref:
@@ -822,11 +828,11 @@ class TestBioSeqAnn(unittest.TestCase):
             # print("")
             #print("************************************")
             #print("************************************")
-            print(seqname)
+            #print(seqname)
             #if len(seqrec.seq) > 5:
             locus = seqrec.description.split("*")[0]
-            ann1 = seqann.annotate(seqrec, locus=locus)
             ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
+            ann1 = seqann.annotate(seqrec, locus=locus)
             self.assertTrue(ann1.exact)
             self.assertEqual(len(ann2.annotation), len(ann1.annotation))
 
@@ -835,23 +841,25 @@ class TestBioSeqAnn(unittest.TestCase):
 
             for f in ann1.annotation:
                 #print(f)
-                #self.assertTrue(f in ann2.annotation)
+                self.assertTrue(f in ann2.annotation)
                 seq1 = str(ann1.annotation[f])
-                #seq2 = '** NA **'
+                # seq2 = '** NA **'
                 # if f in ann2.annotation:
-                #if f not in ann2.annotation:
-                    #print(seqname, "MISSING", f)
-                #else:
-                #if f in ann2.annotation:
+                # if f not in ann2.annotation:
+                #     print(seqname, "MISSING", f)
+                # else:
+                # if f in ann2.annotation:
                 seq2 = str(ann2.annotation[f].seq)
                 #     if seq1 != seq2:
                 #         print(seqname, "NOT EQUAL", f)
-                #print(f, seq1, seq2)
+                # print(f, seq1, seq2)
                 self.assertEqual(seq1, seq2)
                 #print(f,seq2)
             #print("GFE", ann1.gfe, ann2.gfe)
             #print("Actual GFE",ann2.gfe)
-
+            #for f in ann1.features:
+            #    l = ann1.features[f].location.end - ann1.features[f].location.start
+            #    print(f, str(ann1.features[f].location.start), str(ann1.features[f].location.end),str(l))
             #if ann1.gfe != ann2.gfe:
             #    print("DIFFER", seqname, ann1.gfe, ann2.gfe)
             #else:

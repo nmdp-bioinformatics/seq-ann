@@ -392,10 +392,11 @@ class SeqSearch(Model):
                                   exact_match=exact_matches)
 
         #print("BLOCKS")
-        #print(blocks)
-        ##print("FOUND FEATS")
+        ##print(blocks)
+        #print("FOUND FEATS")
         #print(list(found_feats.keys()))
-        #tmp1 = set(list(found_feats.keys()))
+        #print(list(feat_missing.keys()))
+        # tmp1 = set(list(found_feats.keys()))
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
         annotated_feats, mb, mapping = self._resolve_unmapped(blocks,
@@ -404,13 +405,10 @@ class SeqSearch(Model):
                                                               mapping,
                                                               found_feats,
                                                               locus)
-        # tmp2 = set(list(annotated_feats.keys()))
-        # diff_a = tmp2.difference(tmp1)
-        # print("FOUND FEATS AFTER")
-        # print(tmp2)
 
-        # print("DIFF")
-        # print(",".join(list(diff_a)))
+        if(not mb and blocks and len(feat_missing.keys()) == 0
+           and len(ambig_map.keys()) == 0):
+            mb = blocks
 
         if mb:
 

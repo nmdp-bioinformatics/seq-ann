@@ -49,6 +49,7 @@ from seqann.util import get_seqfeat
 from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
 from seqann.util import is_classII
+from Bio.SeqUtils import nt_search
 
 import logging
 
@@ -176,6 +177,7 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
     feats_a = list(feats.keys())
 
     #print(found_seqs.id)
+    # print("start = ",str(start_pos))
     # print("## Before ##")
     # for f in feats:
     #     print(f)
@@ -200,11 +202,26 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                     en += 1
                     if s == 0:
                         start_val = feats[feats_a[j]].location.start
-                        if feats_a[j] == "five_prime_UTR":
+                        #if feats_a[j] == "five_prime_UTR":
+                        #    start_val = 0
+                        
+                        if((len(annotated) == 0 and start_pos == 0
+                            and cutoff < 0.9) or
+                            (len(annotated) == 0 and start_pos == 0
+                             and st < 6)
+                           or (start_pos == 0 and
+                               len(feats) == 1 and cutoff < .9)):
                             start_val = 0
+                            #print("HERE 11")
+                        else:
+                            if feats_a[j] == 'five_prime_UTR':
+                                start_val = 0
+                                #print("HERE 12")
+
                         #print("Before 1-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                         feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(start_val), ExactPosition(int(feats[feats_a[j]].location.end + 1)), strand=1), type=feats[feats_a[j]].type)
                         #print("After 1-1",feats_a[j],str(start_val),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
+                        
                         if j != len(feats_a):
                             for l in range(j+1, len(feats_a)):
                                 #print("Before 1-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
@@ -216,7 +233,7 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                     end = feats[feats_a[j]].location.end + en
 
                     start_val = st
-                    if feats_a[j] != 'five_prime_UTR':
+                    if feats_a[j] != 'five_prime_UTR' and start_pos == 0:
                         if((len(annotated) == 0 and start_pos == 0
                             and cutoff < 0.9) or
                             (len(annotated) == 0 and start_pos == 0
@@ -224,9 +241,9 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                            or (start_pos == 0 and
                                len(feats) == 1 and cutoff < .9)):
                             start_val = 0
-
                     else:
-                        start_val = 0
+                        if feats_a[j] == 'five_prime_UTR':
+                            start_val = 0
 
                     #print("Before 2-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                     feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(start_val), ExactPosition(end), strand=1), type=feats[feats_a[j]].type)
@@ -307,12 +324,14 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
 
                     # if feat == "exon_7":
                     # #if diff > 0:
-                    # print(feat, str(diff), str(start), str(featn.location.start),str(featn.location.end))
-                    # print(feat, str(diff), str(start), str(f.location.start),str(f.location.end))
-                    # print(feat,str(seqrec.seq))
+                    #print(feat, str(diff), str(start), str(featn.location.start),str(featn.location.end))
+                    #print(feat, str(diff), str(start), str(f.location.start),str(f.location.end))
+                    #print(feat,str(seqrec.seq))
+                    #seq_search = nt_search(str(seq.seq), str(seqrec.seq))
+                    # print("SEQ SEARCH IN ALIGN")
+                    # print(seq_search)
                     # print("***")
                     # print("")
-
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
 
@@ -353,6 +372,8 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
         if not full_annotation or len(full_annotation) == 0:
             if verbose:
                 logger.info("Failed to align missing features")
+                print("HERE!!!!!!!!!")
+                print(missing)
             return Annotation(complete_annotation=False)
         else:
             return Annotation(annotation=full_annotation,
@@ -420,6 +441,7 @@ def count_diffs(align, feats, inseq, locus, annotated, cutoff, verbose=False, ve
     indel = iper + delper
 
     if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
+        print("RETURNING HERE 1")
         if verbose:
             logger.info("Alignment coverage high enough to complete annotation 11")
         return insr, dels
@@ -431,6 +453,8 @@ def count_diffs(align, feats, inseq, locus, annotated, cutoff, verbose=False, ve
                 logger.info("Alignment coverage NOT high enough to return annotation")
             return Annotation(complete_annotation=False)
         else:
+            #print("RETURNING HERE 1")
+            #print(indel,mmper,gper,mper2,cutoff)
             if verbose:
                 logger.info("Alignment coverage high enough to complete annotation")
             return insr, dels
