@@ -78,13 +78,13 @@ if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
 verbose = False
-if os.getenv("VERBOSE"):
-    if os.getenv("VERBOSE") == "True" \
-            or int(os.getenv("VERBOSE")) == 1:
-        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-                            datefmt='%m/%d/%Y %I:%M:%S %p',
-                            level=logging.INFO)
-        verbose = True
+# if os.getenv("VERBOSE"):
+#     if os.getenv("VERBOSE") == "True" \
+#             or int(os.getenv("VERBOSE")) == 1:
+#         logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+#                             datefmt='%m/%d/%Y %I:%M:%S %p',
+#                             level=logging.INFO)
+#         verbose = True
 
 verbosity = 0
 if os.getenv("VERBOSITY"):

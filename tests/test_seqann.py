@@ -950,3 +950,49 @@ class TestBioSeqAnn(unittest.TestCase):
                                      str(annotation.annotation[feat]))
         server.close()
         pass
+
+    # def test_022_diffdbs(self):
+
+    #     # diff_d = {
+    #     #           3250: ['HLA-DQB1*06:37'],
+    #     #           3260: ['HLA-DQB1*03:01:17', 'HLA-DQB1*03:01:22', 'HLA-DQB1*03:10:02']
+    #     #           }
+    #     diff_d = {
+    #         3250: ['HLA-DQB1*06:37'],
+    #         3260: ['HLA-DQB1*03:01:17', 'HLA-DQB1*03:01:22', 'HLA-DQB1*03:02:01:02', 'HLA-DQB1*03:10:02',
+    #                'HLA-DQB1*03:150', 'HLA-DQB1*03:211', 'HLA-DQB1*04:01:01', 'HLA-DQB1*04:02:01', 'HLA-DQB1*04:11',
+    #                'HLA-DQB1*04:32', 'HLA-DQB1*05:02:01', 'HLA-DQB1*05:02:07', 'HLA-DQB1*05:02:11', 'HLA-DQB1*05:106',
+    #                'HLA-DQB1*05:52', 'HLA-DQB1*05:57', 'HLA-DQB1*05:97', 'HLA-DQB1*06:02:01:02', 'HLA-DQB1*06:02:22',
+    #                'HLA-DQB1*06:03:12', 'HLA-DQB1*06:03:14', 'HLA-DQB1*06:79:01'],
+    #         3270: ['HLA-DQB1*02:84', 'HLA-DQB1*03:239', 'HLA-DQB1*05:04', 'HLA-DQB1*05:132Q', 'HLA-DQB1*05:134',
+    #                'HLA-DQB1*06:02:17', 'HLA-DQB1*06:10'],
+    #         3290: ['HLA-DQB1*05:03:01:03', 'HLA-DQB1*05:149'],
+    #         3300: ['HLA-DQB1*02:02:01:01', 'HLA-DQB1*02:02:01:03', 'HLA-DQB1*03:01:01:19', 'HLA-DQB1*03:02:01:04',
+    #                'HLA-DQB1*03:02:01:05', 'HLA-DQB1*03:02:01:06', 'HLA-DQB1*03:03:02:04', 'HLA-DQB1*03:10:02:01',
+    #                'HLA-DQB1*03:10:02:02', 'HLA-DQB1*03:12', 'HLA-DQB1*04:01:01:02', 'HLA-DQB1*05:12', 'HLA-DQB1*06:02:01:04',
+    #                'HLA-DQB1*06:09:07', 'HLA-DQB1*06:206:02'],
+    #         3310: ['HLA-DQB1*06:01:01:02', 'HLA-DQB1*06:243']
+    #         }
+    #     for db in diff_d.keys():
+    #         prev_db = db - 10
+    #         seqann1 = BioSeqAnn(dbversion=str(db))
+    #         seqann2 = BioSeqAnn(dbversion=str(prev_db))
+    #         alleles = diff_d[db]
+    #         for seqname in alleles:
+    #             print("Running",str(db),seqname)
+    #             seqrec = seqann1.refdata.hlaref[seqname]
+    #             locus = seqrec.description.split("*")[0]
+    #             ann1 = seqann1.annotate(seqrec, locus=locus)
+    #             ann2 = seqann2.annotate(seqrec, locus=locus)
+    #             self.assertTrue(ann1.exact)
+    #             self.assertEqual(len(ann2.annotation), len(ann1.annotation))
+    #             self.assertEqual(ann1.gfe, ann2.gfe)
+    #             self.assertGreater(len(ann2.structure), 1)
+    #             for feat in ann2.structure:
+    #                 self.assertIsInstance(feat, Feature)
+    #             for f in ann1.annotation:
+    #                 self.assertTrue(f in ann2.annotation)
+    #                 seq1 = str(ann1.annotation[f])
+    #                 seq2 = str(ann2.annotation[f].seq)
+    #                 self.assertEqual(seq1, seq2)
+    #     pass

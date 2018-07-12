@@ -341,7 +341,7 @@ class SeqSearch(Model):
         # If it's a class II sequence and
         # exon_2 is an exact match
         if 'exon_2' in exact_matches and len(blocks) == 2 \
-                and is_classII(locus):
+                and is_classII(locus) and seq_covered < 300:
 
             if self.verbose and self.verbosity > 1:
                 self.logger.info("Running search for class II sequence")
@@ -404,7 +404,9 @@ class SeqSearch(Model):
                                                               ambig_map,
                                                               mapping,
                                                               found_feats,
-                                                              locus)
+                                                              locus,
+                                                              seq_covered
+                                                              )
 
         if(not mb and blocks and len(feat_missing.keys()) == 0
            and len(ambig_map.keys()) == 0):
@@ -413,7 +415,7 @@ class SeqSearch(Model):
         if mb:
 
             # Unmap exon 8
-            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 600 \
+            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 5000 \
                     and 'exon_8' in exact_matches:
                 for i in deleted_coords:
                     mapping[i] = 1
@@ -534,7 +536,7 @@ class SeqSearch(Model):
         return annotation
 
     def _resolve_unmapped(self, blocks, feat_missing, ambig_map,
-                          mapping, found_feats, loc, rerun=False):
+                          mapping, found_feats, loc, covered, rerun=False):
 
         exon_only = True
         found_exons = 0
@@ -553,12 +555,12 @@ class SeqSearch(Model):
 
         # If all exons have been mapped
         # then it is not exon only data
-        if found_exons == num_exons or rerun:
+        if found_exons == num_exons:
             exon_only = False
 
         # If it's exon only, then search two
         # features up rather than one
-        add_num = 2 if exon_only else 1
+        add_num = 2 if exon_only and rerun and covered < 300 else 1
 
         block_mapped = []
         missing_blocks = []
@@ -570,7 +572,6 @@ class SeqSearch(Model):
 
                 # TODO: Catch ERROR
                 #if not end_i in mapping:
-                #
                 feat_num = self.refdata.structures[loc][featname]
                 if feat_num+add_num <= self.refdata.structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
@@ -600,6 +601,7 @@ class SeqSearch(Model):
                         if expected_p == previous_feat \
                             and expected_p != 1 \
                                 and b[0]-1 in locats:
+                                block_mapped.append(b)
                                 found_feats.update({featname:
                                                     SeqFeature(
                                                         FeatureLocation(
@@ -617,6 +619,7 @@ class SeqSearch(Model):
                     if expected_n == next_feat \
                         and expected_p != 1 \
                             and b[0]-1 in locats:
+                            block_mapped.append(b)
                             found_feats.update({featname:
                                                 SeqFeature(
                                                     FeatureLocation(
@@ -629,6 +632,11 @@ class SeqSearch(Model):
 
         for b in blocks:
             for featname in feat_missing.keys():
+                if featname in ambig_map and b not in block_mapped:
+                    if b not in missing_blocks:
+                        missing_blocks.append(b)
+                    continue
+
                 if b not in block_mapped:
                     #featlen = feat_missing[featname]
                     start_i = b[0]-1
@@ -725,7 +733,7 @@ class SeqSearch(Model):
             return self._resolve_unmapped(missing_blocks, feat_missing,
                                           ambig_map,
                                           mapping, found_feats,
-                                          loc, rerun=True)
+                                          loc, covered, rerun=True)
         else:
             return found_feats, missing_blocks, mapping
 
