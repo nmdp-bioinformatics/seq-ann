@@ -645,8 +645,8 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
         seqann = BioSeqAnn(server=server,
-                           verbose=True,
-                           verbosity=4,
+                           verbose=False,
+                           verbosity=0,
                            pid="010_noloc")
         self.assertIsInstance(seqann, BioSeqAnn)
         input_seq = self.data_dir + '/nomatch_seqs.fasta'

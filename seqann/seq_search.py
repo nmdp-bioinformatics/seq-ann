@@ -225,7 +225,7 @@ class SeqSearch(Model):
                 if feat_name == 'three_prime_UTR' \
                         and len(str(in_seq.seq)) > end:
                         end = len(str(in_seq.seq))
-
+                        print("HERE 1")
                 # If the feature is found and it's a five_prime_UTR then
                 # the start should always be 0, so insertions at the
                 # beinging of the sequence will be found.
@@ -235,7 +235,7 @@ class SeqSearch(Model):
 
                 # check if this features has already been mapped
                 mapcheck = set([0 if i in coordinates else 1
-                                for i in range(si, end+1)])
+                               for i in range(si, end+1)])
 
                 # Dont map features if they are out of order
                 skip = False
@@ -403,12 +403,6 @@ class SeqSearch(Model):
                                   mapping=mapping,
                                   exact_match=exact_matches)
 
-        #print("BLOCKS")
-        ##print(blocks)
-        #print("FOUND FEATS")
-        #print(list(found_feats.keys()))
-        #print(list(feat_missing.keys()))
-        # tmp1 = set(list(found_feats.keys()))
         # TODO: pass seq_covered and mapping, so the
         #       final annotation contains the updated values
         annotated_feats, mb, mapping = self._resolve_unmapped(blocks,
@@ -427,7 +421,7 @@ class SeqSearch(Model):
         if mb:
 
             # Unmap exon 8
-            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 5000 \
+            if locus in ['HLA-C', 'HLA-A'] and len(in_seq.seq) < 3000 \
                     and 'exon_8' in exact_matches:
                 for i in deleted_coords:
                     mapping[i] = 1
