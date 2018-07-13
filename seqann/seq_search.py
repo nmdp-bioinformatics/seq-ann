@@ -202,7 +202,19 @@ class SeqSearch(Model):
             # found and if it's found in multiple spots. If it
             # is not found, then record that feature as missing.
             seq_search = nt_search(str(in_seq.seq), str(feats[feat_name]))
-            if len(seq_search) == 2:
+
+            skip = False
+            # if(feat_name == "exon_5" and locus == "HLA-DQB1"
+            #    and len(in_seq.seq) < 7000 and not "intron_5" in found_feats
+            #    and not "intron_4" in found_feats):
+            #     skip = True
+
+            # if(feat_name == "intron_4" and locus == "HLA-DQB1"
+            #    and len(in_seq.seq) > 7000):
+            #     skip = True
+                #print("SKIPPING INTRON 4 seq_search")
+
+            if len(seq_search) == 2 and not skip:
 
                 if self.verbose and self.verbosity > 0:
                     self.logger.info("Found exact match for " + feat_name)

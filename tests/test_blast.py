@@ -126,7 +126,7 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
         server.close()
         pass
 
@@ -140,7 +140,7 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
         pass
 
     def test_002_blastnoloc(self):
@@ -154,7 +154,7 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:12")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
         pass
 
     @unittest.skipUnless(conn(), "TestBlast 002 MySQL connection")
@@ -216,6 +216,6 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
 
 

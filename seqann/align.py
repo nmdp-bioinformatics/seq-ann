@@ -372,8 +372,6 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
         if not full_annotation or len(full_annotation) == 0:
             if verbose:
                 logger.info("Failed to align missing features")
-                print("HERE!!!!!!!!!")
-                print(missing)
             return Annotation(complete_annotation=False)
         else:
             return Annotation(annotation=full_annotation,
@@ -441,14 +439,14 @@ def count_diffs(align, feats, inseq, locus, annotated, cutoff, verbose=False, ve
     indel = iper + delper
 
     if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
-        print("RETURNING HERE 1")
         if verbose:
             logger.info("Alignment coverage high enough to complete annotation 11")
         return insr, dels
     else:
         # TODO:
         # These numbers need to be fine t
-        if (indel > 0.5 or mmper > 0.05 or gper > .50) and mper2 < cutoff:
+        indel_mm = indel + mper2
+        if (indel > 0.5 or mmper > 0.05) and mper2 < cutoff and indel_mm != 1:
             if verbose:
                 logger.info("Alignment coverage NOT high enough to return annotation")
             return Annotation(complete_annotation=False)

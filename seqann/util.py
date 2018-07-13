@@ -132,7 +132,8 @@ def get_seqfeat(seqrecord):
 
 
 def get_seqs(seqrecord):
-    fiveutr = [["five_prime_UTR", str(seqrecord.features[i].extract(seqrecord.seq))] for i in range(0, 3) if seqrecord.features[i].type != "source"
+    n = 3 if len(seqrecord.features) >= 3 else len(seqrecord.features)
+    fiveutr = [["five_prime_UTR", str(seqrecord.features[i].extract(seqrecord.seq))] for i in range(0, n) if seqrecord.features[i].type != "source"
                and seqrecord.features[i].type != "CDS"
                and seqrecord.features[i].type != "3UTR"
                and isinstance(seqrecord.features[i], SeqFeature)
@@ -152,7 +153,8 @@ def get_seqs(seqrecord):
 
 # TODO: change name to get_featseq
 def get_features(seqrecord):
-    fiveutr = [["five_prime_UTR", seqrecord.features[i].extract(seqrecord.seq)] for i in range(0, 3) if seqrecord.features[i].type != "source"
+    n = 3 if len(seqrecord.features) >= 3 else len(seqrecord.features)
+    fiveutr = [["five_prime_UTR", seqrecord.features[i].extract(seqrecord.seq)] for i in range(0, n) if seqrecord.features[i].type != "source"
                and seqrecord.features[i].type != "CDS" and isinstance(seqrecord.features[i], SeqFeature)
                and not seqrecord.features[i].qualifiers]
     feats = [[str(feat.type + "_" + feat.qualifiers['number'][0]), feat.extract(seqrecord.seq)]

@@ -341,6 +341,7 @@ class BioSeqAnn(Model):
         partial_ann = None
         leastmissing_feat = None
         found = blast.match_seqs
+        #print("LEN OF FOUND", str(len(found)))
         for i in range(0, len(found)):
 
             run = 0
@@ -389,6 +390,10 @@ class BioSeqAnn(Model):
                                              + " " + f + " = "
                                              + str(ann
                                                    .annotation[f].seq))
+
+                #print("USED1 " + found[i].name)
+                #print(len(found[i].features))
+                #print(self.refdata.structure_max[locus])
 
                 # Create GFE
                 if create_gfe:
@@ -462,6 +467,7 @@ class BioSeqAnn(Model):
                         self.logger.info(self.logname + " Adding alignment")
                     aligned_ann = self.add_alignment(found[i], aligned_ann)
 
+                #print("USED " + found[i].name)
                 if self.verbose:
                     self.logger.info(self.logname
                                      + " Finished ref_align annotation using "
@@ -673,6 +679,26 @@ class BioSeqAnn(Model):
 
                                 if f == "exon_8" and not is_classII(f):
                                     max_length = 10
+
+                                # IMGT DAT FILE HAS SAME SEQUENCE
+                                # WITH DIFFERENT
+                                # if(f == "exon_5" and locus == "HLA-DQB1"
+                                #    and len(sequence) < 7000
+                                #    and not "intron_5" in annotation.annotation
+                                #    and not "intron_4" in annotation.annotation):
+                                #     self.logger.info(self.logname + " Not mapping exon_5 for HLA-DQB1")
+                                #     continue
+
+                                # if(f == "intron_5" and locus == "HLA-DQB1"
+                                #    and len(sequence) < 7000
+                                #    and not "exon_5" in annotation.annotation
+                                #    and not "intron_4" in annotation.annotation):
+                                #     self.logger.info(self.logname + " Not mapping intron_5 for HLA-DQB1")
+                                #     continue
+
+                                # if(f == "intron_4" and locus == "HLA-DQB1"
+                                #    and len(sequence) > 7000):
+                                #     continue
 
                                 if exon_only:
                                     f_order = self.refdata.structures[locus][f]
