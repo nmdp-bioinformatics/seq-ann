@@ -203,7 +203,8 @@ class BioSeqAnn(Model):
 
     def annotate(self, sequence: Seq=None, locus: str=None,
                  nseqs: int=20, alignseqs: int=10,
-                 skip: List=[]) -> Annotation:
+                 skip: List=[],
+                 rerun: bool=True) -> Annotation:
         """
         annotate - method for annotating a BioPython sequence
 
@@ -333,7 +334,9 @@ class BioSeqAnn(Model):
                                   + " Locus could not be determined!")
                 # TODO: Raise exception
                 return
-            return self.annotate(sequence, locus)
+            return self.annotate(sequence, locus,
+                                 nseqs=nseqs,
+                                 alignseqs=alignseqs)
 
         # Do seq_search first on all blast sequences
         # retain what the largest ref seq is
@@ -341,7 +344,6 @@ class BioSeqAnn(Model):
         partial_ann = None
         leastmissing_feat = None
         found = blast.match_seqs
-        #print("LEN OF FOUND", str(len(found)))
         for i in range(0, len(found)):
 
             run = 0
@@ -390,10 +392,6 @@ class BioSeqAnn(Model):
                                              + " " + f + " = "
                                              + str(ann
                                                    .annotation[f].seq))
-
-                #print("USED1 " + found[i].name)
-                #print(len(found[i].features))
-                #print(self.refdata.structure_max[locus])
 
                 # Create GFE
                 if create_gfe:
@@ -543,10 +541,21 @@ class BioSeqAnn(Model):
                              + " Finished ref_align annotation using full "
                              + leastmissing_feat.name)
 
-        if not isinstance(full_align, Annotation) \
-                or isinstance(full_align, str):
-            self.logger.info(self.logname + " Failed annotation!")
-            return Annotation()
+        if(not isinstance(full_align, Annotation)
+           or isinstance(full_align, str)):
+            if(not rerun or len(sequence) > 4000):
+                self.logger.info(self.logname + " Failed annotation!")
+                return Annotation()
+            else:
+                if self.verbose and self.verbosity > 0:
+                    self.logger.info(self.logname
+                                     + " Reruning annotation!")
+                return self.annotate(sequence=sequence,
+                                     locus=locus,
+                                     alignseqs=2,
+                                     nseqs=nseqs+1,
+                                     skip=[found[0].name],
+                                     rerun=False)
 
         if not full_align.complete_annotation and self.verbose:
             self.logger.info(self.logname + " Incomplete annotation!")
@@ -572,8 +581,21 @@ class BioSeqAnn(Model):
             feats, gfe = self.gfe.get_gfe(full_align, locus)
             full_align.gfe = gfe
             full_align.structure = feats
+
         full_align.clean()
-        return full_align
+        if(full_align.complete_annotation
+           or not rerun or len(sequence) > 4000):
+            return full_align
+        else:
+            if self.verbose and self.verbosity > 0:
+                self.logger.info(self.logname
+                                 + " Reruning annotation!")
+            return self.annotate(sequence=sequence,
+                                 locus=locus,
+                                 nseqs=nseqs+1,
+                                 alignseqs=2,
+                                 skip=[found[0].name],
+                                 rerun=False)
 
     def ref_align(self, found_seqs, sequence: Seq=None,
                   locus: str=None, annotation: Annotation=None,
@@ -679,6 +701,9 @@ class BioSeqAnn(Model):
 
                                 if f == "exon_8" and not is_classII(f):
                                     max_length = 10
+
+                                #if f == "three_prime_UTR" and not is_classII(f):
+                                #    min_length = 60
 
                                 # IMGT DAT FILE HAS SAME SEQUENCE
                                 # WITH DIFFERENT

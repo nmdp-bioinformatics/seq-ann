@@ -203,7 +203,7 @@ class SeqSearch(Model):
             # is not found, then record that feature as missing.
             seq_search = nt_search(str(in_seq.seq), str(feats[feat_name]))
 
-            skip = False
+            #skip = False
             # if(feat_name == "exon_5" and locus == "HLA-DQB1"
             #    and len(in_seq.seq) < 7000 and not "intron_5" in found_feats
             #    and not "intron_4" in found_feats):
@@ -214,7 +214,7 @@ class SeqSearch(Model):
             #     skip = True
                 #print("SKIPPING INTRON 4 seq_search")
 
-            if len(seq_search) == 2 and not skip:
+            if len(seq_search) == 2:
 
                 if self.verbose and self.verbosity > 0:
                     self.logger.info("Found exact match for " + feat_name)
@@ -225,7 +225,7 @@ class SeqSearch(Model):
                 if feat_name == 'three_prime_UTR' \
                         and len(str(in_seq.seq)) > end:
                         end = len(str(in_seq.seq))
-                        print("HERE 1")
+                        #print("HERE 1")
                 # If the feature is found and it's a five_prime_UTR then
                 # the start should always be 0, so insertions at the
                 # beinging of the sequence will be found.
@@ -296,21 +296,21 @@ class SeqSearch(Model):
                         new_seq.append(seq_search[i])
 
                 seq_search = new_seq
-                if(partial_ann and feat_name == "exon_8"
-                   and len(seq_search) == 2 and run > 0):
+                if(partial_ann and feat_name == "exon_8" and run > 0):
                     missing_feats = sorted(list(partial_ann.missing.keys()))
-                    if missing_feats == ['exon_8', 'three_prime_UTR']:
+                    if(missing_feats == ['exon_8', 'three_prime_UTR']
+                       and len(seq_search) <= 3):
                         if self.verbose and self.verbosity > 0:
                             self.logger.info("Resolving exon_8")
 
                         seq_covered -= len(str(feats[feat_name]))
-                        end = int(len(str(feats[feat_name])) + seq_search[len(seq_search)-1])
+                        end = int(len(str(feats[feat_name])) + seq_search[1])
 
                         # If the feature is found and it's a five_prime_UTR then
                         # the start should always be 0, so insertions at the
                         # beinging of the sequence will be found.
-                        start = seq_search[len(seq_search)-1]
-                        si = seq_search[len(seq_search)-1]+1 if seq_search[len(seq_search)-1] != 0 else 0
+                        start = seq_search[1]
+                        si = seq_search[1]+1 if seq_search[1] != 0 else 0
 
                         # check if this features has already been mapped
                         mapcheck = set([0 if i in coordinates else 1
@@ -337,9 +337,14 @@ class SeqSearch(Model):
                         if self.verbose and self.verbosity > 0:
                             self.logger.info("Coordinates | Start = " + str(start) + " - End = " + str(end))
                     else:
+                        if self.verbose and self.verbosity > 0:
+                            self.logger.info("Adding ambig feature " + feat_name)
                         feat_missing.update({feat_name: feats[feat_name]})
-                        ambig_map.update({feat_name: seq_search[1:len(seq_search)]})                        
+                        ambig_map.update({feat_name:
+                                          seq_search[1:len(seq_search)]})
                 else:
+                    if self.verbose and self.verbosity > 0:
+                        self.logger.info("Adding ambig feature " + feat_name)
                     feat_missing.update({feat_name: feats[feat_name]})
                     ambig_map.update({feat_name: seq_search[1:len(seq_search)]})
             else:
@@ -497,6 +502,7 @@ class SeqSearch(Model):
 
                 for i in deleted_coords:
                     mapping[i] = 1
+
                 coordinates.update(deleted_coords)
                 mb = getblocks(coordinates)
                 feat_missing.update(added_feat)
