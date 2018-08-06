@@ -785,9 +785,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               port=biosqlport)
 
         seqann = BioSeqAnn(server=server, verbose=False, verbosity=0)
-        #seqann = BioSeqAnn(server=server,debug={"seqann":4})
         refdata = seqann.refdata
-        #refdata = ReferenceData(dbversion='3270')
 
         # removed 'HLA-DRB1*04:04:01' because it's
         # too large to test with travis
@@ -803,74 +801,37 @@ class TestBioSeqAnn(unittest.TestCase):
                      "HLA-DQA1*05:01:02", "HLA-DRB1*13:02:02",
                      "HLA-DRB4*01:03:04"]
 
-        # HLA-B*07:271 <- insertion at beginning of 5'UTR
-        #test_list = ['HLA-A*03:51','HLA-A*02:01:130']
-
-        # GFE HLA-Bw0-0-0-25-0-846-0-7-0-0-0-0-0-0-0 HLA-Bw0-0-0-25-0-846-0-7-0-0-0-0-0-0-0
-        #test_list = ['HLA-B*15:352']
-        # 'HLA-A*02:19' -> IMGT could be wrong
-        #test_list = ['HLA-A*02:19','HLA-DRB4*01:03:04']
-        #test_list = ['HLA-DRB4*01:03:04']
-        #test_list = ['HLA-B*40:02:05',"HLA-DRB4*01:03:05","HLA-DRB4*01:03:06","HLA-DRB4*01:10","HLA-DRB4*01:63"]
-        
-        #test_list = ["HLA-DQA1*05:01:02","HLA-DRB1*13:02:02"]
-        
-        #test_list = ["HLA-DRB1*13:247"]
-        #test_list = ["HLA-DRB1*13:02:02","HLA-DRB4*01:03:05", "HLA-DRB4*01:03:06"]
-
-        # "HLA-DQA1*05:01:02","HLA-DRB1*13:02:02"
-        #test_list = ["HLA-DQA1*05:01:02"]
-        #test_list = ["HLA-DRB4*01:03:05", "HLA-DRB4*01:03:06", "HLA-DRB4*01:10","HLA-DRB4*01:63"]
-        #test_list = ["HLA-DQA1*05:01:02"]
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
 
             seqrec = refdata.hlaref[seqname]
-            # print("")
-            # print("")
-            #print("************************************")
-            #print("************************************")
-            #print(seqname)
-            #if len(seqrec.seq) > 5:
             locus = seqrec.description.split("*")[0]
             ann1 = seqann.annotate(seqrec, locus=locus)
-            #print("-----")
             ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
             self.assertTrue(ann1.exact)
-            #self.assertEqual(len(ann2.annotation), len(ann1.annotation))
+            self.assertEqual(len(ann2.annotation), len(ann1.annotation))
 
             #for feat in ann2.structure:
             #    self.assertIsInstance(feat, Feature)
 
-            #for f in ann1.annotation:
-                #print(f)
-                #self.assertTrue(f in ann2.annotation)
-                #seq1 = str(ann1.annotation[f])
+            for f in ann1.annotation:
+                self.assertTrue(f in ann2.annotation)
+                seq1 = str(ann1.annotation[f])
                 # seq2 = '** NA **'
                 # if f in ann2.annotation:
                 # if f not in ann2.annotation:
                 #     print(seqname, "MISSING", f)
                 # else:
                 # if f in ann2.annotation:
-                #seq2 = str(ann2.annotation[f].seq)
+                seq2 = str(ann2.annotation[f].seq)
                 #     if seq1 != seq2:
                 #         print(seqname, "NOT EQUAL", f)
                 #print(f, seq1, seq2)
-                #self.assertEqual(seq1, seq2)
+                self.assertEqual(seq1, seq2)
                 #print(f,seq2)
-            print("GFE", ann1.gfe, ann2.gfe)
-            #print("Actual GFE",ann2.gfe)
-            #for f in ann1.features:
-            #    l = ann1.features[f].location.end - ann1.features[f].location.start
-            #    print(f, str(ann1.features[f].location.start), str(ann1.features[f].location.end),str(l))
-            #if ann1.gfe != ann2.gfe:
-            #    print("DIFFER", seqname, ann1.gfe, ann2.gfe)
-            #else:
-            #    print("EQUAL", seqname, ann1.gfe)
+
             self.assertEqual(ann1.gfe, ann2.gfe)
-            #else:
-            #    print("TO SMALL", seqname)
 
         server.close()
         pass
@@ -883,15 +844,13 @@ class TestBioSeqAnn(unittest.TestCase):
         seqann = BioSeqAnn(verbose=False,
                            verbosity=3)
         refdata = seqann.refdata
-        #refdata = ReferenceData()
         test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
                      'HLA-A*01:09:01:01', 'HLA-A*02:545',
                      'HLA-A*29:13', 'HLA-A*24:03:02', 'HLA-A*02:544',
                      'HLA-DQA1*04:01:01:01', 'HLA-A*01:217', 'HLA-A*01:22N',
                      'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
                      'HLA-A*01:09:01:01', 'HLA-B*82:01']
-        #test_list = ['HLA-B*15:352','HLA-B*15:128','HLA-B*15:284']
-        #test_list = ['HLA-B*15:128']
+
         for seqname in refdata.hlaref:
             if seqname not in test_list:
                 continue
