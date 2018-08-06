@@ -585,10 +585,13 @@ class SeqSearch(Model):
                 # TODO: Catch ERROR
                 #if not end_i in mapping:
                 feat_num = self.refdata.structures[loc][featname]
+                x = feat_num-add_num
+                y = feat_num-add_num
                 if feat_num+add_num <= self.refdata.structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
-                        and end_i <= len(mapping) - 1:
-                        x = feat_num-add_num
+                        and end_i <= len(mapping) - 1 \
+                        and x in self.refdata.struct_order[loc] \
+                        and y in self.refdata.struct_order[loc]:
                         expected_p = self.refdata.struct_order[loc][feat_num-add_num]
                         expected_n = self.refdata.struct_order[loc][feat_num+add_num]
                         previous_feat = mapping[start_i]
@@ -607,7 +610,8 @@ class SeqSearch(Model):
                                                         type=featname)})
                 elif feat_num+add_num > self.refdata.structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
-                        and end_i >= max(mapping):
+                        and end_i >= max(mapping) \
+                        and y in self.refdata.struct_order[loc]:
                         expected_p = self.refdata.struct_order[loc][feat_num-add_num]
                         previous_feat = mapping[start_i]
                         if expected_p == previous_feat \
@@ -622,7 +626,8 @@ class SeqSearch(Model):
                                                             strand=1),
                                                         type=featname)})
                 elif feat_num+add_num <= self.refdata.structure_max[loc] \
-                        and feat_num-add_num < 0:
+                        and feat_num-add_num < 0\
+                        and x in self.refdata.struct_order[loc]:
                     expected_n = self.refdata.struct_order[loc][feat_num+add_num]
                     if not end_i in mapping:
                         next_feat = mapping[end_i-1]

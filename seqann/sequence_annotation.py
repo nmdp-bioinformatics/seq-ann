@@ -36,7 +36,6 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import ExactPosition
 from Bio.SeqFeature import FeatureLocation
-from Bio.SeqUtils import nt_search
 
 from seqann.models.annotation import Annotation
 from seqann.models.reference_data import ReferenceData
@@ -122,6 +121,7 @@ class BioSeqAnn(Model):
                  pid: str='NA', kir: bool=False, align: bool=False,
                  load_features: bool=False, store_features: bool=False,
                  cached_features: Dict=None,
+                 safemode: bool=False,
                  debug: Dict=None):
 
         self.kir = kir
@@ -129,9 +129,11 @@ class BioSeqAnn(Model):
         self.debug = debug
         self.server = server
         self.verbose = verbose
+        self.safemode = safemode
         self.verbosity = verbosity
         self.align_verbose = verbose
         self.align_verbosity = verbosity
+        self.dbversion = dbversion
 
         gfe_verbose = verbose
         gfe_verbosity = verbosity
@@ -262,7 +264,7 @@ class BioSeqAnn(Model):
         if isinstance(sequence, Seq) \
                 or isinstance(sequence, str):
                 sequence = SeqRecord(seq=sequence,
-                                     id=self.logname)
+                                     id="NO_ID")
 
         # If sequence contains any characters
         # other than ATCG then the GFE notation
@@ -291,7 +293,8 @@ class BioSeqAnn(Model):
                     self.logger.error(self.logname
                                       + " Locus could not be determined!")
                 # TODO: Raise exception
-                return ''
+                #raise NoLocusException("")
+                return
 
         # Exact match found
         matched_annotation = self.refdata.search_refdata(sequence, locus)
@@ -367,7 +370,6 @@ class BioSeqAnn(Model):
                                              sequence, locus,
                                              partial_ann=partial_ann,
                                              run=run)
-            #print(ann.mapping)
 
             if ann.complete_annotation:
                 if self.verbose:
@@ -439,6 +441,22 @@ class BioSeqAnn(Model):
 
         # Aligned % cutoff
         align_cutoff = .90
+        if((not hasattr(partial_ann, 'features') or
+           len(partial_ann.features) == 0)
+           and len(sequence) > 700 and self.safemode):
+            self.logger.error("No feature matches!")
+            self.logger.error("Running in safe mode. " +
+                              "No alignments will be done!")
+
+            if rerun:
+                # Check to see if reverse comp
+                # TODO: Add note for reverse complement
+                self.logger.info("Running with reverse complement.")
+                sequence = sequence.reverse_complement()
+                return self.annotate(sequence=sequence,
+                                     locus=locus,
+                                     rerun=False)
+            return
 
         # Now loop through doing alignment
         for i in range(0, alignseqs):
@@ -465,7 +483,6 @@ class BioSeqAnn(Model):
                         self.logger.info(self.logname + " Adding alignment")
                     aligned_ann = self.add_alignment(found[i], aligned_ann)
 
-                #print("USED " + found[i].name)
                 if self.verbose:
                     self.logger.info(self.logname
                                      + " Finished ref_align annotation using "
@@ -1441,4 +1458,30 @@ class BioSeqAnn(Model):
             return seq_feat, start
 
 
+class SeqAnnException(Exception):
 
+    def __init__(self, status=None, reason=None, http_resp=None):
+        if http_resp:
+            self.status = http_resp.status
+            self.reason = http_resp.reason
+            self.body = http_resp.data
+            self.headers = http_resp.getheaders()
+        else:
+            self.status = status
+            self.reason = reason
+            self.body = None
+            self.headers = None
+
+    def __str__(self):
+        """
+        Custom error messages for exception
+        """
+        error_message = "({0})\n"\
+                        "Reason: {1}\n".format(self.status, self.reason)
+        if self.headers:
+            error_message += "HTTP response headers: {0}\n".format(self.headers)
+
+        if self.body:
+            error_message += "HTTP response body: {0}\n".format(self.body)
+
+        return error_message
