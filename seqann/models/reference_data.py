@@ -193,6 +193,10 @@ class ReferenceData(Model):
             self.logger.error("Unexpected error:", sys.exc_info()[0])
             raise
 
+        #if self.verbose:
+        #    mem = "{:4.4f}".format(sys.getsizeof(self.all_feats) / 1000000)
+        #    self.logger.info(self.logname + "Finished loading all features * all_feats = " + mem + " MB *")
+
         feature_lengths = tree()
         columns = ['mean', 'std', 'min', 'max']
 
@@ -694,6 +698,12 @@ class ReferenceData(Model):
 
         #seqrecord = self.seqrecord(allele, loc)
         complete_annotation = get_features(seqrecord)
+        # print("&&&&&&")
+        # for f in seqrecord.features:
+        #     #print(f)
+        #     size = f.location.end - f.location.start
+        #     print(f.type, str(f.location.start), str(f.location.end), str(size))
+        # print("&&&&&&")
         annotation = Annotation(annotation=complete_annotation,
                                 method='match',
                                 complete_annotation=True)

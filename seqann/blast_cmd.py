@@ -138,7 +138,8 @@ def blastn(sequences, locus, nseqs, kir=False,
 
     alleles = []
     full_sequences = []
-    l = len(blast_qresult.hits) if nseqs > len(blast_qresult.hits) else nseqs
+    load_blast = 70 if nseqs < 70 else nseqs
+    l = len(blast_qresult.hits) if load_blast > len(blast_qresult.hits) else load_blast
 
     # TODO: update all blast files to have HLA-
     if locus in refdata.hla_loci and not kir:
@@ -155,6 +156,8 @@ def blastn(sequences, locus, nseqs, kir=False,
     # TODO: sort alleles by number of features they contain and evalue
     # Use biosql db if provided
     # otherwise use IMGT dat file
+    final_seqs = []
+    rmax = refdata.structure_max[locus]
     if refdata.server_avail:
         db = refdata.server[refdata.dbversion + "_" + loc]
         full_sequences = []
@@ -176,7 +179,40 @@ def blastn(sequences, locus, nseqs, kir=False,
         for s in full_sequences:
             s.name = s.description.split(",")[0]
 
+    i = 1
+    last_seq = []
+    max_f = 0
+    added_max = False
+    full_feats = False
+    for s in full_sequences:
+
+        fs = len([f.type for f in s.features
+                  if not f.type in ['source', 'CDS']])
+        if i <= nseqs:
+            final_seqs.append(s)
+            max_f = fs if fs > max_f else max_f
+
+        if i <= nseqs and max_f < rmax:
+            full_feats = True
+
+        if(i >= nseqs and fs == max_f and not added_max):
+            if len(last_seq) >= 10:
+                last_seq.insert(3, s)
+            else:
+                last_seq.append(s)
+            added_max = True
+
+        if(fs > max_f and len(last_seq) < 10
+           and i >= nseqs and len(last_seq) < 10):
+            last_seq.append(s)
+
+        i += 1
+
+    if full_feats:
+        for s in last_seq:
+            final_seqs.append(s)
+
     #   Build Blast object
-    blast_o = Blast(match_seqs=full_sequences, alleles=alleles)
+    blast_o = Blast(match_seqs=final_seqs, alleles=alleles)
     return blast_o
 

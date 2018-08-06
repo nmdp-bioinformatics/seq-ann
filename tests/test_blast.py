@@ -78,13 +78,13 @@ if os.getenv("BIOSQLPORT"):
     biosqlport = int(os.getenv("BIOSQLPORT"))
 
 verbose = False
-if os.getenv("VERBOSE"):
-    if os.getenv("VERBOSE") == "True" \
-            or int(os.getenv("VERBOSE")) == 1:
-        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-                            datefmt='%m/%d/%Y %I:%M:%S %p',
-                            level=logging.INFO)
-        verbose = True
+# if os.getenv("VERBOSE"):
+#     if os.getenv("VERBOSE") == "True" \
+#             or int(os.getenv("VERBOSE")) == 1:
+#         logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+#                             datefmt='%m/%d/%Y %I:%M:%S %p',
+#                             level=logging.INFO)
+#         verbose = True
 
 verbosity = 0
 if os.getenv("VERBOSITY"):
@@ -126,7 +126,7 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
         server.close()
         pass
 
@@ -140,7 +140,7 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
         pass
 
     def test_002_blastnoloc(self):
@@ -154,7 +154,7 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:12")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
         pass
 
     @unittest.skipUnless(conn(), "TestBlast 002 MySQL connection")
@@ -216,6 +216,6 @@ class TestBlast(unittest.TestCase):
         self.assertIsInstance(blast_o, Blast)
         self.assertFalse(blast_o.failed)
         self.assertEqual(blast_o.alleles[0], "HLA-A*01:01:01:01")
-        self.assertEqual(len(blast_o.alleles), 3)
+        self.assertEqual(len(blast_o.match_seqs), 3)
 
 
