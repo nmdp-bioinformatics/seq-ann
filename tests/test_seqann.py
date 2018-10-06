@@ -31,11 +31,17 @@ Tests for `seqann` module.
 """
 import os
 import json
+import time
 import pymysql
 import unittest
 import warnings
 from Bio import SeqIO
 from BioSQL import BioSeqDatabase
+
+import csv
+import glob
+import pickle
+import collections
 
 from seqann.util import get_features
 from seqann.models.annotation import Annotation
@@ -784,6 +790,7 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
 
+        #seqann1 = BioSeqAnn(verbose=False, verbosity=0)
         seqann = BioSeqAnn(server=server, verbose=False, verbosity=0)
         refdata = seqann.refdata
 
@@ -836,41 +843,41 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    def test_020_skip(self):
-        # import logging
-        # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-        #                     datefmt='%m/%d/%Y %I:%M:%S %p',
-        #                     level=logging.INFO)
-        seqann = BioSeqAnn(verbose=False,
-                           verbosity=3)
-        refdata = seqann.refdata
-        test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
-                     'HLA-A*01:09:01:01', 'HLA-A*02:545',
-                     'HLA-A*29:13', 'HLA-A*24:03:02', 'HLA-A*02:544',
-                     'HLA-DQA1*04:01:01:01', 'HLA-A*01:217', 'HLA-A*01:22N',
-                     'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
-                     'HLA-A*01:09:01:01', 'HLA-B*82:01']
+    # def test_020_skip(self):
+    #     # import logging
+    #     # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+    #     #                     datefmt='%m/%d/%Y %I:%M:%S %p',
+    #     #                     level=logging.INFO)
+    #     seqann = BioSeqAnn(verbose=False,
+    #                        verbosity=3)
+    #     refdata = seqann.refdata
+    #     test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
+    #                  'HLA-A*01:09:01:01', 'HLA-A*02:545',
+    #                  'HLA-A*29:13', 'HLA-A*24:03:02', 'HLA-A*02:544',
+    #                  'HLA-DQA1*04:01:01:01', 'HLA-A*01:217', 'HLA-A*01:22N',
+    #                  'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
+    #                  'HLA-A*01:09:01:01', 'HLA-B*82:01']
 
-        for seqname in refdata.hlaref:
-            if seqname not in test_list:
-                continue
-
-            seqrec = refdata.hlaref[seqname]
-            locus = seqrec.description.split("*")[0]
-            ann1 = seqann.annotate(seqrec, locus=locus)
-            ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
-            self.assertTrue(ann1.exact)
-            self.assertEqual(len(ann2.annotation), len(ann1.annotation))
-            self.assertEqual(ann1.gfe, ann2.gfe)
-            self.assertGreater(len(ann2.structure), 1)
-            for feat in ann2.structure:
-                self.assertIsInstance(feat, Feature)
-            for f in ann1.annotation:
-                self.assertTrue(f in ann2.annotation)
-                seq1 = str(ann1.annotation[f])
-                seq2 = str(ann2.annotation[f].seq)
-                self.assertEqual(seq1, seq2)
-        pass
+    #     for seqname in refdata.hlaref:
+    #         if seqname not in test_list:
+    #             continue
+    #         # print(seqname)
+    #         seqrec = refdata.hlaref[seqname]
+    #         locus = seqrec.description.split("*")[0]
+    #         ann1 = seqann.annotate(seqrec, locus=locus)
+    #         ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
+    #         self.assertTrue(ann1.exact)
+    #         self.assertEqual(len(ann2.annotation), len(ann1.annotation))
+    #         self.assertEqual(ann1.gfe, ann2.gfe)
+    #         self.assertGreater(len(ann2.structure), 1)
+    #         for feat in ann2.structure:
+    #             self.assertIsInstance(feat, Feature)
+    #         for f in ann1.annotation:
+    #             self.assertTrue(f in ann2.annotation)
+    #             seq1 = str(ann1.annotation[f])
+    #             seq2 = str(ann2.annotation[f].seq)
+    #             self.assertEqual(seq1, seq2)
+    #     pass
 
     @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 016 Requires MySQL connection")
@@ -919,6 +926,93 @@ class TestBioSeqAnn(unittest.TestCase):
                                      str(annotation.annotation[feat]))
         server.close()
         pass
+
+    # def test_022_dataload(self):
+    #     # import logging
+    #     # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+    #     #                     datefmt='%m/%d/%Y %I:%M:%S %p',
+    #     #                     level=logging.INFO)
+    #     data_dir = '/Users/mhalagan/research/NGS/GFE/gfe/seqann/models'
+    #     featurelength_file = data_dir + "/../data/feature_lengths.csv"
+    #     allele_list = data_dir + '/../data/allele_lists/Allelelist.3310.txt'
+    #     seqref_pickle = data_dir + '/../data/seqref.3310.pickle'
+    #     hlaref_pickle = data_dir + '/../data/hlaref.3310.pickle'
+
+    #     with open(seqref_pickle, 'rb') as handle:
+    #         seqdata = pickle.load(handle)
+    #         handle.close()
+    #     with open(hlaref_pickle, 'rb') as handle:
+    #         hladata = pickle.load(handle)
+    #         handle.close()
+
+    #     hla_names = []
+    #     with open(allele_list, 'r') as f:
+    #         for line in f:
+    #             line = line.rstrip()
+    #             accession, name = line.split(" ")
+    #             hla_names.append("HLA-" + name)
+    #         f.close()
+
+    #     feature_lengths = {}
+    #     columns = ['mean', 'std', 'min', 'max']
+    #     with open(featurelength_file, newline='') as csvfile:
+    #         reader = csv.DictReader(csvfile)
+    #         for row in reader:
+    #             ldata = [row[c] for c in columns]
+    #             if row['locus'] in feature_lengths:
+    #                 feature_lengths[row['locus']].update({row['feature']: ldata})
+    #             else:
+    #                 feature_lengths.update({row['locus']: {row['feature']: ldata}})
+    #         csvfile.close()
+
+    #     refdata = ReferenceData(seqdata=seqdata,
+    #                             hladata=hladata,
+    #                             alleles=hla_names,
+    #                             featuredata=feature_lengths,
+    #                             verbose=True)
+
+    #     seqann = BioSeqAnn(verbose=True, verbosity=3, refdata=refdata)
+    #     self.assertIsInstance(seqann, BioSeqAnn)
+
+    #     refdata = seqann.refdata
+    #     test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59']
+
+    #     for seqname in refdata.hlaref:
+    #         if seqname not in test_list:
+    #             continue
+
+    #         seqrec = refdata.hlaref[seqname]
+    #         locus = seqrec.description.split("*")[0]
+    #         ann1 = seqann.annotate(seqrec, locus=locus)
+    #         ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
+    #         self.assertTrue(ann1.exact)
+    #         self.assertEqual(len(ann2.annotation), len(ann1.annotation))
+    #         self.assertEqual(ann1.gfe, ann2.gfe)
+    #         self.assertGreater(len(ann2.structure), 1)
+    #         for feat in ann2.structure:
+    #             self.assertIsInstance(feat, Feature)
+    #         for f in ann1.annotation:
+    #             self.assertTrue(f in ann2.annotation)
+    #             seq1 = str(ann1.annotation[f])
+    #             seq2 = str(ann2.annotation[f].seq)
+    #             self.assertEqual(seq1, seq2)
+    #     pass
+
+    # def test_023_dataload(self):
+    #     import logging
+    #     logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+    #                         datefmt='%m/%d/%Y %I:%M:%S %p',
+    #                         level=logging.INFO)
+    #     seqann = BioSeqAnn(verbose=True, verbosity=5)
+    #     input_seq = self.data_dir + '/insertion_seqs.fasta'
+    #     in_seqrec = list(SeqIO.parse(input_seq, "fasta"))[4]
+    #     ann_seq = seqann.annotate(in_seqrec, "HLA-DRB1")
+    #     print(ann_seq)
+    #     self.assertEqual(1, 1)
+
+    # TODO: Tests to add:
+    #      - test safemode
+    #      - test
 
     # def test_022_diffdbs(self):
 

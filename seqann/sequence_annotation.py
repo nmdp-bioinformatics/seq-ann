@@ -120,6 +120,7 @@ class BioSeqAnn(Model):
                  datfile: str='', verbose: bool=False, verbosity: int=0,
                  pid: str='NA', kir: bool=False, align: bool=False,
                  load_features: bool=False, store_features: bool=False,
+                 refdata: ReferenceData=None,
                  cached_features: Dict=None,
                  safemode: bool=False,
                  debug: Dict=None):
@@ -190,23 +191,27 @@ class BioSeqAnn(Model):
                        store_features=store_features,
                        cached_features=cached_features)
 
-        # Initalize reference data
-        self.refdata = ReferenceData(server=server,
-                                     dbversion=dbversion,
-                                     alignments=align,
-                                     verbose=refdata_verbose,
-                                     verbosity=refdata_verbosity,
-                                     kir=kir)
+        if refdata:
+            # Initialize with preloaded reference object
+            self.refdata = refdata
+        else:
+            # Create new reference data object
+            self.refdata = ReferenceData(server=server,
+                                         dbversion=dbversion,
+                                         alignments=align,
+                                         verbose=refdata_verbose,
+                                         verbosity=refdata_verbosity,
+                                         kir=kir)
 
         # Initalize SeqSearch for matching features
-        self.seqsearch = SeqSearch(refdata=self.refdata,
-                                   verbose=seqsearch_verbose,
+        self.seqsearch = SeqSearch(verbose=seqsearch_verbose,
                                    verbosity=seqsearch_verbosity)
 
     def annotate(self, sequence: Seq=None, locus: str=None,
                  nseqs: int=20, alignseqs: int=10,
                  skip: List=[],
-                 rerun: bool=True) -> Annotation:
+                 rerun: bool=True,
+                 full: bool=True) -> Annotation:
         """
         annotate - method for annotating a BioPython sequence
 
@@ -320,9 +325,6 @@ class BioSeqAnn(Model):
 
         # If the blastn fails..
         if blast.failed:
-            self.logger.error(self.logname + " blastn failed! "
-                              + locus + " " + str(sequence.seq))
-
             # Try and determine the locus and rerun. This is
             # useful for cases when the sequences is associated
             # with the wrong locus.
@@ -340,6 +342,7 @@ class BioSeqAnn(Model):
             return self.annotate(sequence, locus,
                                  nseqs=nseqs,
                                  alignseqs=alignseqs)
+            return
 
         # Do seq_search first on all blast sequences
         # retain what the largest ref seq is
@@ -543,6 +546,11 @@ class BioSeqAnn(Model):
             if not is_classII(locus) and align_cutoff < .88:
                 align_cutoff = .88
 
+        # Don't run full
+        # annotation if flag is passed
+        # if not full:
+        #     return
+
         if self.verbose:
             self.logger.info(self.logname + " running full alignment")
 
@@ -656,17 +664,18 @@ class BioSeqAnn(Model):
             if hasattr(annotation, 'annotation') and annotation.annotation:
                 annoated = list(annotation.annotation.keys())
 
-            # print("HERE HERE HERE")
             # Extract the missing blocks and
             # only align those blocks to the known
             # missing features
             # Start with all blocks missing
             # and then delete block if it is found
+            ib = 0
             tmp_missing = []
             missing_blocks = annotation.blocks
             for b in sorted(annotation.blocks):
                 # **** Check if block equals full input sequence *** #
                 # - If it does, then just align the ful
+
                 start = b[0]-1 if b[0] != 0 else 0
                 seq_feat = \
                     SeqFeature(
@@ -675,8 +684,10 @@ class BioSeqAnn(Model):
                             ExactPosition(b[len(b)-1]),
                             strand=1),
                         type="unmapped")
-
+                #print("1 - STARTING VALUE = " + str(start))
+                #print("1 - END VALUE = " + str(b[len(b)-1]))
                 feat = seq_feat.extract(annotation.seq)
+                #print(feat)
                 combosrecs, exons, fullrec = self._refseqs(locus,
                                                            start,
                                                            annotation,
@@ -688,27 +699,33 @@ class BioSeqAnn(Model):
                     for combseqr in combosrecs:
                         self.logger.info(self.logname + " " + combseqr.id)
 
+                ic = 0
                 for combseqr in combosrecs:
+                    if self.verbose:
+                        self.logger.info(self.logname + " aligning ->" + combseqr.id)
+                    
                     an, ins, dels = align_seqs(combseqr, feat, locus,
                                                start,
-                                               self.refdata,
                                                annotation.missing,
-                                               annoated,
+                                               len(annoated),
                                                cutoff=cutoff,
                                                verbose=self.align_verbose,
                                                verbosity=self.align_verbosity)
 
                     mapped_feat = list(an.annotation.keys())
+                    #self.logger.info(self.logname + " " + locus + " HERE 0 **")
                     if len(mapped_feat) >= 1:
                         for f in an.annotation:
                             f_order = self.refdata.structures[locus][f]
 
+                            #self.logger.info(self.logname + " " + locus + " HERE 1 **")
                             if f in annotation.missing \
                                     and f_order >= start_order:
                                 length, lengthsd = 0, 0
                                 length = float(self.refdata.feature_lengths[locus][f][0])
                                 lengthsd = float(self.refdata.feature_lengths[locus][f][1])
 
+                                #self.logger.info(self.logname + " " + locus + " HERE 2 **")
                                 # min and max lengths expected
                                 incr = 3 if not is_classII(locus) else 4
 
@@ -771,34 +788,34 @@ class BioSeqAnn(Model):
                                             self.logger.info(self.logname + " out of order2 -> " + mf + " " + f)
                                             del an.features[f]
                                             continue
-                                else:
+                                #else:
 
                                     #Make sure order of alignment make sense
-                                    if an.features[f].location.start == 0 \
-                                            and f != "five_prime_UTR" \
-                                            and 'three_prime_UTR' in annotation.annotation:
-                                        del an.features[f]
-                                        continue
+                                    # if an.features[f].location.start == 0 \
+                                    #         and f != "five_prime_UTR" \
+                                    #         and 'three_prime_UTR' in annotation.annotation:
+                                    #     del an.features[f]
+                                    #     continue
 
-                                    f_order = self.refdata.structures[locus][f]
-                                    endp = an.features[f].location.end + 1
-                                    if endp in annotation.mapping and not isinstance(annotation.mapping[endp], int):
-                                        mf = annotation.mapping[endp]
-                                        expected_order = f_order + 1
-                                        if expected_order != self.refdata.structures[locus][mf]:
-                                            self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)
-                                            del an.features[f]
-                                            continue
+                                    # f_order = self.refdata.structures[locus][f]
+                                    # endp = an.features[f].location.end + 1
+                                    # if endp in annotation.mapping and not isinstance(annotation.mapping[endp], int):
+                                    #     mf = annotation.mapping[endp]
+                                    #     expected_order = f_order + 1
+                                    #     if expected_order != self.refdata.structures[locus][mf]:
+                                    #         self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)
+                                    #         del an.features[f]
+                                    #         continue
 
-                                    startp = an.features[f].location.start - 1
-                                    if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
-                                        mf = annotation.mapping[startp]
-                                        expected_order = f_order - 1
-                                        if expected_order != self.refdata.structures[locus][mf]:
-                                            self.logger.info(self.logname + " out of order22 -> " + mf + " " + f)
-                                            del an.features[f]
-                                            continue
-
+                                    # startp = an.features[f].location.start - 1
+                                    # if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
+                                    #     mf = annotation.mapping[startp]
+                                    #     expected_order = f_order - 1
+                                    #     if expected_order != self.refdata.structures[locus][mf]:
+                                    #         self.logger.info(self.logname + " out of order22 -> " + mf + " " + f)
+                                    #         del an.features[f]
+                                    #         continue
+                                #print("HERE %%%%%%%%")
                                 if self.verbose and self.verbosity > 0:
                                     sl = str(len(an.annotation[f]))
                                     #print(str(an.annotation[f].seq))
@@ -844,6 +861,7 @@ class BioSeqAnn(Model):
                                                          + " " + sl + " ! >= !"
                                                          + str(min_length))
 
+                                
                                 if(len(an.annotation[f]) <= max_length and
                                         len(an.annotation[f]) >= min_length):
                                     if self.verbose and self.verbosity > 0:
@@ -878,7 +896,7 @@ class BioSeqAnn(Model):
                                     if f in annotation.missing:
                                         del annotation.missing[f]
 
-                                    # print("HERE 1")
+                                    #print("HERE***************************************")
                                     #if b in annotation.blocks:
                                     #    del annotation.blocks[annotation.blocks.index(b)]
                                     #     print(annotation.blocks)
@@ -900,13 +918,18 @@ class BioSeqAnn(Model):
                                     #     del annotation.blocks[annotation.blocks.index(b)]
                                     #     if b in missing_blocks:
                                     #         del missing_blocks[missing_blocks.index(b)]
-
+                                else:
+                                    self.logger.info(self.logname + " FAILED HERE!!!!!!!!!")
                                 #elif b not in mbtmp and b in missing_blocks:
                                 #    mbtmp.append(b)
+                            else:
+                                self.logger.info(self.logname + " OUT OF ORDER !!!!!!!!!!!!!!!!!!!")
+                    #else:
+                    #    self.logger.info(self.logname + " NOT MAPPED!")
                     #elif b not in mbtmp and b in missing_blocks:
                         #del missing_blocks[missing_blocks.index(b)]
                     #    mbtmp.append(b)
-
+                    #print("GETTING COORDINATES!")
                     coordinates = dict(map(lambda x: [x, 1], [i for i in range(0, len(sequence.seq)+1)]))
                     for f in annotation.features:
                         s = annotation.features[f].location.start
@@ -940,12 +963,12 @@ class BioSeqAnn(Model):
                     # print(print(",".join(annotation.features.keys())))
                     # for fe in annotation.features:
                     #     print(fe, str(annotation.features[fe].location.start), str(annotation.features[fe].location.end))
-                    # print("BEFORE BLOCKS")
-                    # print(annotation.blocks)
-
+                    #print("2 BEFORE BLOCKS")
+                    #print(annotation.blocks)
                     blocks = getblocks(coordinates)
                     annotation.blocks = blocks
                     annotation.check_annotation()
+
                     if annotation.complete_annotation:
                         if self.verbose:
                             self.logger.info(self.logname
@@ -953,6 +976,41 @@ class BioSeqAnn(Model):
                                              + " with targeted ref_align")
                         return annotation
                     else:
+
+                        start2 = annotation.blocks[0][0]-1 if annotation.blocks[0][0] != 0 else 0
+                        end2 = annotation.blocks[0][len(annotation.blocks[0]) - 1]
+
+                        # if start2 != start or end2 != b[len(b)-1]:
+                        #     start = start2
+                        #     b[len(b)-1] = end2
+
+                        #     seq_feat = \
+                        #         SeqFeature(
+                        #             FeatureLocation(
+                        #                 ExactPosition(start2),
+                        #                 ExactPosition(end2),
+                        #                 strand=1),
+                        #             type="unmapped")
+                        #     feat = seq_feat.extract(annotation.seq)
+                        #     icn = ic + 1
+                        #     combosrecs.insert(icn, combseqr)
+
+                        #     tmpann = self.seqsearch.search_seqs(found_seqs,
+                        #                 sequence,
+                        #                 locus,
+                        #                 partial_ann=annotation,
+                        #                 run=99)
+                        #     if tmpann.complete_annotation:
+                        #         for f in tmpann.annotation:
+                        #             if f not in annotation.annotation:
+                        #                 annotation.annotation[f] = tmpann.annotation[f]
+                        #         if self.verbose:
+                        #             self.logger.info(self.logname
+                        #                              + " Completed annotation"
+                        #                              + " with targeted ref_align and seqsearch!")
+
+                        #         return tmpann
+                        #     annotation = tmpann
                         if an.features:
                             # for f in an.features:
                             #     f_order = self.refdata.structures[locus][f]
@@ -973,7 +1031,8 @@ class BioSeqAnn(Model):
                                                                 locus,
                                                                 partial_ann=annotation,
                                                                 run=run)
-
+                            #print("AFTER SEQ SEARCH BLOCKS")
+                            #print(tmpann.blocks)
                             if tmpann.complete_annotation:
                                 for f in tmpann.annotation:
                                     if f not in annotation.annotation:
@@ -985,6 +1044,9 @@ class BioSeqAnn(Model):
 
                                 return tmpann
                             annotation = tmpann
+                        #else:
+                        #    print("FEATURES DO NOT CHANGE")
+                    ic += 1
 
                 # Has to be missing exons
                 exons_n = 0
@@ -994,9 +1056,8 @@ class BioSeqAnn(Model):
 
                 if len(exons.seq) >= 4 and exons_n > 0:
                     exonan, ins, dels = align_seqs(exons, feat, locus, start,
-                                                   self.refdata,
                                                    annotation.missing,
-                                                   annoated,
+                                                   len(annoated),
                                                    cutoff=cutoff,
                                                    verbose=self.align_verbose,
                                                    verbosity=self.align_verbosity)
@@ -1036,6 +1097,8 @@ class BioSeqAnn(Model):
                             if self.verbose:
                                 self.logger.info(self.logname + " Completed annotation with targeted exons ref_align")
                             return annotation
+                #ib += 1
+                #print("NEXT BLOCK !!!  == " + str(ib))
             return annotation
         elif partial_ann:
 
@@ -1083,9 +1146,8 @@ class BioSeqAnn(Model):
 
                     fullref, ins, dels = align_seqs(fullrec, feat,
                                                     locus, start,
-                                                    self.refdata,
                                                     partial_ann.missing,
-                                                    annoated,
+                                                    len(annoated),
                                                     cutoff=cutoff,
                                                     verbose=self.align_verbose,
                                                     verbosity=self.align_verbosity)
@@ -1324,11 +1386,11 @@ class BioSeqAnn(Model):
                     continue
                 rec = all_seqrecs[nfeat]
 
-                length = float(self.refdata.feature_lengths[locus][f][0])
-                lengthsd = float(self.refdata.feature_lengths[locus][f][1])
+                #length = float(self.refdata.feature_lengths[locus][f][0])
+                #lengthsd = float(self.refdata.feature_lengths[locus][f][1])
 
-                max_length = length + lengthsd
-                min_length = length - lengthsd
+                #max_length = length + lengthsd
+                #min_length = length - lengthsd
                 #if len(rec.seq) <= max_length \
                 #       and len(rec.seq) >= min_length:
                 recf, x = self._make_seqfeat(0, rec.seq, nfeat)
@@ -1352,13 +1414,13 @@ class BioSeqAnn(Model):
                         ref_feats.append(nfeat)
                         length, lengthsd = 0, 0
 
-                        for fr in ref_feats:
-                            length += float(self.refdata.feature_lengths[locus][fr][0])
-                            lengthsd += float(self.refdata.feature_lengths[locus][fr][1])
+                        #for fr in ref_feats:
+                        #    length += float(self.refdata.feature_lengths[locus][fr][0])
+                        #    lengthsd += float(self.refdata.feature_lengths[locus][fr][1])
 
                         # min and max lengths expected
-                        max_length = length + lengthsd
-                        min_length = length - lengthsd
+                        #max_length = length + lengthsd
+                        #min_length = length - lengthsd
 
                         rec = all_seqrecs[nfeat]
                         feat_names.append(nfeat)
@@ -1373,7 +1435,7 @@ class BioSeqAnn(Model):
                                  + "_" + str(randomid(N=2))
 
                         #if len(ctmpseq) <= max_length \
-                        #       and len(ctmpseq) >= min_length:
+                        #      and len(ctmpseq) >= min_length:
                         tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
                                            id=ctmpid)
                         combos.append(tmprec)
@@ -1392,13 +1454,13 @@ class BioSeqAnn(Model):
 
                     length, lengthsd = 0, 0
 
-                    for fr in ref_feats:
-                        length += float(self.refdata.feature_lengths[locus][fr][0])
-                        lengthsd += float(self.refdata.feature_lengths[locus][fr][1])
+                    #for fr in ref_feats:
+                    #    length += float(self.refdata.feature_lengths[locus][fr][0])
+                    #    lengthsd += float(self.refdata.feature_lengths[locus][fr][1])
 
                     # min and max lengths expected
-                    max_length = length + lengthsd
-                    min_length = length - lengthsd
+                    #max_length = length + lengthsd
+                    #min_length = length - lengthsd
 
                     rec = all_seqrecs[nfeat]
                     feat_names.append(nfeat)
@@ -1413,7 +1475,7 @@ class BioSeqAnn(Model):
                              + "_" + str(randomid(N=2))
 
                     #if len(ctmpseq) <= max_length \
-                    #       and len(ctmpseq) >= min_length:
+                    #      and len(ctmpseq) >= min_length:
                     tmprec = SeqRecord(seq=ctmpseq, features=combo_feats,
                                        id=ctmpid)
                     combos.append(tmprec)

@@ -61,10 +61,7 @@ class GFE(object):
 
     '''
     def __init__(self, url="http://feature.nmdp-bioinformatics.org",
-                 loci=['HLA-A', 'HLA-B', 'HLA-C',
-                       'HLA-DRB1', 'HLA-DQB1', 'HLA-DRB4',
-                       'HLA-DRB5', 'HLA-DPB1', 'HLA-DPA1',
-                       'HLA-DQA1', 'HLA-DRB3'],
+                 loci=['KIR2DP1', 'KIR2DL5A', 'KIR2DS4', 'HLA-DPA1', 'HLA-DQA1', 'HLA-DPB1', 'KIR2DS2', 'KIR3DP1', 'HLA-DRB4', 'KIR2DL1', 'KIR2DS5', 'HLA-DRB3', 'KIR2DS3', 'KIR3DL1', 'HLA-A', 'HLA-DRB5', 'KIR2DL4', 'HLA-DQB1', 'KIR3DL2', 'HLA-B', 'KIR3DS1', 'KIR2DL5B', 'HLA-DRB1', 'KIR3DL3', 'KIR2DS1', 'HLA-C'],
                  load_features=False, store_features=False,
                  cached_features=None,
                  verbose=False,

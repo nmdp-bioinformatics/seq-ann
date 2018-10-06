@@ -101,17 +101,17 @@ class TestSeqSearch(unittest.TestCase):
 
     @unittest.skipUnless(conn(), "TestSeqAnn 001 Requires MySQL connection")
     def test_001_wrefdata(self):
-        server = BioSeqDatabase.open_database(driver="pymysql",
-                                              user=biosqluser,
-                                              passwd=biosqlpass,
-                                              host=biosqlhost,
-                                              db=biosqldb,
-                                              port=biosqlport)
-        refdata = ReferenceData(server=server)
-        seqsearch = SeqSearch(refdata=refdata)
+        # server = BioSeqDatabase.open_database(driver="pymysql",
+        #                                       user=biosqluser,
+        #                                       passwd=biosqlpass,
+        #                                       host=biosqlhost,
+        #                                       db=biosqldb,
+        #                                       port=biosqlport)
+        #refdata = ReferenceData(server=server)
+        seqsearch = SeqSearch()
         self.assertIsInstance(seqsearch, SeqSearch)
-        self.assertTrue(seqsearch.refdata.server_avail)
-        server.close()
+        #self.assertTrue(seqsearch.refdata.server_avail)
+        #server.close()
         pass
 
     # @unittest.skipUnless(conn(), "TestSeqAnn 002 Requires MySQL connection")

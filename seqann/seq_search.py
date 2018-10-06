@@ -41,7 +41,9 @@ from seqann.models.annotation import Annotation
 from seqann.models.base_model_ import Model
 from seqann.util import deserialize_model
 from seqann.util import get_features
-
+from seqann.util import get_structures
+from seqann.util import get_structorder
+from seqann.util import get_structmax
 from seqann.util import is_classII
 
 
@@ -81,26 +83,22 @@ class SeqSearch(Model):
     '''
     classdocs
     '''
-    def __init__(self, refdata: ReferenceData=None,
-                 verbose: bool=False, verbosity: int=0):
+    def __init__(self, verbose: bool=False, verbosity: int=0):
         """
         ReferenceData
         :param refdata: The reference data of this SeqSearch.
         :type refdata: ReferenceData
         """
         self.data_types = {
-            'refdata': ReferenceData,
             'verbose': bool,
             'verbosity': int
         }
 
         self.attribute_map = {
-            'refdata': 'refdata',
             'verbose': 'verbose',
             'verbosity': 'verbosity'
         }
 
-        self._refdata = refdata
         self._verbose = verbose
         self._verbosity = verbosity
         self.logger = logging.getLogger("Logger." + __name__)
@@ -129,6 +127,7 @@ class SeqSearch(Model):
         # The coordinates and mapping will help determine what positions
         # in the sequence have been mapped and to what features. The
         # missing blocks variable will be generated using these.
+        structures = get_structures()
         seq_covered = len(in_seq.seq)
         coordinates = dict(map(lambda x: [x, 1],
                            [i for i in range(0, len(in_seq.seq)+1)]))
@@ -183,7 +182,7 @@ class SeqSearch(Model):
         added_feat = {}
         deleted_coords = {}
         for feat_name in sorted(feats,
-                                key=lambda k: self.refdata.structures[locus][k]):
+                                key=lambda k: structures[locus][k]):
 
             # skip if partial annotation is provided
             # and the feat name is not one of the
@@ -241,8 +240,8 @@ class SeqSearch(Model):
                 skip = False
                 if found_feats and len(found_feats) > 0:
                     for f in found_feats:
-                        o1 = self.refdata.structures[locus][feat_name]
-                        o2 = self.refdata.structures[locus][f]
+                        o1 = structures[locus][feat_name]
+                        o2 = structures[locus][f]
                         loctyp = loctype(found_feats[f].location.start,
                                          found_feats[f].location.end,
                                          start, end)
@@ -268,7 +267,6 @@ class SeqSearch(Model):
                             if self.verbose:
                                 self.logger.error("seqsearch - should't be here "
                                                   + locus + " - "
-                                                  + self.refdata.dbversion
                                                   + " - " + feat_name)
                         mapping[i] = feat_name
 
@@ -323,7 +321,6 @@ class SeqSearch(Model):
                                 if self.verbose:
                                     self.logger.error("seqsearch - should't be here "
                                                       + locus + " - "
-                                                      + self.refdata.dbversion
                                                       + " - " + feat_name)
                             mapping[i] = feat_name
 
@@ -355,6 +352,46 @@ class SeqSearch(Model):
         blocks = getblocks(coordinates)
         exact_matches = list(found_feats.keys())
 
+        ## TODO: Add case for
+        #  HLA-DRB1 exon3 exact match - with intron1 and 3 missing
+        if('exon_3' in exact_matches and run == 99 and locus == 'HLA-DRB1'
+           and 'exon_2' in feat_missing and (len(blocks) == 1 or len(blocks) == 2)):
+
+            #self.logger.info("++++++++++++++++++++++++++++++++ EXON 3 EXACT MATCH ++++++++++++++++++++++++++++++++")
+
+            for b in blocks:
+                x = b[len(b)-1]
+                if x == max(list(mapping.keys())):
+                    featname = "intron_3"
+                    found_feats.update({featname:
+                                        SeqFeature(
+                                            FeatureLocation(
+                                                ExactPosition(b[0]-1),
+                                                ExactPosition(b[len(b)-1]),
+                                                strand=1),
+                                            type=featname)})
+                else:
+                    featname = "exon_2"
+                    found_feats.update({featname:
+                                        SeqFeature(
+                                            FeatureLocation(
+                                                ExactPosition(b[0]),
+                                                ExactPosition(b[len(b)-1]),
+                                                strand=1),
+                                            type=featname)})
+                    seq_covered -= len(b)
+
+                if self.verbose and self.verbosity > 1:
+                    self.logger.info("Successfully annotated class DRB1 II sequence")
+
+                return Annotation(features=found_feats,
+                                  covered=seq_covered,
+                                  seq=in_seq,
+                                  missing=feat_missing,
+                                  ambig=ambig_map,
+                                  method=method,
+                                  mapping=mapping,
+                                  exact_match=exact_matches)
         # If it's a class II sequence and
         # exon_2 is an exact match
         if 'exon_2' in exact_matches and len(blocks) == 2 \
@@ -445,7 +482,7 @@ class SeqSearch(Model):
                 if 'three_prime_UTR' in annotated_feats:
                     del annotated_feats['three_prime_UTR']
 
-            refmissing = [f for f in self.refdata.structures[locus]
+            refmissing = [f for f in structures[locus]
                           if f not in annotated_feats]
 
             if self.verbose and self.verbosity > 1:
@@ -454,11 +491,11 @@ class SeqSearch(Model):
             #print(coordinates)
             #print(mapping)
             # Print out what blocks haven't been annotated
-            if self.verbose and self.verbosity > 2:
-                self.logger.info("Number of blocks not annotated = " + str(len(mb)))
-                self.logger.info("Blocks not annotated:")
-                for b in mb:
-                    self.logger.info(",".join([str(i) for i in b]))
+            # if self.verbose and self.verbosity > 2:
+            #     self.logger.info("Number of blocks not annotated = " + str(len(mb)))
+            #     self.logger.info("Blocks not annotated:")
+            #     for b in mb:
+            #         self.logger.info(",".join([str(i) for i in b]))
 
             # Print out what features were missing by the ref
             if self.verbose and self.verbosity > 2:
@@ -550,6 +587,9 @@ class SeqSearch(Model):
     def _resolve_unmapped(self, blocks, feat_missing, ambig_map,
                           mapping, found_feats, loc, covered, rerun=False):
 
+        structures = get_structures()
+        struct_order = get_structorder()
+        structure_max = get_structmax()
         exon_only = True
         found_exons = 0
         for f in found_feats:
@@ -561,7 +601,7 @@ class SeqSearch(Model):
 
         # Count the number of exons for the given loci
         num_exons = 0
-        for f in self.refdata.structures[loc]:
+        for f in structures[loc]:
             if re.search("exon", f):
                 num_exons += 1
 
@@ -584,16 +624,16 @@ class SeqSearch(Model):
 
                 # TODO: Catch ERROR
                 #if not end_i in mapping:
-                feat_num = self.refdata.structures[loc][featname]
+                feat_num = structures[loc][featname]
                 x = feat_num-add_num
                 y = feat_num-add_num
-                if feat_num+add_num <= self.refdata.structure_max[loc] \
+                if feat_num+add_num <= structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
                         and end_i <= len(mapping) - 1 \
-                        and x in self.refdata.struct_order[loc] \
-                        and y in self.refdata.struct_order[loc]:
-                        expected_p = self.refdata.struct_order[loc][feat_num-add_num]
-                        expected_n = self.refdata.struct_order[loc][feat_num+add_num]
+                        and x in struct_order[loc] \
+                        and y in struct_order[loc]:
+                        expected_p = struct_order[loc][feat_num-add_num]
+                        expected_n = struct_order[loc][feat_num+add_num]
                         previous_feat = mapping[start_i]
                         next_feat = mapping[end_i]
                         if expected_p == previous_feat \
@@ -608,11 +648,11 @@ class SeqSearch(Model):
                                                             ExactPosition(b[len(b)-1]),
                                                             strand=1),
                                                         type=featname)})
-                elif feat_num+add_num > self.refdata.structure_max[loc] \
+                elif feat_num+add_num > structure_max[loc] \
                         and feat_num-add_num >= 0 and start_i >= 0 \
                         and end_i >= max(mapping) \
-                        and y in self.refdata.struct_order[loc]:
-                        expected_p = self.refdata.struct_order[loc][feat_num-add_num]
+                        and y in struct_order[loc]:
+                        expected_p = struct_order[loc][feat_num-add_num]
                         previous_feat = mapping[start_i]
                         if expected_p == previous_feat \
                             and expected_p != 1 \
@@ -625,10 +665,10 @@ class SeqSearch(Model):
                                                             ExactPosition(b[len(b)-1]),
                                                             strand=1),
                                                         type=featname)})
-                elif feat_num+add_num <= self.refdata.structure_max[loc] \
+                elif feat_num+add_num <= structure_max[loc] \
                         and feat_num-add_num < 0\
-                        and x in self.refdata.struct_order[loc]:
-                    expected_n = self.refdata.struct_order[loc][feat_num+add_num]
+                        and x in struct_order[loc]:
+                    expected_n = struct_order[loc][feat_num+add_num]
                     if not end_i in mapping:
                         next_feat = mapping[end_i-1]
                     else:
@@ -658,9 +698,9 @@ class SeqSearch(Model):
                     #featlen = feat_missing[featname]
                     start_i = b[0]-1
                     end_i = b[len(b)-1]+1
-                    feat_num = self.refdata.structures[loc][featname]
+                    feat_num = structures[loc][featname]
 
-                    if feat_num+add_num <= self.refdata.structure_max[loc] \
+                    if feat_num+add_num <= structure_max[loc] \
                         and feat_num-1 >= 1 \
                             and end_i <= max(mapping.keys()) \
                             and start_i >= 0 \
@@ -668,8 +708,8 @@ class SeqSearch(Model):
 
                         # print(str(end_i),str(max(mapping.keys())),str(min(mapping.keys())))
                         # print(mapping)
-                        expected_p = self.refdata.struct_order[loc][feat_num-add_num]
-                        expected_n = self.refdata.struct_order[loc][feat_num+add_num]
+                        expected_p = struct_order[loc][feat_num-add_num]
+                        expected_n = struct_order[loc][feat_num+add_num]
                         previous_feat = mapping[start_i]
                         next_feat = mapping[end_i]
                         if expected_p == previous_feat \
@@ -691,9 +731,9 @@ class SeqSearch(Model):
                         else:
                             if b not in missing_blocks:
                                 missing_blocks.append(b)
-                    elif feat_num+add_num > self.refdata.structure_max[loc] \
+                    elif feat_num+add_num > structure_max[loc] \
                             and feat_num-add_num >= 1 and start_i >= 0:
-                        expected_p = self.refdata.struct_order[loc][feat_num-add_num]
+                        expected_p = struct_order[loc][feat_num-add_num]
                         previous_feat = mapping[start_i]
                         if expected_p == previous_feat \
                                 and expected_p != 1:
@@ -712,11 +752,11 @@ class SeqSearch(Model):
                         else:
                             if b not in missing_blocks:
                                 missing_blocks.append(b)
-                    elif(feat_num+add_num <= self.refdata.structure_max[loc]
+                    elif(feat_num+add_num <= structure_max[loc]
                             and feat_num-add_num < 1
                             and end_i <= max(mapping)
                             and end_i in mapping):
-                        expected_n = self.refdata.struct_order[loc][feat_num+add_num]
+                        expected_n = struct_order[loc][feat_num+add_num]
                         next_feat = mapping[end_i]
                         if expected_n == next_feat:
                             if b in missing_blocks:
@@ -753,26 +793,6 @@ class SeqSearch(Model):
                                           loc, covered, rerun=True)
         else:
             return found_feats, missing_blocks, mapping
-
-    @property
-    def refdata(self) -> ReferenceData:
-        """
-        Gets the refdata of this SeqSearch.
-
-        :return: The refdata of this SeqSearch.
-        :rtype: ReferenceData
-        """
-        return self._refdata
-
-    @refdata.setter
-    def refdata(self, refdata: ReferenceData):
-        """
-        Sets the refdata of this SeqSearch.
-
-        :param refdata: The refdata of this SeqSearch.
-        :type refdata: ReferenceData
-        """
-        self._refdata = refdata
 
     @property
     def verbose(self) -> bool:

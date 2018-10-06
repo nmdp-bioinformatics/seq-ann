@@ -29,7 +29,6 @@ import glob
 import pickle
 import logging
 import pymysql
-import collections
 import urllib.request
 from typing import List, Dict
 
@@ -76,9 +75,12 @@ class ReferenceData(Model):
     '''
     classdocs
     '''
-    def __init__(self, server: BioSeqDatabase=None, datafile: str=None,
-                 dbversion: str='3310', verbose: bool=False, verbosity: int=0,
-                 kir: bool=False, alignments: bool=False):
+    def __init__(self, server: BioSeqDatabase=None,
+                 datafile: str=None, dbversion: str='3310',
+                 alleles: List=None, seqdata: Dict=None, hladata: Dict=None,
+                 featuredata=None,
+                 kir: bool=False, alignments: bool=False,
+                 verbose: bool=False, verbosity: int=0):
         """
         ReferenceData - a model defined in Swagger
         :param server: The server of this ReferenceData.
@@ -88,7 +90,6 @@ class ReferenceData(Model):
         :param dbversion: The dbversion of this ReferenceData.
         :type dbversion: str
         """
-        tree = lambda: collections.defaultdict(tree)
         self.data_types = {
             'server': BioSeqDatabase,
             'datafile': str,
@@ -109,6 +110,7 @@ class ReferenceData(Model):
         }
 
         self.attribute_map = {
+            'seqdata': 'seqdata',
             'hlaref': 'hlaref',
             'seqref': 'seqref',
             'server': 'server',
@@ -162,6 +164,7 @@ class ReferenceData(Model):
         #           - downloads and creates all files
         #           - removes all data files except alignment files
         #           - Creates blast db
+        #
         # TODO: Download! Don't have in package!
         hla_names = []
         data_dir = os.path.dirname(__file__)
@@ -174,30 +177,34 @@ class ReferenceData(Model):
             allele_list = data_dir + '/../data/allele_lists/Allelelist.' \
                                    + dbversion + '.txt'
 
-        # Open allele list file
-        try:
-            with open(allele_list, 'r') as f:
-                for line in f:
-                    line = line.rstrip()
-                    accession, name = line.split(" ")
-                    if not kir:
-                        hla_names.append("HLA-" + name)
-                    else:
-                        hla_names.append(name)
-                f.close()
-            if self.verbose and verbosity > 0:
-                self.logger.info("Loaded " + str(len(hla_names)) + " allele names")
-        except OSError as err:
-            self.logger.error("OS error: {0}".format(err))
-        except:
-            self.logger.error("Unexpected error:", sys.exc_info()[0])
-            raise
+        if alleles:
+            self._hla_names = alleles
+        else:
+            # Open allele list file
+            try:
+                with open(allele_list, 'r') as f:
+                    for line in f:
+                        line = line.rstrip()
+                        accession, name = line.split(" ")
+                        if not kir:
+                            hla_names.append("HLA-" + name)
+                        else:
+                            hla_names.append(name)
+                    f.close()
+                if self.verbose and verbosity > 0:
+                    self.logger.info("Loaded " + str(len(hla_names)) + " allele names")
+            except OSError as err:
+                self.logger.error("OS error: {0}".format(err))
+            except:
+                self.logger.error("Unexpected error:", sys.exc_info()[0])
+                raise
+            self._hla_names = hla_names
 
         #if self.verbose:
         #    mem = "{:4.4f}".format(sys.getsizeof(self.all_feats) / 1000000)
         #    self.logger.info(self.logname + "Finished loading all features * all_feats = " + mem + " MB *")
 
-        feature_lengths = tree()
+        feature_lengths = {}
         columns = ['mean', 'std', 'min', 'max']
 
         featurelength_file = ''
@@ -206,25 +213,31 @@ class ReferenceData(Model):
         else:
             featurelength_file = data_dir + "/../data/feature_lengths.csv"
 
-        # Open feature file
-        # TODO: use pandas
-        try:
-            with open(featurelength_file, newline='') as csvfile:
-                reader = csv.DictReader(csvfile)
-                for row in reader:
-                    ldata = [row[c] for c in columns]
-                    feature_lengths[row['locus']][row['feature']] = ldata
-                csvfile.close()
-        except OSError as err:
-            self.logger.error("OS error: {0}".format(err))
-        except:
-            self.logger.error("Unexpected error:", sys.exc_info()[0])
-            raise
+        if featuredata:
+            self._feature_lengths = featuredata
+        else:
+            # TODO: use pandas
+            try:
+                columns = ['mean', 'std', 'min', 'max']
+                with open(featurelength_file, newline='') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        ldata = [row[c] for c in columns]
+                        if row['locus'] in feature_lengths:
+                            feature_lengths[row['locus']].update({row['feature']: ldata})
+                        else:
+                            feature_lengths.update({row['locus']: {row['feature']: ldata}})
+                    csvfile.close()
+            except OSError as err:
+                self.logger.error("OS error: {0}".format(err))
+            except:
+                self.logger.error("Unexpected error:", sys.exc_info()[0])
+                raise
+
+            self._feature_lengths = feature_lengths
 
         self._blastdb = blastdb
         self._hla_loci = hla_loci
-        self._hla_names = hla_names
-        self._feature_lengths = feature_lengths
 
         self._structures = get_structures()
         self._struct_order = get_structorder()
@@ -278,7 +291,10 @@ class ReferenceData(Model):
 
         # If no server is provided
         # download the dat file
-        if not self._server_avail:
+        if seqdata and hladata:
+            self._hlaref = hladata
+            self._seqref = seqdata
+        elif not self._server_avail:
             if kir:
                 datfile = data_dir + '/../data/KIR.dat'
             else:
@@ -307,7 +323,7 @@ class ReferenceData(Model):
                 for seqrec in hladata:
                     seqname = seqrec.description.split(",")[0]
                     locus = seqname.split("*")[0]
-                    if locus in self.location:
+                    if locus in self.structure_max:
                         self._hlaref.update({seqname: seqrec})
                         self._seqref.update({str(seqrec.seq): seqname})
 
@@ -495,6 +511,16 @@ class ReferenceData(Model):
         """
         return self._hlaref
 
+    @hlaref.setter
+    def hlaref(self, hlaref: Dict):
+
+        # Sets the seqref of this ReferenceData.
+
+        # :param seqref: The seqref of this ReferenceData.
+        # :type seqref: str
+
+        self._hlaref = hlaref
+
     @property
     def seqref(self) -> Dict:
         """
@@ -505,15 +531,15 @@ class ReferenceData(Model):
         """
         return self._seqref
 
-    # @seqref.setter
-    # def seqref(self, seqref: str):
-        
-    #     Sets the seqref of this ReferenceData.
+    @seqref.setter
+    def seqref(self, seqref: Dict):
 
-    #     :param seqref: The seqref of this ReferenceData.
-    #     :type seqref: str
-        
-    #     self._seqref = seqref
+        # Sets the seqref of this ReferenceData.
+
+        # :param seqref: The seqref of this ReferenceData.
+        # :type seqref: str
+
+        self._seqref = seqref
 
     @property
     def blastdb(self) -> str:
