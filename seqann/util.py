@@ -725,6 +725,29 @@ def get_structures():
             'intron_9': 19,
             'three_prime_UTR': 20
         },
+        'KIR2DL1':
+        {
+            'five_prime_UTR': 1,
+            'exon_1': 2,
+            'intron_1': 3,
+            'exon_2': 4,
+            'intron_2': 5,
+            'exon_3': 6,
+            'intron_3': 7,
+            'exon_4': 8,
+            'intron_4': 9,
+            'exon_5': 10,
+            'intron_5': 11,
+            'exon_6': 12,
+            'intron_6': 13,
+            'exon_7': 14,
+            'intron_7': 15,
+            'exon_8': 16,
+            'intron_8': 17,
+            'exon_9': 18,
+            'intron_9': 19,
+            'three_prime_UTR': 20
+        },
         'KIR2DL5B':
         {
             'five_prime_UTR': 1,
@@ -845,8 +868,35 @@ def get_structures():
     }
 
 
+def get_structmax():
+    return {'KIR2DP1': 20, 'KIR2DL5A': 20, 'KIR2DS4': 20, 'HLA-DPA1': 9, 'HLA-DQA1': 9, 'HLA-DPB1': 11, 'KIR2DS2': 20, 'KIR3DP1': 20, 'HLA-DRB4': 13, 'KIR2DL1': 20, 'KIR2DS5': 20, 'HLA-DRB3': 13, 'KIR2DS3': 20, 'KIR3DL1': 20, 'HLA-A': 17, 'HLA-DRB5': 13, 'KIR2DL4': 20, 'HLA-DQB1': 13, 'KIR3DL2': 20, 'HLA-B': 15, 'KIR3DS1': 20, 'KIR2DL5B': 20, 'HLA-DRB1': 13, 'KIR3DL3': 20, 'KIR2DS1': 20, 'HLA-C': 17}
+
+
 def get_structorder():
     return {
+        'KIR2DL1':
+        {
+            1: 'five_prime_UTR',
+            2: 'exon_1',
+            3: 'intron_1',
+            4: 'exon_2',
+            5: 'intron_2',
+            6: 'exon_3',
+            7: 'intron_3',
+            8: 'exon_4',
+            9: 'intron_4',
+            10: 'exon_5',
+            11: 'intron_5',
+            12: 'exon_6',
+            13: 'intron_6',
+            14: 'exon_7',
+            15: 'intron_7',
+            16: 'exon_8',
+            17: 'intron_8',
+            18: 'exon_9',
+            19: 'intron_9',
+            20: 'three_prime_UTR'
+        },
         'KIR2DP1':
         {
             1: 'five_prime_UTR',

@@ -49,6 +49,7 @@ from seqann.util import get_seqfeat
 from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
 from seqann.util import is_classII
+from seqann.util import get_structures
 from Bio.SeqUtils import nt_search
 
 import logging
@@ -56,7 +57,7 @@ import logging
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing,
+def align_seqs(found_seqs, sequence, locus, start_pos, missing,
                annotated, cutoff=0.90, verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
@@ -132,7 +133,7 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing,
     all_features = []
     if len(align)-2 == 0:
         infeats = get_seqfeat(seqs[0])
-        diffs = count_diffs(align, infeats, sequence, locus, annotated, cutoff, verbose, verbosity)
+        diffs = count_diffs(align, infeats, sequence, locus, cutoff, verbose, verbosity)
         if isinstance(diffs, Annotation):
             if verbose:
                 logger.info("Run alignment with " + found_seqs.id)
@@ -149,11 +150,15 @@ def align_seqs(found_seqs, sequence, locus, start_pos, refdata, missing,
             all_features.append(f)
 
     if len(all_features) > 0:
+        if verbose:
+            logger.info("-- Resolving features -- ")
+            for f in all_features[0]:
+                logger.info("Resolving -> " + f)
+
         annotation = resolve_feats(all_features,
                                    align[len(align)-1],
                                    align[0],
                                    start_pos,
-                                   refdata,
                                    locus,
                                    missing,
                                    verbose,
@@ -205,14 +210,14 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                         #if feats_a[j] == "five_prime_UTR":
                         #    start_val = 0
                         
-                        if((len(annotated) == 0 and start_pos == 0
+                        if((annotated == 0 and start_pos == 0
                             and cutoff < 0.9) or
-                            (len(annotated) == 0 and start_pos == 0
+                            (annotated == 0 and start_pos == 0
                              and st < 6)
                            or (start_pos == 0 and
                                len(feats) == 1 and cutoff < .9)):
                             start_val = 0
-                            #print("HERE 11")
+                            print("HERE !!!!!")
                         else:
                             if feats_a[j] == 'five_prime_UTR':
                                 start_val = 0
@@ -234,9 +239,9 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
 
                     start_val = st
                     if feats_a[j] != 'five_prime_UTR' and start_pos == 0:
-                        if((len(annotated) == 0 and start_pos == 0
+                        if((annotated == 0 and start_pos == 0
                             and cutoff < 0.9) or
-                            (len(annotated) == 0 and start_pos == 0
+                            (annotated == 0 and start_pos == 0
                              and st < 6)
                            or (start_pos == 0 and
                                len(feats) == 1 and cutoff < .9)):
@@ -254,15 +259,10 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                             feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+st), ExactPosition(int(feats[feats_a[l]].location.end + st)), strand=1), type=feats[feats_a[l]].type)
                             #print("After 2-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
                     s = 0
-    # print("## After ##")
-    # for f in feats:
-    #     print(f)
-    #     print(feats[f])
-    # print("##")
     return feats
 
 
-def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verbose=False, verbosity=0):
+def resolve_feats(feat_list, seqin, seqref, start, locus, missing, verbose=False, verbosity=0):
     """
     Resolves features from alignments
 
@@ -271,6 +271,7 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
 
     :return: Annotation.
     """
+    structures = get_structures()
     logger = logging.getLogger("Logger." + __name__)
     seq = SeqRecord(seq=Seq("".join(seqin), SingleLetterAlphabet()))
     seq_covered = len(seq.seq)
@@ -292,15 +293,14 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
 
         # Need to sort
         feature_list = sorted(features.keys(),
-                              key=lambda f: refdata.structures[locus][f])
-        
+                              key=lambda f: structures[locus][f])
+
         diff_f = True
         for feat in feature_list:
+            #logger.error("TRYING TO RESOLVE ***>>>> " +feat)
             if feat in missing:
-
+                #logger.error("FEAT IN MISSING >> " + feat)
                 f = features[feat]
-                #print(feat)
-                #print(f)
                 seqrec = f.extract(seq)
                 seq_covered -= len(seqrec.seq)
                 if re.search("-", str(seqrec.seq)):
@@ -311,6 +311,7 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                     diff += tmdiff
 
                 if seqrec.seq:
+                    #logger.error("FEAT HAS SEQ " + feat)
                     if diff_f and diff > 0:
                         sp = f.location.start + start
                         diff_f = False
@@ -358,16 +359,19 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
         rmapping = {k+start: mapping[k] for k in mapping.keys()}
 
         # Print out what blocks haven't been annotated
-        if verbose and verbosity > 2:
-            logger.info("Blocks not mapped:")
-            for b in blocks:
-                logger.info(",".join([str(i) for i in b]))
+        # if verbose and verbosity > 2:
+        #     logger.info("Blocks not mapped:")
+        #     for b in blocks:
+        #         logger.info(",".join([str(i) for i in b]))
 
         # Print out what features are missing
         if verbose and verbosity > 0 and len(full_annotation.keys()) > 1:
             logger.info("Features resolved:")
             for f in full_annotation:
                 logger.info(f)
+        else:
+            if verbose:
+                logger.info("Failed to resolve")
 
         if not full_annotation or len(full_annotation) == 0:
             if verbose:
@@ -382,7 +386,8 @@ def resolve_feats(feat_list, seqin, seqref, start, refdata, locus, missing, verb
                               seq=seq)
 
 
-def count_diffs(align, feats, inseq, locus, annotated, cutoff, verbose=False, verbosity=0):
+def count_diffs(align, feats, inseq, locus, cutoff,
+                verbose=False, verbosity=0):
     """
     Aligns sequences with clustalw
 
@@ -438,7 +443,7 @@ def count_diffs(align, feats, inseq, locus, annotated, cutoff, verbose=False, ve
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
 
-    if len(inseq) > 8000 and mmper < .10 and mper2 > .80:
+    if len(inseq) > 6000 and mmper < .10 and mper2 > .80:
         if verbose:
             logger.info("Alignment coverage high enough to complete annotation 11")
         return insr, dels
