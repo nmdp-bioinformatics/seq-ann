@@ -776,8 +776,8 @@ class TestBioSeqAnn(unittest.TestCase):
 
     # TODO: Break alleles into separate tests
     #       based on what they are testing
-    #@ignore_warnings
-    #@unittest.skipUnless(conn(), "TestBioSeqAnn 015 Requires MySQL connection")
+    @ignore_warnings
+    @unittest.skipUnless(conn(), "TestBioSeqAnn 015 Requires MySQL connection")
     def test_019_skipserv(self):
         # import logging
         # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
@@ -790,9 +790,9 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
 
-        seqann1 = BioSeqAnn(verbose=False, verbosity=0)
+        #seqann1 = BioSeqAnn(verbose=False, verbosity=0)
         seqann = BioSeqAnn(server=server, verbose=False, verbosity=0)
-        refdata = seqann1.refdata
+        refdata = seqann.refdata
 
         # removed 'HLA-DRB1*04:04:01' because it's
         # too large to test with travis
@@ -812,7 +812,6 @@ class TestBioSeqAnn(unittest.TestCase):
             if seqname not in test_list:
                 continue
 
-            print(seqname)
             seqrec = refdata.hlaref[seqname]
             locus = seqrec.description.split("*")[0]
             ann1 = seqann.annotate(seqrec, locus=locus)
