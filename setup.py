@@ -38,7 +38,7 @@ requirements = [
     'six==1.11.0',
     'bson==0.5.5',
     'pytz==2017.3',
-    'numpy==1.13.3',
+    'numpy',
     'requests==2.18.4'
 ]
 
@@ -49,12 +49,12 @@ test_requirements = [
     'six==1.11.0',
     'bson==0.5.5',
     'unittest',
-    'numpy==1.13.3'
+    'numpy'
 ]
 
 setup(
     name='seqann',
-    version='0.0.43',
+    version='0.0.44',
     description="Sequence Annotation",
     long_description=readme,
     author="Mike Halagan",

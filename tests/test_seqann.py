@@ -367,7 +367,6 @@ class TestBioSeqAnn(unittest.TestCase):
                            verbosity=verbosity,
                            pid="005_partial")
         input_seq = self.data_dir + '/partial_seqs.fasta'
-
         for ex in self.expected['partial']:
             i = int(ex['index'])
             locus = ex['locus']
@@ -465,6 +464,7 @@ class TestBioSeqAnn(unittest.TestCase):
             locus = ex['locus']
             allele = ex['name']
             hla, loc = locus.split("-")
+            print(str(i), allele)
             in_seq = list(SeqIO.parse(input_seq, "fasta"))[i]
             ann = seqann.annotate(in_seq, locus)
             self.assertTrue(ann.complete_annotation)
@@ -790,9 +790,9 @@ class TestBioSeqAnn(unittest.TestCase):
                                               db=biosqldb,
                                               port=biosqlport)
 
-        #seqann1 = BioSeqAnn(verbose=False, verbosity=0)
+        seqann1 = BioSeqAnn(verbose=False, verbosity=0)
         seqann = BioSeqAnn(server=server, verbose=False, verbosity=0)
-        refdata = seqann.refdata
+        refdata = seqann1.refdata
 
         # removed 'HLA-DRB1*04:04:01' because it's
         # too large to test with travis
@@ -843,41 +843,41 @@ class TestBioSeqAnn(unittest.TestCase):
         server.close()
         pass
 
-    # def test_020_skip(self):
-    #     # import logging
-    #     # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
-    #     #                     datefmt='%m/%d/%Y %I:%M:%S %p',
-    #     #                     level=logging.INFO)
-    #     seqann = BioSeqAnn(verbose=False,
-    #                        verbosity=3)
-    #     refdata = seqann.refdata
-    #     test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
-    #                  'HLA-A*01:09:01:01', 'HLA-A*02:545',
-    #                  'HLA-A*29:13', 'HLA-A*24:03:02', 'HLA-A*02:544',
-    #                  'HLA-DQA1*04:01:01:01', 'HLA-A*01:217', 'HLA-A*01:22N',
-    #                  'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
-    #                  'HLA-A*01:09:01:01', 'HLA-B*82:01']
+    def test_020_skip(self):
+        # import logging
+        # logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(funcName)s %(lineno)d: - %(message)s',
+        #                     datefmt='%m/%d/%Y %I:%M:%S %p',
+        #                     level=logging.INFO)
+        seqann = BioSeqAnn(verbose=False,
+                           verbosity=3)
+        refdata = seqann.refdata
+        test_list = ['HLA-C*07:241', 'HLA-A*01:07', 'HLA-A*01:01:59',
+                     'HLA-A*01:09:01:01', 'HLA-A*02:545',
+                     'HLA-A*29:13', 'HLA-A*24:03:02', 'HLA-A*02:544',
+                     'HLA-DQA1*04:01:01:01', 'HLA-A*01:217', 'HLA-A*01:22N',
+                     'HLA-B*51:42', 'HLA-C*03:04:05', 'HLA-A*01:01:01:04',
+                     'HLA-A*01:09:01:01', 'HLA-B*82:01']
 
-    #     for seqname in refdata.hlaref:
-    #         if seqname not in test_list:
-    #             continue
-    #         # print(seqname)
-    #         seqrec = refdata.hlaref[seqname]
-    #         locus = seqrec.description.split("*")[0]
-    #         ann1 = seqann.annotate(seqrec, locus=locus)
-    #         ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
-    #         self.assertTrue(ann1.exact)
-    #         self.assertEqual(len(ann2.annotation), len(ann1.annotation))
-    #         self.assertEqual(ann1.gfe, ann2.gfe)
-    #         self.assertGreater(len(ann2.structure), 1)
-    #         for feat in ann2.structure:
-    #             self.assertIsInstance(feat, Feature)
-    #         for f in ann1.annotation:
-    #             self.assertTrue(f in ann2.annotation)
-    #             seq1 = str(ann1.annotation[f])
-    #             seq2 = str(ann2.annotation[f].seq)
-    #             self.assertEqual(seq1, seq2)
-    #     pass
+        for seqname in refdata.hlaref:
+            if seqname not in test_list:
+                continue
+            print(seqname)
+            seqrec = refdata.hlaref[seqname]
+            locus = seqrec.description.split("*")[0]
+            ann1 = seqann.annotate(seqrec, locus=locus)
+            ann2 = seqann.annotate(seqrec, locus=locus, skip=[seqname])
+            self.assertTrue(ann1.exact)
+            self.assertEqual(len(ann2.annotation), len(ann1.annotation))
+            self.assertEqual(ann1.gfe, ann2.gfe)
+            self.assertGreater(len(ann2.structure), 1)
+            for feat in ann2.structure:
+                self.assertIsInstance(feat, Feature)
+            for f in ann1.annotation:
+                self.assertTrue(f in ann2.annotation)
+                seq1 = str(ann1.annotation[f])
+                seq2 = str(ann2.annotation[f].seq)
+                self.assertEqual(seq1, seq2)
+        pass
 
     @ignore_warnings
     @unittest.skipUnless(conn(), "TestBioSeqAnn 016 Requires MySQL connection")

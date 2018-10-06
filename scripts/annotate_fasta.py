@@ -6,11 +6,12 @@ from Bio import SeqIO
 from BioSQL import BioSeqDatabase
 from BioSQL.BioSeq import DBSeq
 
-from seqann.sequence_annotation import BioSeqAnn
+from seqann import BioSeqAnn
 import time
 import datetime
 import argparse
 import sys
+import logging
 
 
 def main():
@@ -26,36 +27,45 @@ def main():
 
     parser.add_argument("-l", "--locus",
                         required=True,
-                        help="HLA locus",
+                        help="Locus",
                         type=str)
 
     parser.add_argument("-k", "--kir",
-                        required=False,
-                        help="Bool for KIR",
-                        default=False,
-                        type=bool)
+                        help="Option for running with KIR",
+                        action='store_true')
 
     parser.add_argument("-s", "--server",
-                        required=False,
-                        help="BioSQL server",
-                        default=False,
-                        type=bool)
+                        help="Option for running with a server",
+                        action='store_true')
 
     parser.add_argument("-v", "--verbose",
                         help="Option for running in verbose",
-                        default=False,
-                        type=bool)
-
-    if verbose:
-        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p',
-                    level=logging.INFO)
+                        action='store_true')
 
     args = parser.parse_args()
     fastafile = args.file
-    loc = args.locus
-    kir = args.kir
-    serv = args.server
+    locus = args.locus
+
+    verbose = False
+    if args.verbose:
+        verbose = True
+
+    verbose = False
+    if args.verbose:
+        verbose = True
+
+    kir = False
+    if args.kir:
+        kir = True
+
+    serv = False
+    if args.server:
+        serv = True
+
+    if verbose:
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            level=logging.INFO)
 
     server = None
     if serv:
@@ -63,9 +73,9 @@ def main():
                                               passwd="", host="localhost",
                                               db="bioseqdb")
 
-    seqann = BioSeqAnn(verbose=True, server=server, kir=kir)
+    seqann = BioSeqAnn(verbose=True, kir=kir)
     for seq in SeqIO.parse(fastafile, "fasta"):
-        ann = seqann.annotate(seq, loc)
+        ann = seqann.annotate(seq, locus=locus)
         print('{:*^20} {:^20} {:*^20}'.format("", str(seq.description), ""))
         l = 0
         for f in ann.annotation:
