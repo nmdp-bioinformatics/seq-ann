@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from Bio import SeqIO
+from seqann import BioSeqAnn
+
+import argparse
+import logging
+
+
+def main():
+    """This is run if file is directly executed, but not if imported as
+    module. Having this in a separate function  allows importing the file
+    into interactive python, and still able to execute the
+    function for testing"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file",
+                        required=True,
+                        help="input file",
+                        type=str)
+
+    parser.add_argument("-v", "--verbose",
+                        help="Option for running in verbose",
+                        action='store_true')
+
+    args = parser.parse_args()
+    fastafile = args.file
+
+    verbose = False
+    if args.verbose:
+        verbose = True
+
+    if verbose:
+        logging.basicConfig(format='%(asctime)s - %(name)-35s - %(levelname)-5s - %(message)s',
+                            datefmt='%m/%d/%Y %I:%M:%S %p',
+                            level=logging.INFO)
+
+    seqann = BioSeqAnn(verbose=True, kir=True, dbversion="2700")
+    for seq in SeqIO.parse(fastafile, "fasta"):
+        locus = seq.id.replace("*", "_").split("_")[0]
+        try:
+            ann = seqann.annotate(seq, locus=locus)
+        except:
+            print(seq.id, "Failed annotation")
+            continue
+
+        if hasattr(ann, 'gfe'):
+            print(seq.id, ann.gfe)
+        else:
+            print(seq.id, "FAILED")
+
+
+if __name__ == '__main__':
+    """The following will be run if file is executed directly,
+    but not if imported as a module"""
+    main()
+
+

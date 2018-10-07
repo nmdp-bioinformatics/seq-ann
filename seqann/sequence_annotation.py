@@ -325,6 +325,10 @@ class BioSeqAnn(Model):
 
         # If the blastn fails..
         if blast.failed:
+
+            if self.verbose:
+                self.logger.info(self.logname + " Blastn failed!!")
+
             # Try and determine the locus and rerun. This is
             # useful for cases when the sequences is associated
             # with the wrong locus.
