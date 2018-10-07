@@ -82,7 +82,7 @@ def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
 
     locus = set(loci)
     if len(locus) == 1:
-        if has_hla(loci[0]):
+        if has_hla(loci[0]) or kir:
             return loci[0]
         else:
             return "HLA-" + loci[0]
@@ -124,6 +124,7 @@ def blastn(sequences, locus, nseqs, kir=False,
     loc = locus
     if not kir:
         loc = locus.split("-")[1]
+
     blast_qresult = SearchIO.read(output_xml, 'blast-xml')
 
     #   Delete files

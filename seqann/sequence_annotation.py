@@ -325,6 +325,10 @@ class BioSeqAnn(Model):
 
         # If the blastn fails..
         if blast.failed:
+
+            if self.verbose:
+                self.logger.info(self.logname + " Blastn failed!!")
+
             # Try and determine the locus and rerun. This is
             # useful for cases when the sequences is associated
             # with the wrong locus.
@@ -788,33 +792,34 @@ class BioSeqAnn(Model):
                                             self.logger.info(self.logname + " out of order2 -> " + mf + " " + f)
                                             del an.features[f]
                                             continue
-                                #else:
+                                else:
 
-                                    #Make sure order of alignment make sense
-                                    # if an.features[f].location.start == 0 \
-                                    #         and f != "five_prime_UTR" \
-                                    #         and 'three_prime_UTR' in annotation.annotation:
-                                    #     del an.features[f]
-                                    #     continue
+                                    ##Make sure order of alignment make sense
+                                    if an.features[f].location.start == 0 \
+                                            and f != "five_prime_UTR" \
+                                            and 'three_prime_UTR' in annotation.annotation:
+                                        del an.features[f]
+                                        continue
 
-                                    # f_order = self.refdata.structures[locus][f]
-                                    # endp = an.features[f].location.end + 1
-                                    # if endp in annotation.mapping and not isinstance(annotation.mapping[endp], int):
-                                    #     mf = annotation.mapping[endp]
-                                    #     expected_order = f_order + 1
-                                    #     if expected_order != self.refdata.structures[locus][mf]:
-                                    #         self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)
-                                    #         del an.features[f]
-                                    #         continue
+                                    f_order = self.refdata.structures[locus][f]
+                                    endp = an.features[f].location.end + 1
+                                    if endp in annotation.mapping and not isinstance(annotation.mapping[endp], int):
+                                        mf = annotation.mapping[endp]
+                                        expected_order = f_order + 1
+                                        if expected_order != self.refdata.structures[locus][mf]:
+                                            self.logger.info(self.logname + " out of order12 -> " + mf + " " + f)
+                                            del an.features[f]
+                                            continue
 
-                                    # startp = an.features[f].location.start - 1
-                                    # if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
-                                    #     mf = annotation.mapping[startp]
-                                    #     expected_order = f_order - 1
-                                    #     if expected_order != self.refdata.structures[locus][mf]:
-                                    #         self.logger.info(self.logname + " out of order22 -> " + mf + " " + f)
-                                    #         del an.features[f]
-                                    #         continue
+                                    startp = an.features[f].location.start - 1
+                                    if startp in annotation.mapping and not isinstance(annotation.mapping[startp], int):
+                                        mf = annotation.mapping[startp]
+                                        expected_order = f_order - 1
+                                        if expected_order != self.refdata.structures[locus][mf]:
+                                            self.logger.info(self.logname + " out of order22 -> " + mf + " " + f)
+                                            del an.features[f]
+                                            continue
+
                                 #print("HERE %%%%%%%%")
                                 if self.verbose and self.verbosity > 0:
                                     sl = str(len(an.annotation[f]))
@@ -968,7 +973,6 @@ class BioSeqAnn(Model):
                     blocks = getblocks(coordinates)
                     annotation.blocks = blocks
                     annotation.check_annotation()
-
                     if annotation.complete_annotation:
                         if self.verbose:
                             self.logger.info(self.logname
