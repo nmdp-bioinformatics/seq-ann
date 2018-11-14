@@ -24,10 +24,7 @@
 
 from __future__ import absolute_import
 
-import os
 import re
-import sys
-
 from Bio.Alphabet import SingleLetterAlphabet
 from Bio.SeqRecord import SeqRecord
 from subprocess import Popen
@@ -48,9 +45,7 @@ from seqann.util import randomid
 from seqann.util import get_seqfeat
 from seqann.seq_search import getblocks
 from seqann.models.annotation import Annotation
-from seqann.util import is_classII
 from seqann.util import get_structures
-from Bio.SeqUtils import nt_search
 
 import logging
 
@@ -60,12 +55,27 @@ flatten = lambda l: [item for sublist in l for item in sublist]
 def align_seqs(found_seqs, sequence, locus, start_pos, missing,
                annotated, cutoff=0.90, verbose=False, verbosity=0):
     """
-    Aligns sequences with clustalw
+    align_seqs - Aligns sequences with clustalo
 
-    :param locus: string containing HLA locus.
-    :param sequence: string containing sequence data.
-
-    :return: GFEobject.
+    :param found_seqs: List of the reference sequences
+    :type found_seqs: ``List``
+    :param sequence: The input consensus sequence.
+    :type sequence: SeqRecord
+    :param locus: The gene locus associated with the sequence.
+    :type locus: ``str``
+    :param annotated: dictonary of the annotated features
+    :type annotated: ``dict``
+    :param start_pos: Where the reference sequence starts
+    :type start_pos: ``int``
+    :param missing: List of the unmapped features
+    :type missing: ``List``
+    :param cutoff: The alignment cutoff
+    :type cutoff: ``float``
+    :param verbose: Flag for running in verbose mode.
+    :type verbose: ``bool``
+    :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
+    :type verbosity: ``int``
+    :rtype: :ref:`ann`
     """
     logger = logging.getLogger("Logger." + __name__)
     seqs = [found_seqs, sequence]
@@ -78,12 +88,13 @@ def align_seqs(found_seqs, sequence, locus, start_pos, missing,
     seqs.append(found_seqs)
     seqs.append(sequence)
 
-    # print(found_seqs.id)
-    # for f in found_seqs.features:
-    #     print(f)
-    # print("--**--")
     align = []
+
+    # piping to clustalo failed
+    # when sequences were over ~7k bp
     if len(sequence) > 7000:
+
+        # Writing sequences out to fasta files..
         if verbose:
             logger.info("Sequence too large to use pipe")
         randid = randomid()
@@ -100,10 +111,9 @@ def align_seqs(found_seqs, sequence, locus, start_pos, missing,
             align.append(str(aln.seq))
 
         # Delete files
-        # if not "_".join(found_seqs.id.split("_")[0:2]) == "exon_2":
-        #     cleanup(randid)
         cleanup(randid)
     else:
+        # Running clustalo by piping in sequences
         indata = flatten([[">" + str(s.id), str(s.seq)]
                           for s in seqs])
         child = Popen(['clustalo',
@@ -179,15 +189,28 @@ def align_seqs(found_seqs, sequence, locus, start_pos, missing,
 
 
 def find_features(feats, sequ, annotated, start_pos, cutoff):
-    feats_a = list(feats.keys())
+    """
+    find_features - Finds the reference sequence features in the alignments and records the positions 
 
-    #print(found_seqs.id)
-    # print("start = ",str(start_pos))
-    # print("## Before ##")
-    # for f in feats:
-    #     print(f)
-    #     print(feats[f])
-    # print("##")
+    :param feats: Dictonary of sequence features
+    :type feats: ``dict``
+    :param sequ: The sequence alignment for the input sequence
+    :type sequ: ``List``
+    :param annotated: dictonary of the annotated features
+    :type annotated: ``dict``
+    :param start_pos: Where the reference sequence starts
+    :type start_pos: ``int``
+    :param missing: List of the unmapped features
+    :type missing: ``List``
+    :param cutoff: The alignment cutoff
+    :type cutoff: ``float``
+    :param verbose: Flag for running in verbose mode.
+    :type verbose: ``bool``
+    :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
+    :type verbosity: ``int``
+    :rtype: ``List``
+    """
+    feats_a = list(feats.keys())
 
     j = 0
     s = 0
@@ -209,7 +232,7 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                         start_val = feats[feats_a[j]].location.start
                         #if feats_a[j] == "five_prime_UTR":
                         #    start_val = 0
-                        
+
                         if((annotated == 0 and start_pos == 0
                             and cutoff < 0.9) or
                             (annotated == 0 and start_pos == 0
@@ -217,21 +240,16 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                            or (start_pos == 0 and
                                len(feats) == 1 and cutoff < .9)):
                             start_val = 0
-                            print("HERE !!!!!")
+
                         else:
                             if feats_a[j] == 'five_prime_UTR':
                                 start_val = 0
-                                #print("HERE 12")
 
-                        #print("Before 1-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                         feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(start_val), ExactPosition(int(feats[feats_a[j]].location.end + 1)), strand=1), type=feats[feats_a[j]].type)
-                        #print("After 1-1",feats_a[j],str(start_val),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
-                        
+
                         if j != len(feats_a):
                             for l in range(j+1, len(feats_a)):
-                                #print("Before 1-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
                                 feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+1), ExactPosition(int(feats[feats_a[l]].location.end + 1)), strand=1), type=feats[feats_a[l]].type)
-                                #print("After 1-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
             else:
                 if s == 1:
                     st = feats[feats_a[j]].location.start + start
@@ -250,26 +268,34 @@ def find_features(feats, sequ, annotated, start_pos, cutoff):
                         if feats_a[j] == 'five_prime_UTR':
                             start_val = 0
 
-                    #print("Before 2-1",feats_a[j],str(feats[feats_a[j]].location.start),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                     feats[feats_a[j]] = SeqFeature(FeatureLocation(ExactPosition(start_val), ExactPosition(end), strand=1), type=feats[feats_a[j]].type)
-                    #print("After 2-1",feats_a[j],str(start_val),str(feats[feats_a[j]].location.end),feats[feats_a[j]].type)
                     if j != len(feats_a):
-                        for l in range(j+1, len(feats_a)):
-                            #print("Before 2-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
+                        for l in range(j+1, len(feats_a)):     
                             feats[feats_a[l]] = SeqFeature(FeatureLocation(ExactPosition(feats[feats_a[l]].location.start+st), ExactPosition(int(feats[feats_a[l]].location.end + st)), strand=1), type=feats[feats_a[l]].type)
-                            #print("After 2-2",feats_a[l],str(feats[feats_a[l]].location.start),str(feats[feats_a[l]].location.end),feats[feats_a[l]].type)
+
                     s = 0
     return feats
 
 
 def resolve_feats(feat_list, seqin, seqref, start, locus, missing, verbose=False, verbosity=0):
     """
-    Resolves features from alignments
+    resolve_feats - Resolves features from alignments
 
-    :param feat_list: string containing HLA locus.
-    :param seqin: string containing sequence data.
-
-    :return: Annotation.
+    :param feat_list: List of the found features
+    :type feat_list: ``List``
+    :param seqin: The input sequence
+    :type seqin: ``str``
+    :param locus: The input locus
+    :type locus: ``str``
+    :param start: Where the sequence start in the alignment
+    :type start: ``int``
+    :param missing: List of the unmapped features
+    :type missing: ``List``
+    :param verbose: Flag for running in verbose mode.
+    :type verbose: ``bool``
+    :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
+    :type verbosity: ``int``
+    :rtype: :ref:`ann`
     """
     structures = get_structures()
     logger = logging.getLogger("Logger." + __name__)
@@ -297,9 +323,7 @@ def resolve_feats(feat_list, seqin, seqref, start, locus, missing, verbose=False
 
         diff_f = True
         for feat in feature_list:
-            #logger.error("TRYING TO RESOLVE ***>>>> " +feat)
             if feat in missing:
-                #logger.error("FEAT IN MISSING >> " + feat)
                 f = features[feat]
                 seqrec = f.extract(seq)
                 seq_covered -= len(seqrec.seq)
@@ -323,16 +347,6 @@ def resolve_feats(feat_list, seqin, seqref, start, locus, missing, verbose=False
                                                        ExactPosition(ep),
                                                        strand=1), type=f.type)
 
-                    # if feat == "exon_7":
-                    # #if diff > 0:
-                    #print(feat, str(diff), str(start), str(featn.location.start),str(featn.location.end))
-                    #print(feat, str(diff), str(start), str(f.location.start),str(f.location.end))
-                    #print(feat,str(seqrec.seq))
-                    #seq_search = nt_search(str(seq.seq), str(seqrec.seq))
-                    # print("SEQ SEARCH IN ALIGN")
-                    # print(seq_search)
-                    # print("***")
-                    # print("")
                     features.update({feat: featn})
                     full_annotation.update({feat: seqrec})
 
@@ -341,28 +355,18 @@ def resolve_feats(feat_list, seqin, seqref, start, locus, missing, verbose=False
                             del coordinates[i]
                         mapping[i] = feat
             else:
-
                 f = features[feat]
                 seqrec = f.extract(seq)
                 seq_covered -= len(seqrec.seq)
                 if re.search("-", str(seqrec.seq)):
-                    #print("DIFF21", str(diff), feat)
                     l1 = len(seqrec.seq)
                     newseq = re.sub(r'-', '', str(seqrec.seq))
                     seqrec.seq = Seq(newseq, IUPAC.unambiguous_dna)
                     tmdiff = l1 - len(newseq)
                     diff += tmdiff
-                    #print("DIFF22", str(diff), feat)
-                # print("--")
 
         blocks = getblocks(coordinates)
         rmapping = {k+start: mapping[k] for k in mapping.keys()}
-
-        # Print out what blocks haven't been annotated
-        # if verbose and verbosity > 2:
-        #     logger.info("Blocks not mapped:")
-        #     for b in blocks:
-        #         logger.info(",".join([str(i) for i in b]))
 
         # Print out what features are missing
         if verbose and verbosity > 0 and len(full_annotation.keys()) > 1:
@@ -386,13 +390,27 @@ def resolve_feats(feat_list, seqin, seqref, start, locus, missing, verbose=False
                               seq=seq)
 
 
+# ** HARD CODED LOGIC ** #
 def count_diffs(align, feats, inseq, locus, cutoff,
                 verbose=False, verbosity=0):
     """
-    Aligns sequences with clustalw
+    count_diffs - Counts the number of mismatches, gaps, and insertions and then determines if those are within an acceptable range.
 
-    :param locus: string containing HLA locus.
-    :param sequence: string containing sequence data.
+    :param align: The alignment
+    :type align: ``List``
+    :param feats: Dictonary of the features
+    :type feats: ``dict``
+    :param locus: The gene locus associated with the sequence.
+    :type locus: ``str``
+    :param inseq: The input sequence
+    :type inseq: ``str``
+    :param cutoff: The alignment cutoff
+    :type cutoff: ``float``
+    :param verbose: Flag for running in verbose mode.
+    :type verbose: ``bool``
+    :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
+    :type verbosity: ``int``
+    :rtype: ``List``
     """
 
     nfeats = len(feats.keys())
@@ -404,6 +422,7 @@ def count_diffs(align, feats, inseq, locus, cutoff,
     lastb = ''
     l = len(align[0]) if len(align[0]) > len(align[1]) else len(align[1])
 
+    # Counting gaps, mismatches and insertions
     for i in range(0, l):
         if align[0][i] == "-" or align[1][i] == "-":
             if align[0][i] == "-":
@@ -443,21 +462,19 @@ def count_diffs(align, feats, inseq, locus, cutoff,
         logger.info('{:<22}{:<6d}{:<1.2f}'.format("Number of matches: ", match, mper2))
     indel = iper + delper
 
+    # ** HARD CODED LOGIC ** #
     if len(inseq) > 6000 and mmper < .10 and mper2 > .80:
         if verbose:
             logger.info("Alignment coverage high enough to complete annotation 11")
         return insr, dels
     else:
-        # TODO:
-        # These numbers need to be fine t
+        # TODO: These numbers need to be fine tuned
         indel_mm = indel + mper2
         if (indel > 0.5 or mmper > 0.05) and mper2 < cutoff and indel_mm != 1:
             if verbose:
                 logger.info("Alignment coverage NOT high enough to return annotation")
             return Annotation(complete_annotation=False)
         else:
-            #print("RETURNING HERE 1")
-            #print(indel,mmper,gper,mper2,cutoff)
             if verbose:
                 logger.info("Alignment coverage high enough to complete annotation")
             return insr, dels

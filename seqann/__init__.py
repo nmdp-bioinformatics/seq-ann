@@ -27,4 +27,4 @@ from .sequence_annotation import BioSeqAnn
 
 __author__ = """Mike Halagan"""
 __email__ = 'mhalagan@nmdp.org'
-__version__ = '0.0.45'
+__version__ = '1.0.0'

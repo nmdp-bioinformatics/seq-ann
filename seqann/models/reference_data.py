@@ -69,7 +69,7 @@ def download_dat(url, dat):
     urllib.request.urlretrieve(url, dat)
 
 
-# TODO: Use pandas to get latest version
+# TODO: Use the AWS Lamba API for getting latest IMGT/DB
 
 class ReferenceData(Model):
     '''
@@ -613,10 +613,19 @@ class ReferenceData(Model):
 
     def search_refdata(self, seq, locus):
         """
-        Gets the Annotation of this ReferenceData. "select ent.name from bioentry limit 10"
-        :return: The Annotation of this ReferenceData.
-        :rtype: Annotation
-        mysql --user=root bioseqdb -e "select * from biodatabase"
+        This checks to see if a sequence already exists in the reference data. If it does, then it'll return the known annotation.
+
+        :return: The Annotation of associated with the input sequence
+        :rtype: :ref:`ann`
+
+        Example:
+
+            >>> from Bio.Seq import Seq
+            >>> from seqann.models.reference_data import ReferenceData
+            >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
+            >>> refdata = ReferenceData()
+            >>> matched_annotation = refdata.search_refdata(sequence, locus)
+
         """
         # TODO: ONLY MAKE ONE CONNECTION
         # TODO: add try statement
@@ -721,15 +730,8 @@ class ReferenceData(Model):
         :return: The Annotation from the found sequence
         :rtype: Annotation
         """
-
         #seqrecord = self.seqrecord(allele, loc)
         complete_annotation = get_features(seqrecord)
-        # print("&&&&&&")
-        # for f in seqrecord.features:
-        #     #print(f)
-        #     size = f.location.end - f.location.start
-        #     print(f.type, str(f.location.start), str(f.location.end), str(size))
-        # print("&&&&&&")
         annotation = Annotation(annotation=complete_annotation,
                                 method='match',
                                 complete_annotation=True)

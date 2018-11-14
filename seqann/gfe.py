@@ -41,6 +41,8 @@ from seqann.feature_client.models.feature_request import FeatureRequest
 
 class GFE(object):
     '''
+    This class is used for converting annotations into GFE notations.
+
     Example:
 
         >>> from Bio import SeqIO
@@ -55,7 +57,7 @@ class GFE(object):
         >>> seqann = BioSeqAnn(server=server)
         >>> seq_rec = list(SeqIO.parse(seq_file, 'fasta'))[0]
         >>> annotation = seqann.annotate(seq_rec, "HLA-DQB1")
-        >>> gfe = gfe.get_gfe(annotation, "HLA-DQB1")
+        >>> features, gfe = gfe.get_gfe(annotation, "HLA-DQB1")
         >>> print(gfe)
         HLA-DQB1w0-4-0-141-0-12-0-4-0-0-0-0-0
 
@@ -97,12 +99,7 @@ class GFE(object):
 
     def load_features(self):
         """
-        creates GFE from HLA sequence and locus
-
-        :param locus: string containing HLA locus.
-        :param sequence: string containing sequence data.
-
-        :return: GFEobject.
+        Loads all the known features from the feature service
         """
         # Loading all loci that
         # are in self.loci variable defined
@@ -123,12 +120,11 @@ class GFE(object):
 
     def locus_features(self, locus):
         """
-        creates GFE from HLA sequence and locus
+        Returns all features associated with a locus
 
         :param locus: string containing HLA locus.
-        :param sequence: string containing sequence data.
-
-        :return: GFEobject.
+        :type locus: ``str``
+        :rtype: ``dict``
         """
         features = self.api.list_features(locus=locus)
         feat_dict = {":".join([a.locus, str(a.rank), a.term, a.sequence]): a.accession for a in features}
@@ -136,12 +132,17 @@ class GFE(object):
 
     def get_gfe(self, annotation, locus):
         """
-        creates GFE from HLA sequence and locus
+        creates GFE from a sequence annotation
 
-        :param locus: string containing HLA locus.
-        :param sequence: string containing sequence data.
+        :param locus:  The gene locus
+        :type locus: ``str``
+        :param annotation: An sequence annotation object
+        :type annotation: ``List``
+        :rtype: ``List``
 
-        :return: GFEobject.
+        Returns:
+            The GFE notation and the associated features in an array
+
         """
         features = []
         accessions = {}

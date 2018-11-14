@@ -6,15 +6,22 @@ Copyright (c) 2018 Be The Match operated by National Marrow Donor Program. All R
 
    readme
    installation
+   algorithm
    db
+   blast
 
 .. toctree::
    :maxdepth: 2
    :caption: Developer Documentation
 
-   seqann
-   contributing
    debug
+   testing
+   seqann
+   models
+   seqann.feature_client
+   seqann.feature_client.apis
+   seqann.feature_client.models
+   contributing
    history
    authors
 
