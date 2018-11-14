@@ -59,62 +59,41 @@ from typing import List
 import re
 
 
-# TODO: Add documentation
-def getblocks(coords):
-    block = []
-    blocks = []
-    sorted_i = sorted(coords.keys())
-    if len(sorted_i) == 1:
-        return [sorted_i]
-    for i in range(0, len(sorted_i)-1):
-        j = i+1
-        if i == 0:
-            block.append(sorted_i[i])
-        if(j <= len(sorted_i)-1):
-            if(sorted_i[i] == sorted_i[j]-1):
-                block.append(sorted_i[j])
-            else:
-                blocks.append(block)
-                block = []
-                block.append(sorted_i[j])
-        else:
-            block.append(sorted_i[j])
-    if len(block) > 1:
-        blocks.append(block)
-    return blocks
-
-
 class BioSeqAnn(Model):
     '''
         ::
 
             from seqann import BioSeqAnn
-            seqann = BioSeqAnn()
+            seqann1 = BioSeqAnn()
+            seqann2 = BioSeqAnn(dbversion="3300", verbose=True, verbosity=3)
+            seqann3 = BioSeqAnn(debug={"align":4}, safe)
 
         :param server: A BioSQL database to use for retriving the sequence features. Using a BioSQL DB will speed up the annotations dramatically.
-        :type server: BioSeqDatabase
+        :type server: :ref:`bio`
         :param dbversion: The IPD-IMGT/HLA or KIR database release.
-        :type dbversion: str
+        :type dbversion: ``str``
         :param datfile: The IPD-IMGT/HLA or KIR dat file to use in place of the server parameter.
-        :type datfile: str
+        :type datfile: ``str``
         :param pid: A process label that can be provided to help track the logging output.
-        :type pid: str
+        :type pid: ``str``
         :param load_features: Flag for downloading all gene features and accessions from the feature service.
-        :type load_features: bool
+        :type load_features: ``bool``
         :param store_features: Flag for caching all features and their corresponding accessions.
-        :type store_features: bool
+        :type store_features: ``bool``
         :param cached_features: Dictionary containing all the features from the feature service.
-        :type cached_features: Dict
+        :type cached_features: ``dict``
         :param kir: Flag for indicating the input sequences are from the KIR gene system.
-        :type kir: bool
+        :type kir: ``bool``
         :param align: Flag for producing the alignments along with the annotations.
-        :type align: bool
+        :type align: ``bool``
         :param verbose: Flag for running in verbose mode.
-        :type verbose: bool
+        :type verbose: ``bool``
         :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
-        :type verbosity: int
+        :type verbosity: ``int``
         :param debug: Dictionary containing names of steps that you want to debug.
-        :type debug: Dict
+        :type debug: ``dict``
+        :param safemode: Flag for running the annotations in safemode. No alignments will be done if no feature matches were made. This can prevent the alignment step for running for too long on bad sequences.
+        :type safemode: ``bool``
     '''
     def __init__(self, server: BioSeqDatabase=None, dbversion: str='3310',
                  datfile: str='', verbose: bool=False, verbosity: int=0,
@@ -218,14 +197,14 @@ class BioSeqAnn(Model):
         :param sequence: The input consensus sequence.
         :type sequence: Seq
         :param locus: The gene locus associated with the sequence.
-        :type locus: str
+        :type locus: ``str``
         :param nseqs: The number of blast sequences to use.
-        :type nseqs: int
+        :type nseqs: ``int``
         :param alignseqs: The number of sequences to use for targeted alignments.
-        :type alignseqs: int
+        :type alignseqs: ``int``
         :param skip: A list of alleles to skip for using as a reference. This is used for validation and testing.
-        :type skip: List
-        :rtype: Annotation
+        :type skip: ``List``
+        :rtype: :ref:`ann`
 
         Returns:
             The annotate function return an ``Annotation`` object that
@@ -250,7 +229,6 @@ class BioSeqAnn(Model):
         Example usage:
 
             >>> from Bio.Seq import Seq
-            >>> from Bio.SeqRecord import SeqRecord
             >>> from seqann import BioSeqAnn
             >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
             >>> seqann = BioSeqAnn()
@@ -446,6 +424,10 @@ class BioSeqAnn(Model):
         if alignseqs > len(found):
             alignseqs = len(found)-1
 
+        # * HARD CODED LOGIC * #
+        # > After testing with multiple thresholds
+        #   this value seemed to work best.
+        #
         # Aligned % cutoff
         align_cutoff = .90
         if((not hasattr(partial_ann, 'features') or
@@ -482,8 +464,13 @@ class BioSeqAnn(Model):
                                          annotation=partial_ann,
                                          run=i,
                                          cutoff=align_cutoff)
-            align_cutoff -= .01
 
+            # * HARD CODED LOGIC * #
+            # > If sequences are very novel, then the alignment
+            #   cutoff may be to stringent. Incrementally decreasing
+            #   the cutoff improves the likelihood of these sequences
+            #   being annotated.
+            align_cutoff -= .01
             if aligned_ann and aligned_ann.complete_annotation:
                 if self.align:
                     if self.verbose:
@@ -552,8 +539,8 @@ class BioSeqAnn(Model):
 
         # Don't run full
         # annotation if flag is passed
-        # if not full:
-        #     return
+        if not full:
+            return
 
         if self.verbose:
             self.logger.info(self.logname + " running full alignment")
@@ -570,6 +557,7 @@ class BioSeqAnn(Model):
                              + " Finished ref_align annotation using full "
                              + leastmissing_feat.name)
 
+        # Check to see if an annotation was returned
         if(not isinstance(full_align, Annotation)
            or isinstance(full_align, str)):
             if(not rerun or len(sequence) > 4000):
@@ -586,9 +574,11 @@ class BioSeqAnn(Model):
                                      skip=[found[0].name],
                                      rerun=False)
 
+        # Check if the annotation is complete
         if not full_align.complete_annotation and self.verbose:
             self.logger.info(self.logname + " Incomplete annotation!")
 
+        # Add the alignment to the annotation
         if self.align and full_align.complete_annotation:
             if self.verbose:
                 self.logger.info(self.logname + " Adding alignment")
@@ -639,12 +629,12 @@ class BioSeqAnn(Model):
         :param sequence: The input sequence record.
         :type sequence: Seq
         :param locus: The gene locus associated with the sequence.
-        :type locus: str
+        :type locus: ``str``
         :param annotation: The incomplete annotation from a previous iteration.
-        :type annotation: Annotation
+        :type annotation: :ref:`ann`
         :param partial_ann: The partial annotation after looping through all of the blast sequences.
-        :type partial_ann: Annotation
-        :rtype: Annotation
+        :type partial_ann: :ref:`ann`
+        :rtype: :ref:`ann`
 
         """
         if annotation and isinstance(annotation, Annotation):
@@ -688,10 +678,8 @@ class BioSeqAnn(Model):
                             ExactPosition(b[len(b)-1]),
                             strand=1),
                         type="unmapped")
-                #print("1 - STARTING VALUE = " + str(start))
-                #print("1 - END VALUE = " + str(b[len(b)-1]))
+
                 feat = seq_feat.extract(annotation.seq)
-                #print(feat)
                 combosrecs, exons, fullrec = self._refseqs(locus,
                                                            start,
                                                            annotation,
@@ -1026,8 +1014,6 @@ class BioSeqAnn(Model):
                             #         print("HERE order!!!!")
 
                             # annotation.missing = missing_f
-                            #print("BEFORE SEQ SEARCH BLOCKS")
-                            #print(annotation.blocks)
                             # Rerunning seqsearch with
                             # new annotation from alignment
                             tmpann = self.seqsearch.search_seqs(found_seqs,
@@ -1306,12 +1292,9 @@ class BioSeqAnn(Model):
         end_pos = start_pos + len(feat.seq)
         missing_feats = annotation.missing
         mapping = annotation.mapping
-        #print(start_pos, end_pos)
-        #print(mapping)
 
         # TODO: Do not use combos that
         # don't have missing features
-        # 
         if start_pos == 0:
             prv_order = -1
         else:
@@ -1524,30 +1507,27 @@ class BioSeqAnn(Model):
             return seq_feat, start
 
 
-class SeqAnnException(Exception):
-
-    def __init__(self, status=None, reason=None, http_resp=None):
-        if http_resp:
-            self.status = http_resp.status
-            self.reason = http_resp.reason
-            self.body = http_resp.data
-            self.headers = http_resp.getheaders()
+# TODO: Add to util
+def getblocks(coords):
+    block = []
+    blocks = []
+    sorted_i = sorted(coords.keys())
+    if len(sorted_i) == 1:
+        return [sorted_i]
+    for i in range(0, len(sorted_i)-1):
+        j = i+1
+        if i == 0:
+            block.append(sorted_i[i])
+        if(j <= len(sorted_i)-1):
+            if(sorted_i[i] == sorted_i[j]-1):
+                block.append(sorted_i[j])
+            else:
+                blocks.append(block)
+                block = []
+                block.append(sorted_i[j])
         else:
-            self.status = status
-            self.reason = reason
-            self.body = None
-            self.headers = None
+            block.append(sorted_i[j])
+    if len(block) > 1:
+        blocks.append(block)
+    return blocks
 
-    def __str__(self):
-        """
-        Custom error messages for exception
-        """
-        error_message = "({0})\n"\
-                        "Reason: {1}\n".format(self.status, self.reason)
-        if self.headers:
-            error_message += "HTTP response headers: {0}\n".format(self.headers)
-
-        if self.body:
-            error_message += "HTTP response body: {0}\n".format(self.body)
-
-        return error_message

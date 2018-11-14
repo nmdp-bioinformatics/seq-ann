@@ -28,6 +28,8 @@ from BioSQL.BioSeq import DBSeqRecord
 from ..util import deserialize_model
 
 
+# NOTE: This really doesn't need to be a class..
+
 class Blast(Model):
     '''
     classdocs
@@ -35,12 +37,10 @@ class Blast(Model):
     def __init__(self, failed: bool=None, match_seqs: List[DBSeqRecord]=None,
                  alleles: List[str]=None):
         """
-        Blast
-        TODO: ADD evalues
         :param match_seqs: The match_seqs of this Blast.
-        :type match_seqs: List[DBSeqRecord]
+        :type match_seqs: List[``SeqRecord``]
         :param alleles: The alleles of this Blast.
-        :type alleles: List[str]
+        :type alleles: List[``str``]
         """
         self.data_types = {
             'match_seqs': List[DBSeqRecord],

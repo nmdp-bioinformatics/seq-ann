@@ -36,7 +36,6 @@ from Bio.SeqFeature import SeqFeature
 from Bio.SeqFeature import FeatureLocation
 from Bio.SeqFeature import ExactPosition
 
-from seqann.models.reference_data import ReferenceData
 from seqann.models.annotation import Annotation
 from seqann.models.base_model_ import Model
 from seqann.util import deserialize_model
@@ -47,48 +46,25 @@ from seqann.util import get_structmax
 from seqann.util import is_classII
 
 
-def loctype(s1, e1, s2, e2):
-    if s1 < s2 and e1 < e2:
-        return True
-    else:
-        return False
-
-
-# TODO: Add documentation
-def getblocks(coords):
-    block = []
-    blocks = []
-    sorted_i = sorted(coords.keys())
-    if len(sorted_i) == 1:
-        return [sorted_i]
-    for i in range(0, len(sorted_i)-1):
-        j = i+1
-        if i == 0:
-            block.append(sorted_i[i])
-        if(j <= len(sorted_i)-1):
-            if(sorted_i[i] == sorted_i[j]-1):
-                block.append(sorted_i[j])
-            else:
-                blocks.append(block)
-                block = []
-                block.append(sorted_i[j])
-        else:
-            block.append(sorted_i[j])
-    if len(block) > 1:
-        blocks.append(block)
-    return blocks
-
+# NOTE: This doesn't need to be a class anymore and could be reduced to functions 
 
 class SeqSearch(Model):
     '''
-    classdocs
+        This is a class for annotating a BioPython sequence without using alignment
+
+        :param verbose: Flag for running in verbose mode.
+        :type verbose: ``bool``
+        :param verbosity: Numerical value to indicate how verbose the output will be in verbose mode.
+        :type verbosity: ``int``
+
+        Example usage:
+
+            >>> from seqann.seq_search import SeqSearch
+            >>> seqsrch = SeqSearch()
+
+
     '''
     def __init__(self, verbose: bool=False, verbosity: int=0):
-        """
-        ReferenceData
-        :param refdata: The reference data of this SeqSearch.
-        :type refdata: ReferenceData
-        """
         self.data_types = {
             'verbose': bool,
             'verbosity': int
@@ -116,7 +92,30 @@ class SeqSearch(Model):
         return deserialize_model(dikt, cls)
 
     def search_seqs(self, seqrec, in_seq, locus, run=0, partial_ann=None):
+        """
+        search_seqs - method for annotating a BioPython sequence without alignment
 
+        :param seqrec: The reference sequence
+        :type seqrec: SeqRecord
+        :param locus: The gene locus associated with the sequence.
+        :type locus: str
+        :param in_seq: The input sequence
+        :type in_seq: SeqRecord
+        :param run: The number of runs that have been done
+        :type run: int
+        :param partial_ann: A partial annotation from a previous step
+        :type partial_ann: :ref:`ann`
+        :rtype: :ref:`ann`
+
+        Example usage:
+
+            >>> from Bio.Seq import Seq
+            >>> from seqann.seq_search import SeqSearch
+            >>> inseq = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
+            >>> sqsrch = SeqSearch()
+            >>> ann = sqsrch.search_seqs(refseqs, inseq)
+
+        """
         # Extract out the sequences and feature names
         # from the reference sequences
 
@@ -202,17 +201,6 @@ class SeqSearch(Model):
             # is not found, then record that feature as missing.
             seq_search = nt_search(str(in_seq.seq), str(feats[feat_name]))
 
-            #skip = False
-            # if(feat_name == "exon_5" and locus == "HLA-DQB1"
-            #    and len(in_seq.seq) < 7000 and not "intron_5" in found_feats
-            #    and not "intron_4" in found_feats):
-            #     skip = True
-
-            # if(feat_name == "intron_4" and locus == "HLA-DQB1"
-            #    and len(in_seq.seq) > 7000):
-            #     skip = True
-                #print("SKIPPING INTRON 4 seq_search")
-
             if len(seq_search) == 2:
 
                 if self.verbose and self.verbosity > 0:
@@ -224,7 +212,7 @@ class SeqSearch(Model):
                 if feat_name == 'three_prime_UTR' \
                         and len(str(in_seq.seq)) > end:
                         end = len(str(in_seq.seq))
-                        #print("HERE 1")
+
                 # If the feature is found and it's a five_prime_UTR then
                 # the start should always be 0, so insertions at the
                 # beinging of the sequence will be found.
@@ -296,6 +284,11 @@ class SeqSearch(Model):
                 seq_search = new_seq
                 if(partial_ann and feat_name == "exon_8" and run > 0):
                     missing_feats = sorted(list(partial_ann.missing.keys()))
+
+                    # * HARD CODED LOGIC * #
+                    # > exon8 in class I maps to multiple spots in a sequence,
+                    #   often in the 3' UTR. These features need to be mapped
+                    #   last to make sure it's not mapping exon8 incorrectly.
                     if(missing_feats == ['exon_8', 'three_prime_UTR']
                        and len(seq_search) <= 3):
                         if self.verbose and self.verbosity > 0:
@@ -352,12 +345,12 @@ class SeqSearch(Model):
         blocks = getblocks(coordinates)
         exact_matches = list(found_feats.keys())
 
-        ## TODO: Add case for
+        # * HARD CODED LOGIC * #
+        # > 
+        #
         #  HLA-DRB1 exon3 exact match - with intron1 and 3 missing
         if('exon_3' in exact_matches and run == 99 and locus == 'HLA-DRB1'
            and 'exon_2' in feat_missing and (len(blocks) == 1 or len(blocks) == 2)):
-
-            #self.logger.info("++++++++++++++++++++++++++++++++ EXON 3 EXACT MATCH ++++++++++++++++++++++++++++++++")
 
             for b in blocks:
                 x = b[len(b)-1]
@@ -392,8 +385,16 @@ class SeqSearch(Model):
                                   method=method,
                                   mapping=mapping,
                                   exact_match=exact_matches)
+
         # If it's a class II sequence and
         # exon_2 is an exact match
+        # * HARD CODED LOGIC * #
+        # > It's common for exon2 to be fully sequenced
+        #   but intron_2 and intron_1 to be partially sequenced,
+        #   which can make it hard to annotate those to features.
+        #   If there are two missing blocks that is small enough
+        #   and they are before and after exon2, then it's very
+        #   very likely to be intron_2 and intron_1.
         if 'exon_2' in exact_matches and len(blocks) == 2 \
                 and is_classII(locus) and seq_covered < 300:
 
@@ -445,8 +446,6 @@ class SeqSearch(Model):
                                   mapping=mapping,
                                   exact_match=exact_matches)
 
-        # TODO: pass seq_covered and mapping, so the
-        #       final annotation contains the updated values
         annotated_feats, mb, mapping = self._resolve_unmapped(blocks,
                                                               feat_missing,
                                                               ambig_map,
@@ -456,6 +455,7 @@ class SeqSearch(Model):
                                                               seq_covered
                                                               )
 
+        # * HARD CODED LOGIC * #
         if(not mb and blocks and len(feat_missing.keys()) == 0
            and len(ambig_map.keys()) == 0):
             mb = blocks
@@ -487,15 +487,6 @@ class SeqSearch(Model):
 
             if self.verbose and self.verbosity > 1:
                 self.logger.info("* Annotation not complete *")
-
-            #print(coordinates)
-            #print(mapping)
-            # Print out what blocks haven't been annotated
-            # if self.verbose and self.verbosity > 2:
-            #     self.logger.info("Number of blocks not annotated = " + str(len(mb)))
-            #     self.logger.info("Blocks not annotated:")
-            #     for b in mb:
-            #         self.logger.info(",".join([str(i) for i in b]))
 
             # Print out what features were missing by the ref
             if self.verbose and self.verbosity > 2:
@@ -584,6 +575,9 @@ class SeqSearch(Model):
 
         return annotation
 
+    # TODO: This should be cleaned up and reduced..
+    #       There is some repeating logic and overlap in
+    #       this section.
     def _resolve_unmapped(self, blocks, feat_missing, ambig_map,
                           mapping, found_feats, loc, covered, rerun=False):
 
@@ -706,8 +700,6 @@ class SeqSearch(Model):
                             and start_i >= 0 \
                             and feat_num-add_num > 0:
 
-                        # print(str(end_i),str(max(mapping.keys())),str(min(mapping.keys())))
-                        # print(mapping)
                         expected_p = struct_order[loc][feat_num-add_num]
                         expected_n = struct_order[loc][feat_num+add_num]
                         previous_feat = mapping[start_i]
@@ -800,7 +792,7 @@ class SeqSearch(Model):
         Gets the verbose of this SeqSearch.
 
         :return: The verbose of this SeqSearch.
-        :rtype: ReferenceData
+        :rtype: bool
         """
         return self._verbose
 
@@ -810,7 +802,7 @@ class SeqSearch(Model):
         Sets the verbose of this SeqSearch.
 
         :param verbose: The verbose of this SeqSearch.
-        :type verbose: ReferenceData
+        :type verbose: bool
         """
         self._verbose = verbose
 
@@ -820,7 +812,7 @@ class SeqSearch(Model):
         Gets the verbosity of this SeqSearch.
 
         :return: The verbosity of this SeqSearch.
-        :rtype: ReferenceData
+        :rtype: int
         """
         return self._verbosity
 
@@ -830,6 +822,39 @@ class SeqSearch(Model):
         Sets the verbosity of this SeqSearch.
 
         :param verbosity: The verbosity of this SeqSearch.
-        :type verbosity: ReferenceData
+        :type verbosity: int
         """
         self._verbosity = verbosity
+
+
+# TODO: Move to util.py
+def loctype(s1, e1, s2, e2):
+    if s1 < s2 and e1 < e2:
+        return True
+    else:
+        return False
+
+
+# TODO: Move to util.py
+def getblocks(coords):
+    block = []
+    blocks = []
+    sorted_i = sorted(coords.keys())
+    if len(sorted_i) == 1:
+        return [sorted_i]
+    for i in range(0, len(sorted_i)-1):
+        j = i+1
+        if i == 0:
+            block.append(sorted_i[i])
+        if(j <= len(sorted_i)-1):
+            if(sorted_i[i] == sorted_i[j]-1):
+                block.append(sorted_i[j])
+            else:
+                blocks.append(block)
+                block = []
+                block.append(sorted_i[j])
+        else:
+            block.append(sorted_i[j])
+    if len(block) > 1:
+        blocks.append(block)
+    return blocks

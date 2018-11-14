@@ -33,72 +33,38 @@ from seqann.models.reference_data import ReferenceData
 import logging
 import re
 
+# TODO: Move to util.py
 has_hla = lambda x: True if re.search("HLA", x) else False
-
-
-def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
-    """
-    Gets the locus of the sequence by running blastn
-
-    :param sequences: sequenences to blast
-    :param kir: bool whether the sequences are KIR or not
-
-    :return: str.
-    """
-    if not refdata:
-        refdata = ReferenceData()
-
-    file_id = str(randomid())
-    input_fasta = file_id + ".fasta"
-    output_xml = file_id + ".xml"
-    SeqIO.write(sequences, input_fasta, "fasta")
-    blastn_cline = NcbiblastnCommandline(query=input_fasta,
-                                         db=refdata.blastdb,
-                                         evalue=evalue,
-                                         outfmt=5,
-                                         reward=1,
-                                         penalty=-3,
-                                         gapopen=5,
-                                         gapextend=2,
-                                         dust='yes',
-                                         out=output_xml)
-
-    stdout, stderr = blastn_cline()
-
-    blast_qresult = SearchIO.read(output_xml, 'blast-xml')
-
-    #   Delete files
-    cleanup(file_id)
-
-    if len(blast_qresult.hits) == 0:
-        return ''
-
-    loci = []
-    for i in range(0, 3):
-        if kir:
-            loci.append(blast_qresult[i].id.split("*")[0])
-        else:
-            loci.append(blast_qresult[i].id.split("*")[0])
-
-    locus = set(loci)
-    if len(locus) == 1:
-        if has_hla(loci[0]) or kir:
-            return loci[0]
-        else:
-            return "HLA-" + loci[0]
-    else:
-        return ''
 
 
 def blastn(sequences, locus, nseqs, kir=False,
            verbose=False, refdata=None, evalue=10):
     """
-    Gets the locus of the sequence by running blastn
+    Gets the a list of alleles that are the most similar to the input sequence
 
-    :param sequences: sequenences to blast
-    :param kir: bool whether the sequences are KIR or not
+    :param sequences: The input sequence record.
+    :type sequences: SeqRecord
+    :param locus: The gene locus associated with the sequence.
+    :type locus: ``str``
+    :param nseqs: The incomplete annotation from a previous iteration.
+    :type nseqs: ``int``
+    :param evalue: The evalue to use (default = 10)
+    :type evalue: ``int``
+    :param kir: Run with KIR or not
+    :type kir: ``bool``
+    :param verbose: Run in versboe
+    :type verbose: ``bool``
+    :param refdata: An object with reference data
+    :type refdata: :ref:`ref`
+    :rtype: :ref:`bl`
 
-    :return: Blast.
+    Example usage:
+
+        >>> from Bio.Seq import Seq
+        >>> from seqann.blast_cmd import blastn
+        >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
+        >>> blast = blastn(sequence, locus, nseqs)
+
     """
     logger = logging.getLogger("Logger." + __name__)
 
@@ -216,4 +182,65 @@ def blastn(sequences, locus, nseqs, kir=False,
     #   Build Blast object
     blast_o = Blast(match_seqs=final_seqs, alleles=alleles)
     return blast_o
+
+
+def get_locus(sequences, kir=False, verbose=False, refdata=None, evalue=10):
+    """
+    Gets the locus of the sequence by running blastn
+
+    :param sequences: sequenences to blast
+    :param kir: bool whether the sequences are KIR or not
+    :rtype: ``str``
+
+    Example usage:
+
+        >>> from Bio.Seq import Seq
+        >>> from seqann.blast_cmd import get_locus
+        >>> sequence = Seq('AGAGACTCTCCCGAGGATTTCGTGTACCAGTTTAAGGCCATGTGCTACTTCACC')
+        >>> locus = get_locus(sequence)
+
+    """
+    if not refdata:
+        refdata = ReferenceData()
+
+    file_id = str(randomid())
+    input_fasta = file_id + ".fasta"
+    output_xml = file_id + ".xml"
+    SeqIO.write(sequences, input_fasta, "fasta")
+    blastn_cline = NcbiblastnCommandline(query=input_fasta,
+                                         db=refdata.blastdb,
+                                         evalue=evalue,
+                                         outfmt=5,
+                                         reward=1,
+                                         penalty=-3,
+                                         gapopen=5,
+                                         gapextend=2,
+                                         dust='yes',
+                                         out=output_xml)
+
+    stdout, stderr = blastn_cline()
+
+    blast_qresult = SearchIO.read(output_xml, 'blast-xml')
+
+    #   Delete files
+    cleanup(file_id)
+
+    if len(blast_qresult.hits) == 0:
+        return ''
+
+    loci = []
+    for i in range(0, 3):
+        if kir:
+            loci.append(blast_qresult[i].id.split("*")[0])
+        else:
+            loci.append(blast_qresult[i].id.split("*")[0])
+
+    locus = set(loci)
+    if len(locus) == 1:
+        if has_hla(loci[0]) or kir:
+            return loci[0]
+        else:
+            return "HLA-" + loci[0]
+    else:
+        return ''
 
