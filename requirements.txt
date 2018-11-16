@@ -3,6 +3,6 @@ bson
 numpy
 PyMySQL
 pytz
-six
+six==1.11.0
 bson
 requests
