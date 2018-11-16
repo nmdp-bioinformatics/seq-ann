@@ -22,6 +22,7 @@
 #
 from __future__ import absolute_import
 
+import re
 import os
 import sys
 import csv
@@ -147,7 +148,7 @@ class ReferenceData(Model):
         kir_url = 'ftp://ftp.ebi.ac.uk/pub/databases/ipd/kir/KIR.dat'
         hla_loci = ['HLA-A', 'HLA-B', 'HLA-C', 'HLA-DRB1', 'HLA-DQB1',
                     'HLA-DPB1', 'HLA-DQA1', 'HLA-DPA1', 'HLA-DRB3',
-                    'HLA-DRB4', 'HLA-DRB5']
+                    'HLA-DRB4', 'HLA-DRB5', 'HLA-DRA']
 
         if self.verbose and verbosity > 0:
             self.logger.info("IPD-IMGT/HLA release = " + str(dbversion))
@@ -180,12 +181,15 @@ class ReferenceData(Model):
         if alleles:
             self._hla_names = alleles
         else:
+            splitter = " " if int(dbversion) < 3320 else ","
             # Open allele list file
             try:
                 with open(allele_list, 'r') as f:
                     for line in f:
                         line = line.rstrip()
-                        accession, name = line.split(" ")
+                        if re.search("#", line):
+                            continue
+                        accession, name = line.split(splitter)
                         if not kir:
                             hla_names.append("HLA-" + name)
                         else:
@@ -250,13 +254,16 @@ class ReferenceData(Model):
                                'HLA-A': 17, 'HLA-DRB5': 13, 'KIR2DL4': 20,
                                'HLA-DQB1': 13, 'KIR3DL2': 20, 'HLA-B': 15,
                                'KIR3DS1': 20, 'KIR2DL5B': 20, 'HLA-DRB1': 13,
-                               'KIR3DL3': 20, 'KIR2DS1': 20, 'HLA-C': 17}
+                               'KIR3DL3': 20, 'KIR2DS1': 20, 'HLA-C': 17,
+                               'HLA-DRA': 9}
 
         # Starting location of sequence for IPD-IMGT/HLA alignments
+        # ** DRA location is not right **
         self.location = {"HLA-A": -300, "HLA-B": -284, "HLA-C": -283,
                          "HLA-DRB1": -599, "HLA-DRB3": -327, "HLA-DRB4": -313,
                          "HLA-DQB1": -525, "HLA-DPB1": -366, "HLA-DPA1": -523,
-                         "HLA-DQA1": -746}
+                         "HLA-DQA1": -746,
+                         "HLA-DRA": -400}
 
         self.align_coordinates = {}
         self.annoated_alignments = {}
