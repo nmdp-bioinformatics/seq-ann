@@ -33,28 +33,28 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'biopython==1.71',
-    'PyMySQL==0.9.2',
-    'six==1.11.0',
-    'bson==0.5.6',
-    'pytz==2018.5',
+    'biopython',
+    'PyMySQL',
+    'six',
+    'bson',
+    'pytz',
     'numpy',
-    'requests==2.18.4'
+    'requests'
 ]
 
 test_requirements = [
-    'pytz==2017.3',
-    'biopython==1.70',
-    'PyMySQL==0.7.11',
-    'six==1.11.0',
-    'bson==0.5.5',
+    'pytz',
+    'biopython',
+    'PyMySQL',
+    'six',
+    'bson',
     'unittest',
     'numpy'
 ]
 
 setup(
     name='seqann',
-    version='0.0.45',
+    version='1.0.0',
     description="Sequence Annotation",
     long_description=readme,
     author="Mike Halagan",
@@ -79,7 +79,7 @@ setup(
     license="LGPL 3.0",
     zip_safe=False,
     keywords='seqann',
-    scripts=['scripts/kir2gfe'],
+    scripts=['scripts/kir2gfe', 'scripts/ngs-imgt-db'],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',

@@ -1,9 +1,8 @@
-biopython==1.71
-bson==0.5.6
+biopython
+bson
 numpy
-PyMySQL==0.9.2
-pytz==2018.5
-six==1.11.0
-six==1.11.0
-bson==0.5.6
-requests==2.18.4
+PyMySQL
+pytz
+six
+bson
+requests

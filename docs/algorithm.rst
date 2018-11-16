@@ -4,7 +4,7 @@
 Annotation Algorithm
 ======================
 
-.. note:: There are several places where hard-coded logic was added to make the algorithm work  with certain sequences. For instance, 
+.. note:: There are several places where hard-coded logic was added to make the algorithm work with certain sequences. Hard coded logic is marked by **HARD CODED LOGIC** in the code. For instance, in :ref:`seq_search` I added logic to annotate exon 8 for class I last, because mapping it first causes issues due to the size of the feature.
 
 
 #. **Check if locus is provided** (:ref:`blast`)
@@ -24,13 +24,14 @@ Annotation Algorithm
 #. **Iterate through the list and try to annotate with reference sequences** (:ref:`seq_search`)
 
     * Break reference up into features
-    * Search for each feature in the provided sequence
+    * Search for each feature in the provided sequence. When a feature is found record the coordinates and remove the mapped sequence from the unknown coordinates.
     * If all features are mapped, then go to step 7, else..
     * Try and assemble the remaining features based on what has already been mapped. Since we know the coordinates of the mapped features and the remaining unmapped sequence, we can determine if the unmapped sequences fall between two mapped features or at the ends/beginning after/before mapped sequences.
     * If all features could be mapped, then go to step 7 else go back to step 4A using any partial annotations for each reference sequence. If no annotation could be created after searching all of the reference sequences, then move on to step 5.
+    * Partial annotations are :ref:`ann` objects with ``mapping``, ``blocks``, ``covered`` attributes. The ``mapping`` attribute is a dictionary with each position being a key and the values being features if they are mapped. The ``blocks`` attribute is a list of lists, which each list representing the positions of the unmapped parts of the sequence. If the whole sequence isn't mapped then there will only be one list (block).
 
 #. **Loop through each reference sequence and do targeted alignments** (:ref:`align`)
-    
+
     * Break up each reference sequence into features and create feature combos that will be used for doing alignments. Order the feature combos by the ones that make the most sense first.
     *  Do targeted alignments on all of the remaining blocks of sequences that have not yet been mapped.
   
