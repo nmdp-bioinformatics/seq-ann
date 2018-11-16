@@ -5,4 +5,4 @@ PyMySQL
 pytz
 six
 bson
-requests
+requests==2.20.1
