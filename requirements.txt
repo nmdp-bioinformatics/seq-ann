@@ -2,7 +2,7 @@ biopython
 bson
 numpy
 PyMySQL
-pytz
+pytz==2018.7
 six
 bson
 requests
