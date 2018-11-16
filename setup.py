@@ -54,7 +54,7 @@ test_requirements = [
 
 setup(
     name='seqann',
-    version='0.0.45',
+    version='1.0.0',
     description="Sequence Annotation",
     long_description=readme,
     author="Mike Halagan",
@@ -79,7 +79,7 @@ setup(
     license="LGPL 3.0",
     zip_safe=False,
     keywords='seqann',
-    scripts=['scripts/kir2gfe'],
+    scripts=['scripts/kir2gfe', 'scripts/ngs-imgt-db'],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
