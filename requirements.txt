@@ -1,8 +1,8 @@
 biopython
-bson
+bson==0.5.8
 numpy
 PyMySQL
 pytz
 six
-bson
+bson==0.5.8
 requests
