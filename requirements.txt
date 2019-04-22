@@ -1,6 +1,6 @@
 biopython
 bson
-numpy
+numpy==1.16.3
 PyMySQL
 pytz
 six
