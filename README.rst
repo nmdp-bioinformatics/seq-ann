@@ -74,6 +74,9 @@ To annotated a sequence initialize a new ``BioSeqAnn`` object and then pass the 
 ``annotate`` method. The sequence must be a Biopython ``Seq``. The locus of the sequence is not required but it will improve the accuracy of the annotation.
 
 
+> The packages `ncbi-blast+` and `clustalo` are required to be installed on your system.
+
+
 .. code-block:: python3
 
     from seqann import BioSeqAnn
