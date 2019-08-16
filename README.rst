@@ -96,6 +96,9 @@ running the imgt_biosqldb from DockerHub_ then the following parameters we be th
     ann = seqann.annotate(sequence, "HLA-A")
 
 
+  You may need to set environment variables: *BIOSQLHOST* and *BIOSQLPORT* to your docker instance.
+
+
 Annotations
 ------------
 
