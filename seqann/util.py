@@ -25,7 +25,13 @@ import re
 import os
 import string
 import random as r
-from typing import GenericMeta
+
+# fixes issue #97
+try:
+    from typing import GenericMeta
+except ImportError:
+    class GenericMeta(type): pass
+
 from datetime import datetime, date
 from six import integer_types, iteritems
 from Bio.SeqFeature import SeqFeature
