@@ -1,6 +1,6 @@
 biopython==1.73
 bson==0.5.8
-numpy==1.16.1
+numpy==1.16.2
 PyMySQL==0.9.3
 pytz==2018.9
 six==1.12.0
