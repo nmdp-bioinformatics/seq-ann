@@ -1,4 +1,4 @@
-biopython
+biopython==1.73
 bson
 numpy
 PyMySQL==0.9.3
