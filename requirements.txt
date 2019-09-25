@@ -2,7 +2,7 @@ biopython==1.73
 bson
 numpy
 PyMySQL==0.9.3
-pytz
+pytz==2018.9
 six==1.12.0
 bson
 requests==2.21.0
