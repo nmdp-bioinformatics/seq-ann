@@ -1,7 +1,7 @@
 biopython
 bson
 numpy
-PyMySQL
+PyMySQL==0.9.3
 pytz
 six==1.12.0
 bson
