@@ -1,8 +1,7 @@
-biopython
-bson
-numpy
-PyMySQL
+biopython==1.73
+bson==0.5.8
+numpy==1.16.2
+PyMySQL==0.9.3
 pytz==2019.1
-six
-bson
-requests
+six==1.12.0
+requests==2.21.0
