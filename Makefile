@@ -37,7 +37,7 @@ clean-build: ## remove build artifacts
 	rm -fr dist/
 	rm -fr .eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.egg' -exec rm -fr {} +
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -54,19 +54,18 @@ lint: ## check style with flake8
 	flake8 gfe tests
 
 test: ## run tests quickly with the default Python
-	
-		python setup.py test
+	python setup.py test
 
 test-all: ## run tests on every Python version with tox
 	tox
 
 coverage: ## check code coverage quickly with the default Python
 	
-		coverage run --source seqann setup.py test
-	
-		coverage report -m
-		coverage html
-		$(BROWSER) htmlcov/index.html
+	coverage run --source seqann setup.py test
+
+	coverage report -m
+	coverage html
+	$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	# rm -f docs/seqann.rst
@@ -101,22 +100,4 @@ activate: ## activate a virtual environment. Run `make venv` before activating.
 	@echo "====================================================================="
 	@echo "To activate the new virtualenv, execute the following from your shell"
 	@echo "source $(PWD)/venv/bin/activate"
-
-git-init: ## initializes a git repository. Commits and pushes to github.
-	@echo "====================================================================="
-	@echo "Make sure you've created a github repo 'mhalagan-nmdp/gfe'"
-	@read -p "Continue? [Y/N] " choice; \
-	case "$$choice" in \
-		y | Y ) \
-			echo "====================================================================="; \
-			git init . ; \
-			git add . ; \
-			git commit -m "Initial Import" ; \
-			git remote add origin https://github.com/mhalagan-nmdp/gfe ; \
-			git push -u origin master; \
-			echo "====================================================================="; \
-			echo "Git Initialized!" \
-			;; \
-	  * ) echo "Git NOT initialized!" ;; \
-	esac; 
 

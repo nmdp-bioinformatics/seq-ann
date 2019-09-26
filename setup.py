@@ -33,33 +33,23 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'biopython',
-    'PyMySQL',
-    'six',
-    'bson',
-    'pytz',
-    'numpy',
-    'requests'
+    'biopython==1.74',
+    'PyMySQL==0.9.3',
+    'bson==0.5.8',
+    'requests==2.22.0'
 ]
 
 test_requirements = [
-    'pytz',
-    'biopython',
-    'PyMySQL',
-    'six',
-    'bson',
-    'unittest',
-    'numpy'
 ]
 
 setup(
-    name='seqann',
-    version='1.0.0',
+    name='seq-ann',
+    version='1.0.4',
     description="Sequence Annotation",
     long_description=readme,
-    author="Mike Halagan",
-    author_email='mhalagan@nmdp.org',
-    url='https://github.com/nmdp-bioinformatics/SeqAnn',
+    author="NMDP Bioinformatics, CIBMTR",
+    author_email='cibmtr-pypi@nmdp.org',
+    url='https://github.com/nmdp-bioinformatics/seq-ann',
     packages=[
         'seqann',
         'seqann.models',
@@ -85,7 +75,7 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
     tests_require=test_requirements
