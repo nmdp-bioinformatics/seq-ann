@@ -71,6 +71,8 @@ docs/_build/
 
 # PyBuilder
 target/
+.idea/
+tags
 
 # pyenv python configuration file
 .python-version

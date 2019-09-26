@@ -39,6 +39,14 @@ created significantly faster when using a BioSQL database. When a BioSQL databas
 A BioSQL database containing all of IPD-IMGT/HLA is available on DockerHub_ and can be
 run on any machine that has docker installed. 
 
+Install
+------------
+
+.. code-block:: shell
+    
+    pip install seq-ann
+
+
 Parameters
 ----------
 
@@ -76,6 +84,13 @@ To annotated a sequence initialize a new ``BioSeqAnn`` object and then pass the 
 
   The packages `ncbi-blast+` and `clustalo` are required to be installed on your system.
 
+
+  Set variables to BioSQL host/port if using BioSQL.
+
+.. code-block:: shell
+
+    export BIOSQLHOST="localhost"
+    export BIOSQLPORT=3306
 
 .. code-block:: python3
 
@@ -130,13 +145,6 @@ annotation is not able to be produced then nothing will be returned. Below is an
     for feat in ann.annotation:
         print(feat, ann.gfe, str(ann.annotation[feat].seq), sep="\t")
 
-
-Install
-------------
-
-.. code-block:: shell
-    
-    pip install seqann
 
 
 Dependencies
