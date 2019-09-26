@@ -1,20 +1,14 @@
-FROM ubuntu:17.10
-MAINTAINER Mike Halagan <mhalagan@nmdp.org>
+FROM python:3.7
+MAINTAINER NMDP Bioinformatics
+
+RUN pip install biopython==1.74 PyMySQL==0.9.3 bson==0.5.8 requests==2.22.0
 
 RUN apt-get update -q \
-    && apt-get dist-upgrade -qy \
-    && apt-get install -qyy wget curl build-essential cpp git \
-    && apt-get -qyy install python3.6 python3-pip python3-dev python3-setuptools uwsgi-plugin-python3  python-mysqldb python3-mysql.connector
+    && apt-get install python-mysqldb \
+    && apt-get install clustalo -y \
+	  && apt-get install ncbi-blast+ -y \
+    && apt-get autoremove \
+    && apt-get clean
 
-RUN apt-get install python3.6-dev -qy
-
-RUN cd opt/ && git clone https://github.com/nmdp-bioinformatics/SeqAnn && cd SeqAnn \
-    && curl https://bootstrap.pypa.io/get-pip.py | python3.6 \
-    && pip install --upgrade pip
-
-RUN cd opt/SeqAnn && pip install -r requirements.txt \
-    && python3.6 setup.py install 
-
-RUN apt-get install clustalo -y
-RUN apt-get install ncbi-blast+ -y
+RUN pip install seq-ann==1.0.5
 
