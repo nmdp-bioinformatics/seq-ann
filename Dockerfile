@@ -8,5 +8,4 @@ RUN apt-get update -q \
     && apt-get autoremove \
     && apt-get clean
 
-RUN pip install -U pip seq-ann==1.0.5
-
+RUN pip install -U pip seq-ann==1.1.0
