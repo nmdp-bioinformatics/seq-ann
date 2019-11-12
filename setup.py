@@ -33,7 +33,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'biopython==1.74',
+    'biopython==1.75',
     'PyMySQL==0.9.3',
     'bson==0.5.8',
     'requests==2.22.0'
@@ -44,7 +44,7 @@ test_requirements = [
 
 setup(
     name='seq-ann',
-    version='1.0.5',
+    version='1.1.0',
     description="Sequence Annotation",
     long_description=readme,
     author="NMDP Bioinformatics, CIBMTR",
