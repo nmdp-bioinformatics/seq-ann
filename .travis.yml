@@ -3,10 +3,10 @@
 sudo: required
 
 language: python
-python: 3.6
+python: 3.7
 
 env:
-  - TOXENV=py36
+  - TOXENV=py37
 
 services:
   - docker
@@ -15,7 +15,7 @@ before_install:
   - sudo apt-get install ncbi-blast+ clustalo build-essential git curl
   - git clone https://github.com/nmdp-bioinformatics/imgt_biosqldb
   - cd imgt_biosqldb
-  - docker build --build-arg RELEASES="3310" -t imgt_biosqldb:3310 . 
+  - docker build --build-arg RELEASES="3360" -t imgt_biosqldb:3310 .
   - cd ..
 
 before_script:

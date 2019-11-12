@@ -25,6 +25,4 @@ from __future__ import absolute_import
 from .sequence_annotation import BioSeqAnn
 
 
-__author__ = """Mike Halagan"""
-__email__ = 'mhalagan@nmdp.org'
-__version__ = '1.0.0'
+
