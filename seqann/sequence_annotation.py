@@ -772,6 +772,7 @@ class BioSeqAnn(Model):
                                     ##Make sure order of alignment make sense
                                     if an.features[f].location.start == 0 \
                                             and f != "five_prime_UTR" \
+                                            and annotation.annotation \
                                             and 'three_prime_UTR' in annotation.annotation:
                                         del an.features[f]
                                         continue
