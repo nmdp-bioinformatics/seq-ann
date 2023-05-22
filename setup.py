@@ -36,7 +36,7 @@ requirements = [
     'biopython==1.75',
     'PyMySQL==0.9.3',
     'bson==0.5.8',
-    'requests==2.22.0'
+    'requests==2.31.0'
 ]
 
 test_requirements = [
